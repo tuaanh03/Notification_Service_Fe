@@ -11,7 +11,12 @@ const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--next-font-mono' }
 export const metadata: Metadata = {
   title: 'EWS Notification Service',
   description: 'Nền tảng thông báo nội bộ EWS',
-  icons: { icon: '/apps/ews-astrolink/icon.svg', apple: '/apps/ews-astrolink/apple-icon.png' },
+  // metadata.icons KHÔNG tự thêm basePath -> phải tự ghép, nếu không 404 khi
+  // console đứng sau prefix. BASE_PATH inline lúc build (next.config.mjs).
+  icons: {
+    icon: `${process.env.BASE_PATH ?? ''}/icon.svg`,
+    apple: `${process.env.BASE_PATH ?? ''}/apple-icon.png`,
+  },
 }
 export const viewport: Viewport = { colorScheme: 'light', themeColor: '#FFFFFF' }
 export default function RootLayout({ children }: { children: React.ReactNode }) {

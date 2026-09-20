@@ -1,20 +1,43 @@
 # ews-astrolink — EWS Notification Service admin console.
-# Next.js standalone serves directly under basePath /apps/ews-astrolink on 127.0.0.1:4001
-# (no nginx gateway). Local URL: http://127.0.0.1:4001/apps/ews-astrolink
+# Next.js standalone chạy trên :3000 trong container, publish ra 127.0.0.1:4001.
+#
+# Console KHÔNG gọi backend từ browser. Mọi request quản trị đi qua Next.js server
+# (BFF): Server Component / Route Handler gọi http://ews-astrolink-api:3000/admin/*
+# qua network `ews-net`, kèm ADMIN_TOKEN. Token vì thế không bao giờ rời server,
+# và backend không cần CORS.
+#
+# Dựng network một lần trước khi `up`:  docker network create ews-net
 services:
   ews-astrolink:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Chạy trên domain riêng -> không có prefix. Giữ /apps/ews-astrolink nếu
+        # vẫn đứng sau portal nginx.
+        BASE_PATH: ${BASE_PATH-}
     container_name: ews-astrolink
     restart: unless-stopped
     ports:
       - "127.0.0.1:4001:3000"
     env_file:
       - .env
+    environment:
+      # DNS nội bộ của service api trên ews-net — không đi qua host, không qua domain public.
+      EWS_API_URL: ${EWS_API_URL:-http://ews-astrolink-api:3000}
+      # Cùng giá trị với ADMIN_TOKEN của backend. Server-side only: KHÔNG đặt tên NEXT_PUBLIC_*.
+      EWS_ADMIN_TOKEN: ${EWS_ADMIN_TOKEN:-}
+      # Org mà console đang quản trị — GET /admin/apps bắt buộc query `orgId`.
+      EWS_ORG_ID: ${EWS_ORG_ID:-}
+    networks:
+      - ews-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/apps/ews-astrolink"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000${BASE_PATH-}/"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+networks:
+  ews-net:
+    external: true

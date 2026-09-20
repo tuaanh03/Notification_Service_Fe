@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 # ews-astrolink — EWS Notification Service admin console (Next.js 16, pnpm).
 # Build:  docker compose up -d --build      (from this folder)
-# Image serves Next standalone on :3000 under basePath /apps/ews-astrolink;
-# docker-compose.yml publishes it at 127.0.0.1:4001 (no nginx gateway).
+# Image serves Next standalone on :3000; docker-compose.yml publishes it at
+# 127.0.0.1:4001 (no nginx gateway). basePath rỗng mặc định = chạy trên domain
+# riêng; truyền --build-arg BASE_PATH=/apps/ews-astrolink nếu đứng sau portal.
 
 # ---- deps: install with the exact lockfile ---------------------------------
 FROM node:22-alpine AS deps
@@ -17,8 +18,8 @@ WORKDIR /app
 RUN npm install -g pnpm@10
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# basePath every <Link> and /_next asset is served under.
-ARG BASE_PATH=/apps/ews-astrolink
+# basePath every <Link> and /_next asset is served under. Rỗng = domain riêng.
+ARG BASE_PATH=
 ENV BASE_PATH=$BASE_PATH \
     NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build

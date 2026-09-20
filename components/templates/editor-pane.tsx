@@ -63,8 +63,8 @@ export function EditorPane({ ed, locked }: { ed: TemplateEditorState; locked: bo
 
     try {
       const basePath =
-        typeof window !== 'undefined' && window.location.pathname.startsWith('/apps/ews-astrolink')
-          ? '/apps/ews-astrolink'
+        typeof process.env.BASE_PATH === 'string'
+          ? process.env.BASE_PATH
           : ''
       const res = await fetch(`${basePath}/api/ai/generate-html`, {
         method: 'POST',
