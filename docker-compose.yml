@@ -1,0 +1,20 @@
+# ews-astrolink — EWS Notification Service admin console.
+# Next.js standalone serves directly under basePath /apps/ews-astrolink on 127.0.0.1:4001
+# (no nginx gateway). Local URL: http://127.0.0.1:4001/apps/ews-astrolink
+services:
+  ews-astrolink:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ews-astrolink
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4001:3000"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/apps/ews-astrolink"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---- Light Modern Theme tokens (with Cosmic accents) -------------------------------- */
+:root {
+  color-scheme: light;
+  --void: #F8FAFC;
+  --deep: #FFFFFF;
+  --nebula-indigo: #E0E7FF;
+  --nebula-violet: #EDE9FE;
+  --nebula-teal: #CCFBF1;
+  --starlight: #0284C7;
+  --pulsar: #9333EA;
+  --solar: #D97706;
+  --supernova: #E11D48;
+  --aurora: #059669;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --orbit: #E2E8F0;
+  /* Effects */
+  --glow-panel: 0 4px 20px -4px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03);
+  --glow-starlight: 0 0 10px rgba(2, 132, 199, 0.2);
+  --glow-starlight-lg: 0 0 24px rgba(2, 132, 199, 0.25);
+  --glow-supernova: 0 0 12px rgba(225, 29, 72, 0.2);
+  --overlay: rgba(15, 23, 42, 0.45);
+  /* Email preview frame */
+  --mail-bg: #FFFFFF;
+  --mail-text: #0F172A;
+  --mail-muted: #94A3B8;
+  --mail-line: #E2E8F0;
+  --mail-frame: #CBD5E1;
+  --mail-link: #2563EB;
+  /* Runtime vars for components that read plain var() (sonner toaster, base-ui popups) */
+  --popover: #FFFFFF;
+  --popover-foreground: var(--text-primary);
+  --border: var(--orbit);
+  --radius: 12px;
+}
+
+/* ---- shadcn/ui colour contract ------------------------------------------------------- */
+@theme inline {
+  /* Fonts */
+  --font-sans: var(--next-font-sans), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--next-font-sans), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--next-font-mono), 'JetBrains Mono', ui-monospace, monospace;
+
+  --color-background: var(--void);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--deep);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--deep);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary: var(--starlight);
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: var(--pulsar);
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #F1F5F9;
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: #F1F5F9;
+  --color-accent-foreground: var(--text-primary);
+  --color-destructive: var(--supernova);
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: var(--orbit);
+  --color-input: var(--orbit);
+  --color-ring: var(--starlight);
+
+  /* shadcn Sidebar semantic tokens */
+  --color-sidebar: #FFFFFF;
+  --color-sidebar-foreground: #0F172A;
+  --color-sidebar-primary: #0F172A;
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent: #F1F5F9;
+  --color-sidebar-accent-foreground: #0F172A;
+  --color-sidebar-border: #E2E8F0;
+  --color-sidebar-ring: #0284C7;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+/* ---- Base ------------------------------------------------------------------------------ */
+* { box-sizing: border-box; border-color: var(--orbit); }
+body { @apply font-sans; margin: 0; background: var(--void); color: var(--text-primary); }
+h1, h2, h3 { @apply font-sans; letter-spacing: -0.01em; }
+
+/* ---- Surfaces / effects (used by <Panel>, <StatusPill>, <CosmicBackground>) ------------ */
+.cosmic-surface { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); border: 1px solid var(--orbit); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+.orbit-ring:before { content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; background: linear-gradient(110deg, var(--starlight), var(--pulsar), transparent 65%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+[data-slot='dialog-overlay'] { background: var(--overlay); }
+[data-slot='dialog-content'] { background: #FFFFFF; border: 1px solid var(--orbit); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+.mail-body h2 { font-size: 1.05rem; font-weight: 700; margin: 0 0 .5rem; }
+.mail-body p { margin: 0 0 .6rem; }
+.mail-body a { color: var(--mail-link); text-decoration: underline; }
+.star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #CBD5E1; }
+@keyframes drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(4%, 2%, 0) scale(1.06); } }
+@keyframes twinkle { 0%, 100% { opacity: .15; } 50% { opacity: .5; } }
+@keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, .25); } 50% { box-shadow: 0 0 0 4px rgba(2, 132, 199, 0); } }
+.sending-pulse { animation: pulse-ring 2.4s infinite; }
+@keyframes horizon-pulse { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+.horizon-pulse { animation: horizon-pulse 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { *, *:before, *:after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
