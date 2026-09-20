@@ -1,6 +1,6 @@
 export { ApiError, messageOf, type Issue, type ProblemDetails } from './problem'
 export { adminFetch, orgId } from './client'
-export { listApps, getApp, toApp } from './apps'
+export { listApps, getApp, toApp, listSecrets, issueSecret, revokeSecret } from './apps'
 export {
   listTopics,
   createTopic,
@@ -8,4 +8,5 @@ export {
   type CreateTopicInput,
   type TopicAction,
 } from './topics'
-export type { AppDto, TopicDto } from './types'
+export { listAudit } from './audit'
+export type { AppDto, AppSecretDto, IssuedAppSecretDto, AuditEntryDto, TopicDto } from './types'

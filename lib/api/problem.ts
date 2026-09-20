@@ -53,6 +53,8 @@ const MESSAGES: Readonly<Record<string, string>> = {
   TOPIC_KEY_TAKEN: 'Mã chủ đề này đã có trong app. Chọn mã khác.',
   INVALID_TRANSITION: 'Không chuyển được trạng thái này. Tải lại trang để xem trạng thái mới nhất.',
   CONCURRENT_TRANSITION: 'Người khác vừa đổi trạng thái trước bạn. Tải lại trang rồi thử lại.',
+  ACTIVE_SECRET_LIMIT: 'App đã đủ số khoá active cho phép. Thu hồi một khoá cũ rồi cấp lại.',
+  APP_REVOKED: 'App đã bị thu hồi nên không cấp khoá mới được.',
 }
 
 /** Câu hiển thị cho người vận hành. Chưa có bản dịch thì trả `detail` của backend. */

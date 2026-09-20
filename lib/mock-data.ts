@@ -809,24 +809,6 @@ export const auditEntries: AuditEntry[] = [
     source: 'self',
   },
 ]
-export const credentialAuditEntries: AuditEntry[] = [
-  { actor: 'lan.nguyen', action: 'credential_issued', timestamp: '12 ngày trước', source: 'admin' },
-  {
-    actor: 'system',
-    action: 'credential_rotated',
-    from: 'nsk_live_…a1b2',
-    to: 'nsk_live_…c3d4',
-    timestamp: '4 ngày trước',
-    source: 'admin',
-  },
-  {
-    actor: 'lan.nguyen',
-    action: 'credential_revoked',
-    from: 'nsk_live_…c3d4',
-    timestamp: '4 ngày trước',
-    source: 'admin',
-  },
-]
 export const chartData = Array.from({ length: 12 }, (_, i) => ({
   hour: `${String(i + 8).padStart(2, '0')}:00`,
   api: 32 + i * 7,
@@ -901,7 +883,6 @@ export const currentApp = apps[0]
 export const appBySlug = (slug: string) => apps.find((app) => app.slug === slug) ?? apps[0]
 export const appIdIsUuidV4 = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
-export const appSecretHint = 'nsk_live_…a1b2'
 export const approvalApp = { ...apps[3], submitted_topics: ['atlas.data_quality'] }
 
 /* ---- UC-001 §C Duyệt có điều chỉnh ---- */
@@ -925,29 +906,29 @@ export const ungrantedChannelTopics = (granted: Channel[], topicKeys: string[]) 
     .filter((t) => t.channels.length > 0)
 
 /* ---- UC-001 §E Credentials: chỉ có hint, không bao giờ có bản gốc ---- */
-export type AppSecret = {
-  hint: string
-  status: 'active' | 'revoked'
-  created_at: string
-  rotated_at?: string
-  revoked_at?: string
-}
-/** Giả định 11 §: tối đa 2 secret active cùng lúc để rotate không downtime. */
+/**
+ * Màn `/settings/credentials` đã đọc khoá và audit THẬT (`AppSecretDto`, `/admin/audit`),
+ * nên fixture khoá mock đã bỏ. Giữ lại đúng hằng số nghiệp vụ, trùng khít backend
+ * (`ews-astrolink-api/src/modules/apps/domain/entities/app-secret.ts`): hai khoá cùng
+ * active để xoay vòng không mất kết nối.
+ */
 export const MAX_ACTIVE_SECRETS = 2
-export const appSecrets: AppSecret[] = [
-  { hint: 'nsk_live_…c3d4', status: 'revoked', created_at: '12 ngày trước', rotated_at: '4 ngày trước', revoked_at: '4 ngày trước' },
-  { hint: appSecretHint, status: 'active', created_at: '4 ngày trước' },
-]
-/** Hint cho secret mới sinh — mock cố định theo thứ tự, không Math.random (SSR-safe). */
-export const nextSecretHint = (existing: AppSecret[]) => `nsk_live_…${['e5f6', 'a7b8', 'c9d0'][existing.length - 2] ?? 'ffff'}`
-export const CREDENTIAL_ACTIONS = ['credential_issued', 'credential_rotated', 'credential_revoked'] as const
-export const credentialAudit = (entries: AuditEntry[]) =>
-  entries.filter((e) => (CREDENTIAL_ACTIONS as readonly string[]).includes(e.action))
-/** Snippet config / đổi token cho modal credential — theo app được duyệt, không hard-code apps[0]. */
-export const configSnippetFor = (app: App) =>
-  `EWS_APP_ID=${app.app_id}\nEWS_APP_SECRET=nsk_live_…copy-from-approval\nEWS_NAMESPACE=${app.namespace}`
-export const tokenSnippetFor = (app: App) =>
-  `POST /v1/auth/token\n{\n  "app_id": "${app.app_id}",\n  "app_secret": "nsk_live_…copy-from-approval"\n}\n\n→ 200 OK\n{ "access_token": "…", "expires_in": 3600 }`
+/**
+ * Khoá giả cho các màn CHƯA đấu backend (wizard đăng ký app, duyệt app). Đúng định dạng thật
+ * `ews_<32 hex>_<43 ký tự base64url>` để không dạy sai người đọc.
+ */
+export const DEMO_API_KEY = 'ews_4f2a8c1d9e7b6a5c3d2e1f0a9b8c7d6e_Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaQ'
+/**
+ * Snippet cho modal credential — theo app được duyệt, không hard-code apps[0].
+ *
+ * Backend KHÔNG có bước đổi token: `/v1/*` xác thực thẳng bằng `Authorization: Bearer <api key>`
+ * (`ews-astrolink-api/src/shared/http/server.ts`). Đừng dựng lại luồng `/v1/auth/token`.
+ */
+export const configSnippetFor = (app: App, apiKey: string) =>
+  `EWS_APP_ID=${app.app_id}\nEWS_API_KEY=${apiKey}\nEWS_NAMESPACE=${app.namespace}`
+/** Body sao đúng `sendBody` của `POST /v1/notifications`. 202 = đã nhận, CHƯA gửi (UC-005 BR-3). */
+export const sendSnippetFor = (apiKey: string) =>
+  `POST /v1/notifications\nAuthorization: Bearer ${apiKey}\nContent-Type: application/json\n\n{\n  "to": { "externalId": "u-1024" },\n  "topic": "order_updates",\n  "subject": "Đơn hàng đã được xác nhận",\n  "html": "<p>Xin chào…</p>"\n}\n\n→ 202 Accepted\nLocation: /v1/notifications/<id>`
 /* Mock-only foundation: fixtures intentionally live in memory for the next implementation slices. */
 
 /* ---- Recipient estimate (UC-008 BR-4) — the ONE place every "bao nhiêu người" number comes from.

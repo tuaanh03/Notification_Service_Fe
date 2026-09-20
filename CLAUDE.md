@@ -37,6 +37,7 @@ webservice/ews-astrolink/
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
 │   ├── apps/new/             # /apps/new    Đăng ký app (UC-001)
 │   ├── settings/{credentials,origins,profile,quota,sync}/
+│   │                         # credentials/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
@@ -57,7 +58,7 @@ webservice/ews-astrolink/
 │                             # toggle-group tooltip
 ├── lib/{mock-data.ts,theme.ts,utils.ts}
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
-│                             # · apps.ts · topics.ts · index.ts
+│                             # · result.ts (ActionResult) · apps.ts · topics.ts · audit.ts · index.ts
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
 ├── next.config.mjs           # output: 'standalone', basePath RỖNG (console có domain riêng)
@@ -91,7 +92,7 @@ Spec & use case nằm **ngoài** thư mục này:
     Thiếu primitive nào → thêm bằng `pnpm dlx shadcn@latest add <name>` (project dùng shadcn v4 / base-ui).
 *   **Không đổi tên nghiệp vụ theo metaphor vũ trụ.** Vũ trụ là lớp thị giác. `Chủ đề` vẫn là Chủ đề,
     `Người nhận` vẫn là Người nhận, `binding` vẫn là binding. Tài liệu use case rất chặt về thuật ngữ.
-*   **Identifier luôn monospace.** `topic_key`, `app_id`, `nsk_live_…`, trạng thái (`queued`,
+*   **Identifier luôn monospace.** `topic_key`, `app_id`, khoá API `ews_…`, trạng thái (`queued`,
     `no_recipient`), mã HTTP, JSON, số đếm → `font-mono` + `tabular-nums`. Hard rule, không ngoại lệ.
 *   **Tách biệt logic và UI.** State / derived number đặt ở custom hook (`hooks/use-*.ts`) hoặc đầu
     component. Số suy ra (ước lượng người nhận, counter) tính từ **một helper** trong `lib/mock-data.ts`,
@@ -178,7 +179,7 @@ Hai cách gọi, chọn theo việc server có biết `appId` lúc render hay kh
 
 *   **Server Component** khi dữ liệu không phụ thuộc app đang chọn (`/admin/apps`) — đọc thẳng
     trong `page.tsx`, `export const dynamic = 'force-dynamic'`.
-*   **Server Action** khi dữ liệu thuộc app đang chọn (`/topics`). App đang chọn nằm trong state
+*   **Server Action** khi dữ liệu thuộc app đang chọn (`/topics`, `/settings/credentials`). App đang chọn nằm trong state
     client của `<AppProvider>`, server lúc render chưa biết `appId`. Action vẫn chạy phía server nên
     token không lộ. **Không ném lỗi qua ranh giới server/client** (Next nuốt message ở production
     build) — trả `ActionResult` có `code` để màn hình dựng exception path thật.
@@ -224,7 +225,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<RepeatableInput values onChange validate>` | `components/repeatable-input.tsx` | ✓ | ô nhập lặp (domain / CIDR) → chip mono có nút bỏ; dùng ở wizard step 1 |
 | `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `/users/[id]` và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
-| `<CredentialDialog app open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung wizard step 4 và `/admin/approvals/[id]` |
+| `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
@@ -258,7 +259,10 @@ chuyện thẩm mỹ. Nguồn: `../../use_case_template/use_case_*.md`, `../../u
 *   **Binding table 1 dòng / 1 rule**, không bung thành từng người (UC-002 BR-4).
 *   **`excluded` thắng `included`** — hiển thị khác biệt, có tooltip (UC-002 BR-6).
 *   **Footer opt-out do hệ thống chèn**, hiển thị read-only có khoá (UC-006 BR-10).
-*   **Credential chỉ hiện một lần**; trang credentials chỉ hiện hint (UC-001 BR-4).
+*   **Credential chỉ hiện một lần**; trang credentials chỉ hiện hint (UC-001 BR-4). Khoá thật có
+    dạng `ews_<32 hex>_<43 ký tự>`; `/v1/*` xác thực THẲNG bằng `Authorization: Bearer <khoá>`,
+    **không** có bước đổi token. Cấp khoá mới **không** thu hồi khoá cũ — tối đa 2 khoá active
+    đúng để xoay vòng không mất kết nối.
 *   **11 trạng thái notification**, đúng tên, đúng màu, qua `<StatusPill>` (SM §3).
 *   **`GET` trang unsubscribe không đổi trạng thái** — chỉ `POST` (UC-007 BR-3).
 *   **Exception path là UI thật**, không phải toast — mỗi spec màn hình có mục riêng cho nó.
@@ -318,6 +322,8 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
 | Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
 | Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
+| Snippet hướng dẫn tích hợp dạy sai luồng thật | snippet mock dựng endpoint không tồn tại (`POST /v1/auth/token`) | snippet phải sao đúng route + body backend; đối chiếu `*-routes.ts` trước khi viết |
+| Lỗi Server Action ra màn hình thành câu chung chung | ném `Error` qua ranh giới server/client — production Next thay message | trả `ActionResult` của `lib/api/result.ts`, map theo `code` |
 | Build pass nhưng type sai | `ignoreBuildErrors: true` | `pnpm exec tsc --noEmit` |
 | Container "Up 1 second" liên tục, browser navigate fail ngẫu nhiên | chạy docker qua `wsl -e ...` từ Windows: WSL **tự tắt khi idle** sau mỗi lệnh → dockerd chết → container restart | giữ WSL sống: `Start-Process wsl -ArgumentList '-e','sleep','infinity' -WindowStyle Hidden` (hoặc mở sẵn 1 terminal WSL) |
 | Font/token khai trong `@theme inline` nhưng rule CSS thường `var(--font-sans)` không ăn | `inline` chỉ inline vào utility, **không** phát biến ra runtime | trong `globals.css` dùng `@apply font-sans` / `@apply font-heading`, không `var()` |

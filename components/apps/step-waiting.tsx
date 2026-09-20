@@ -3,7 +3,7 @@ import { LockKeyhole } from 'lucide-react'
 import { useState } from 'react'
 import { StatusPill } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
-import { apps } from '@/lib/mock-data'
+import { apps, DEMO_API_KEY } from '@/lib/mock-data'
 import { CredentialDialog } from './credential-dialog'
 
 /** Step 4 — Chờ duyệt: form khoá, chưa sinh credential. Nút demo mô phỏng Super Admin duyệt → modal show-once. */
@@ -23,7 +23,7 @@ export function StepWaiting() {
       <Button variant="outline" size="sm" className="mt-6" onClick={() => setIssued(true)}>
         Demo: Super Admin đã duyệt
       </Button>
-      <CredentialDialog app={apps[3]} open={issued} onClose={() => setIssued(false)} />
+      <CredentialDialog app={apps[3]} apiKey={DEMO_API_KEY} open={issued} onClose={() => setIssued(false)} />
     </div>
   )
 }

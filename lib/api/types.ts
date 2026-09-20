@@ -50,3 +50,35 @@ export type TopicDto = {
   createdAt: string
   updatedAt: string
 }
+
+/** Sao đúng `AppSecretDto` của backend. KHÔNG có plaintext — hệ thống chỉ lưu hash. */
+export type AppSecretDto = {
+  id: string
+  /** `ews_<8 hex>…<4 ký tự cuối>` — đủ để nhận ra khoá, không đủ để dùng. */
+  hint: string
+  /** APP_SECRET_STATUSES: active | revoked */
+  status: string
+  createdAt: string
+  revokedAt: string | null
+}
+
+/**
+ * Trả về DUY NHẤT một lần, trong response của `POST /admin/apps/:appId/secrets` (UC-001 BR-4).
+ * `apiKey` không vào DB, không vào event, không vào log — mất là phải cấp khoá mới.
+ */
+export type IssuedAppSecretDto = AppSecretDto & { apiKey: string }
+
+/** Sao đúng `AuditEntryDto` của backend (`src/modules/audit/application/dto.ts`). */
+export type AuditEntryDto = {
+  id: string
+  actor: string
+  actorType: string
+  /** Tên domain event, ví dụ `AppSecretIssued`. */
+  action: string
+  targetType: string
+  targetId: string
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  source: string
+  at: string
+}

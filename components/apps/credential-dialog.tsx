@@ -9,15 +9,27 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { configSnippetFor, tokenSnippetFor, type App } from '@/lib/mock-data'
-
-const DEMO_SECRET = 'nsk_live_4f2a8c1d9e7b6a5c3d2e1f0a9b8c7d6e'
+import { configSnippetFor, sendSnippetFor, type App } from '@/lib/mock-data'
 
 /**
- * UC-001 BR-4 — credential chỉ hiển thị một lần. Dùng chung cho /admin/approvals/[id] (sau Duyệt)
- * và wizard step 4. Đóng chỉ khi đã tick "đã lưu"; chưa copy mà đóng → confirm lần hai.
+ * UC-001 BR-4 — credential chỉ hiển thị một lần. Dùng chung cho /settings/credentials (khoá thật
+ * từ `POST /admin/apps/:appId/secrets`), /admin/approvals/[id] và wizard step 4 (hai màn này còn
+ * mock — truyền `DEMO_API_KEY`). Đóng chỉ khi đã tick "đã lưu"; chưa copy mà đóng → confirm lần hai.
+ *
+ * `apiKey` chỉ sống trong state của component này: backend không lưu plaintext, đóng modal là mất.
  */
-export function CredentialDialog({ app, open, onClose }: { app: App; open: boolean; onClose: () => void }) {
+export function CredentialDialog({
+  app,
+  apiKey,
+  open,
+  onClose,
+}: {
+  app: App
+  /** Khoá plaintext, chỉ có đúng một lần trong response lúc cấp. */
+  apiKey: string
+  open: boolean
+  onClose: () => void
+}) {
   const [visible, setVisible] = useState(false)
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -61,14 +73,14 @@ export function CredentialDialog({ app, open, onClose }: { app: App; open: boole
               </p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <code className="break-all font-mono text-xs text-[var(--supernova)]">
-                  {visible ? DEMO_SECRET : 'nsk_live_••••••••••••••••••••••••••••••••'}
+                  {visible ? apiKey : `ews_${'•'.repeat(32)}`}
                 </code>
                 <div className="flex shrink-0 gap-1">
                   <Button variant="ghost" size="sm" onClick={() => setVisible(!visible)}>
                     {visible ? <EyeOff /> : <Eye />}
                     {visible ? 'Ẩn' : 'Hiện'}
                   </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="Sao chép app_secret" onClick={() => copy(DEMO_SECRET)}>
+                  <Button variant="ghost" size="icon-sm" aria-label="Sao chép app_secret" onClick={() => copy(apiKey)}>
                     <Copy />
                   </Button>
                 </div>
@@ -78,13 +90,13 @@ export function CredentialDialog({ app, open, onClose }: { app: App; open: boole
           <Tabs defaultValue="config">
             <TabsList>
               <TabsTrigger value="config">Config</TabsTrigger>
-              <TabsTrigger value="token">Đổi token</TabsTrigger>
+              <TabsTrigger value="token">Gọi API</TabsTrigger>
             </TabsList>
             <TabsContent value="config" className="mt-3">
-              <CodeBlock language="env" value={configSnippetFor(app)} />
+              <CodeBlock language="env" value={configSnippetFor(app, apiKey)} />
             </TabsContent>
             <TabsContent value="token" className="mt-3">
-              <CodeBlock language="http" value={tokenSnippetFor(app)} />
+              <CodeBlock language="http" value={sendSnippetFor(apiKey)} />
             </TabsContent>
           </Tabs>
           <div className="flex items-center gap-2">

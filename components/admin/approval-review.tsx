@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
-import { approvalApp, requestedGrant, type ApprovalGrant } from '@/lib/mock-data'
+import { approvalApp, DEMO_API_KEY, requestedGrant, type ApprovalGrant } from '@/lib/mock-data'
 import { AdjustForm, GrantDiff } from './adjust-form'
 
 type Decision = '' | 'approved' | 'adjusted' | 'rejected'
@@ -160,7 +160,7 @@ export function ApprovalReview({ id }: { id: string }) {
           )}
         </Panel>
       </div>
-      <CredentialDialog app={approvalApp} open={issued && !credentialClosed} onClose={() => setCredentialClosed(true)} />
+      <CredentialDialog app={approvalApp} apiKey={DEMO_API_KEY} open={issued && !credentialClosed} onClose={() => setCredentialClosed(true)} />
     </>
   )
 }

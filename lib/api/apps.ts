@@ -1,9 +1,9 @@
 import 'server-only'
 import { fmtIso, type App, type Channel } from '@/lib/mock-data'
 import { adminFetch, orgId } from './client'
-import type { AppDto } from './types'
+import type { AppDto, AppSecretDto, IssuedAppSecretDto } from './types'
 
-export type { AppDto }
+export type { AppDto, AppSecretDto, IssuedAppSecretDto }
 
 /** GET /admin/apps?orgId= — org lấy từ EWS_ORG_ID. */
 export async function listApps(): Promise<AppDto[]> {
@@ -39,4 +39,27 @@ export function toApp(dto: AppDto): App {
     max_recipients_per_event: dto.maxRecipientsPerEvent,
     updated_at: fmtIso(dto.updatedAt),
   }
+}
+
+/** GET /admin/apps/:appId/secrets — chỉ hint, không bao giờ có plaintext. */
+export async function listSecrets(appId: string): Promise<AppSecretDto[]> {
+  return adminFetch<AppSecretDto[]>(`/apps/${encodeURIComponent(appId)}/secrets`)
+}
+
+/**
+ * POST /admin/apps/:appId/secrets — response DUY NHẤT chứa `apiKey` plaintext.
+ *
+ * Cấp khoá mới KHÔNG thu hồi khoá cũ: backend cho tối đa `MAX_ACTIVE_SECRETS` khoá
+ * active đúng để xoay vòng không mất kết nối (cấp mới -> app đổi sang -> thu hồi cũ).
+ */
+export async function issueSecret(appId: string): Promise<IssuedAppSecretDto> {
+  return adminFetch<IssuedAppSecretDto>(`/apps/${encodeURIComponent(appId)}/secrets`, { method: 'POST' })
+}
+
+/** DELETE /admin/apps/:appId/secrets/:secretId — không hoàn tác được. */
+export async function revokeSecret(appId: string, secretId: string): Promise<AppSecretDto> {
+  return adminFetch<AppSecretDto>(
+    `/apps/${encodeURIComponent(appId)}/secrets/${encodeURIComponent(secretId)}`,
+    { method: 'DELETE' },
+  )
 }

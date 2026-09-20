@@ -7,7 +7,7 @@ import {
   type CreateTopicInput,
   type TopicAction,
 } from '@/lib/api/topics'
-import { ApiError, messageOf } from '@/lib/api/problem'
+import { toResult, type ActionResult } from '@/lib/api/result'
 import type { TopicDto } from '@/lib/api/types'
 
 /**
@@ -18,31 +18,19 @@ import type { TopicDto } from '@/lib/api/types'
  * Server Action giữ nguyên tính chất quan trọng: `EWS_ADMIN_TOKEN` và địa chỉ backend
  * chỉ tồn tại phía server, browser không thấy (CLAUDE.md mục 2.2).
  *
- * Lỗi KHÔNG ném qua ranh giới server/client (Next nuốt message trong production build);
- * trả về `ActionResult` để màn hình dựng exception path thật, có mã lỗi.
+ * Lỗi trả về dưới dạng `ActionResult` (`lib/api/result.ts`), không ném qua ranh giới
+ * server/client.
  */
-export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; message: string; code: string }
-
-async function run<T>(op: () => Promise<T>): Promise<ActionResult<T>> {
-  try {
-    return { ok: true, data: await op() }
-  } catch (err) {
-    if (!(err instanceof ApiError)) throw err
-    return { ok: false, message: messageOf(err), code: err.code }
-  }
-}
 
 export async function loadTopicsAction(appId: string): Promise<ActionResult<TopicDto[]>> {
-  return run(() => listTopics(appId))
+  return toResult(() => listTopics(appId))
 }
 
 export async function createTopicAction(
   appId: string,
   input: CreateTopicInput,
 ): Promise<ActionResult<TopicDto>> {
-  return run(() => createTopic(appId, input))
+  return toResult(() => createTopic(appId, input))
 }
 
 export async function transitionTopicAction(
@@ -50,5 +38,5 @@ export async function transitionTopicAction(
   key: string,
   action: TopicAction,
 ): Promise<ActionResult<TopicDto>> {
-  return run(() => transitionTopic(appId, key, action))
+  return toResult(() => transitionTopic(appId, key, action))
 }

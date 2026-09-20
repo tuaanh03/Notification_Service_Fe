@@ -1,90 +1,165 @@
 'use client'
-import { useState } from 'react'
-import { KeyRound, RotateCcw, ShieldOff } from 'lucide-react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
+import { AlertTriangle, KeyRound, PlugZap, RotateCcw, ShieldOff } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  issueSecretAction,
+  loadCredentialsAction,
+  revokeSecretAction,
+  type CredentialsView,
+} from '@/app/settings/credentials/actions'
 import { AuditTrail } from '@/components/audit-trail'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
+import { CredentialDialog } from '@/components/apps/credential-dialog'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApp } from '@/components/app-context'
-import {
-  MAX_ACTIVE_SECRETS,
-  appSecrets,
-  credentialAudit,
-  credentialAuditEntries,
-  nextSecretHint,
-  type AppSecret,
-  type AuditEntry,
-} from '@/lib/mock-data'
+import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
+import { MAX_ACTIVE_SECRETS, fmtIso } from '@/lib/mock-data'
 
-const HEADERS = ['Hint', 'Trạng thái', 'Tạo lúc', 'Xoay lúc', 'Thu hồi lúc', '']
+const HEADERS = ['Hint', 'Trạng thái', 'Tạo lúc', 'Thu hồi lúc', '']
 
-/** UC-001 §E — bảng secret chỉ có hint; rotate có confirm nêu hậu quả; tối đa 2 active để rotate không downtime. */
+/**
+ * UC-001 §E — vòng đời khoá API của app đang chọn. Bảng chỉ có hint; plaintext chỉ hiện
+ * đúng một lần ngay sau khi cấp, trong `<CredentialDialog>` (BR-4).
+ *
+ * `MAX_ACTIVE_SECRETS` = 2 ở cả hai phía (backend `app-secret.ts`, `lib/mock-data.ts`):
+ * hai khoá cùng sống để xoay vòng KHÔNG mất kết nối — cấp khoá mới, chuyển app service
+ * sang, rồi mới thu hồi khoá cũ. Cấp mới KHÔNG tự thu hồi khoá cũ.
+ */
 export function CredentialsPanel() {
   const { app } = useApp()
-  const [secrets, setSecrets] = useState<AppSecret[]>(appSecrets)
-  const [audit, setAudit] = useState<AuditEntry[]>(credentialAuditEntries)
-  const [rotateOpen, setRotateOpen] = useState(false)
-  const [revoking, setRevoking] = useState<AppSecret | null>(null)
+  const [view, setView] = useState<CredentialsView | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [issueOpen, setIssueOpen] = useState(false)
+  const [revoking, setRevoking] = useState<AppSecretDto | null>(null)
+  /** Khoá vừa cấp — chỉ nằm ở đây cho tới khi người dùng đóng modal, rồi mất hẳn. */
+  const [issued, setIssued] = useState<IssuedAppSecretDto | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  const appId = app.app_id
+
+  const load = useCallback(async () => {
+    const result = await loadCredentialsAction(appId)
+    if (result.ok) {
+      setView(result.data)
+      setLoadError(null)
+    } else {
+      setView(null)
+      setLoadError(`${result.message} (mã: ${result.code})`)
+    }
+  }, [appId])
+
+  useEffect(() => {
+    setView(null)
+    setLoadError(null)
+    setActionError(null)
+    void load()
+  }, [load])
+
+  const secrets = view?.secrets ?? []
   const activeCount = secrets.filter((s) => s.status === 'active').length
   const atLimit = activeCount >= MAX_ACTIVE_SECRETS
 
-  const rotate = () => {
-    const hint = nextSecretHint(secrets)
-    const current = secrets.find((s) => s.status === 'active')
-    setSecrets((prev) => [...prev, { hint, status: 'active', created_at: 'vừa xong' }])
-    setAudit((prev) => [
-      { actor: 'lan.nguyen', action: 'credential_rotated', from: current?.hint, to: hint, timestamp: 'vừa xong', source: 'admin' },
-      ...prev,
-    ])
-    setRotateOpen(false)
-    toast.success('Đã sinh secret mới', { description: `${hint} — bản gốc chỉ hiện một lần ở modal cấp credential.` })
-  }
-  const revoke = (target: AppSecret) => {
-    setSecrets((prev) =>
-      prev.map((s) => (s.hint === target.hint ? { ...s, status: 'revoked', revoked_at: 'vừa xong' } : s)),
-    )
-    setAudit((prev) => [
-      { actor: 'lan.nguyen', action: 'credential_revoked', from: target.hint, timestamp: 'vừa xong', source: 'admin' },
-      ...prev,
-    ])
-    setRevoking(null)
+  const issue = () => {
+    startTransition(async () => {
+      const result = await issueSecretAction(appId)
+      if (!result.ok) {
+        setActionError(`${result.message} (mã: ${result.code})`)
+        return
+      }
+      setActionError(null)
+      setIssueOpen(false)
+      setIssued(result.data)
+      await load()
+    })
   }
 
-  const rotateButton = (
-    <Button variant="outline" disabled={atLimit} onClick={() => setRotateOpen(true)}>
+  const revoke = (target: AppSecretDto) => {
+    startTransition(async () => {
+      const result = await revokeSecretAction(appId, target.id)
+      if (!result.ok) {
+        setActionError(`${result.message} (mã: ${result.code})`)
+        return
+      }
+      setActionError(null)
+      setRevoking(null)
+      toast.success(`Đã thu hồi ${target.hint}`)
+      await load()
+    })
+  }
+
+  const header = (
+    <PageHeader title="Credentials" subtitle={`Vòng đời khoá API của ${app.slug} · app_id không đổi`} />
+  )
+
+  if (loadError) {
+    return (
+      <>
+        {header}
+        <Panel className="overflow-hidden">
+          <EmptyState
+            icon={PlugZap}
+            title="Không đọc được danh sách khoá"
+            description={loadError}
+            action={
+              <Button variant="ghost" size="sm" onClick={() => void load()}>
+                Thử lại
+              </Button>
+            }
+          />
+        </Panel>
+      </>
+    )
+  }
+
+  const issueButton = (
+    <Button variant="outline" disabled={atLimit || pending} onClick={() => setIssueOpen(true)}>
       <RotateCcw />
-      Sinh secret mới
+      Cấp khoá mới
     </Button>
   )
+
   return (
     <>
-      <PageHeader title="Credentials" subtitle={`Vòng đời secret của ${app.slug} · app_id không đổi`} />
+      {header}
+
+      {actionError && (
+        <Alert variant="destructive" className="mb-5">
+          <AlertTriangle />
+          <AlertTitle>Thao tác không thành công</AlertTitle>
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
+      )}
+
       <Panel className="p-5" ring>
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold">Secrets</h2>
-            {/* UC-001 BR-4: không bao giờ hiện secret đầy đủ ở đây */}
+            <h2 className="text-sm font-semibold">Khoá API</h2>
+            {/* UC-001 BR-4: không bao giờ hiện khoá đầy đủ ở đây */}
             <p className="mt-2 text-xs text-[var(--text-secondary)]">
-              Hệ thống chỉ lưu SHA-256 hash. Mất secret thì phải xoay, không cấp lại được.
+              Hệ thống chỉ lưu SHA-256 hash. Mất khoá thì phải cấp khoá mới, không lấy lại được.
             </p>
             <p className="mt-1 font-mono text-[11px] tabular-nums text-[var(--text-muted)]">
-              {activeCount}/{MAX_ACTIVE_SECRETS} secret active
+              {activeCount}/{MAX_ACTIVE_SECRETS} khoá active
             </p>
           </div>
           {atLimit ? (
             <Tooltip>
-              <TooltipTrigger render={<span className="inline-flex" />}>{rotateButton}</TooltipTrigger>
+              <TooltipTrigger render={<span className="inline-flex" />}>{issueButton}</TooltipTrigger>
               <TooltipContent>
-                Đã có {MAX_ACTIVE_SECRETS} secret active — thu hồi secret cũ trước khi sinh thêm.
+                Đã có {MAX_ACTIVE_SECRETS} khoá active — thu hồi khoá cũ trước khi cấp thêm.
               </TooltipContent>
             </Tooltip>
           ) : (
-            rotateButton
+            issueButton
           )}
         </div>
         <div className="overflow-x-auto">
@@ -100,7 +175,7 @@ export function CredentialsPanel() {
             </TableHeader>
             <TableBody>
               {secrets.map((s) => (
-                <TableRow key={s.hint} className="h-11 border-[var(--orbit)]" data-status={s.status}>
+                <TableRow key={s.id} className="h-11 border-[var(--orbit)]" data-status={s.status}>
                   <TableCell className="px-3 font-mono text-xs text-[var(--starlight)]">
                     <KeyRound className="mr-2 inline size-3.5" />
                     {s.hint}
@@ -108,12 +183,19 @@ export function CredentialsPanel() {
                   <TableCell className="px-3">
                     <StatusPill status={s.status} />
                   </TableCell>
-                  <TableCell className="px-3 text-xs">{s.created_at}</TableCell>
-                  <TableCell className="px-3 text-xs">{s.rotated_at ?? '—'}</TableCell>
-                  <TableCell className="px-3 text-xs">{s.revoked_at ?? '—'}</TableCell>
+                  <TableCell className="px-3 font-mono text-xs">{fmtIso(s.createdAt)}</TableCell>
+                  <TableCell className="px-3 font-mono text-xs">
+                    {s.revokedAt ? fmtIso(s.revokedAt) : '—'}
+                  </TableCell>
                   <TableCell className="px-3 text-right">
                     {s.status === 'active' && (
-                      <Button variant="ghost" size="xs" onClick={() => setRevoking(s)} aria-label={`Thu hồi ${s.hint}`}>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        disabled={pending}
+                        onClick={() => setRevoking(s)}
+                        aria-label={`Thu hồi ${s.hint}`}
+                      >
                         <ShieldOff /> Thu hồi
                       </Button>
                     )}
@@ -122,46 +204,71 @@ export function CredentialsPanel() {
               ))}
             </TableBody>
           </Table>
+          {view !== null && secrets.length === 0 && (
+            <EmptyState
+              icon={KeyRound}
+              title="Chưa có khoá API"
+              description={`${app.name} chưa được cấp khoá nào — app chưa gọi được /v1. Cấp khoá đầu tiên để bắt đầu.`}
+            />
+          )}
         </div>
       </Panel>
+
       <Panel className="mt-5 p-5">
-        <h2 className="mb-4 text-sm font-semibold">Audit credentials</h2>
-        {/* chỉ credential_issued / credential_rotated / credential_revoked */}
-        <AuditTrail entries={credentialAudit(audit)} />
+        <h2 className="mb-4 text-sm font-semibold">Audit khoá API</h2>
+        {view && view.audit.length > 0 ? (
+          <AuditTrail entries={view.audit} />
+        ) : (
+          <p className="text-xs text-[var(--text-muted)]">
+            Chưa có sự kiện nào. Audit được ghi bất đồng bộ nên thao tác vừa xong có thể chưa hiện ngay.
+          </p>
+        )}
       </Panel>
 
       <ConfirmDialog
-        open={rotateOpen}
+        open={issueOpen}
         tone="warning"
-        title="Sinh secret mới?"
-        description="Secret cũ bị thu hồi ngay, và mọi access_token đang lưu hành hết hiệu lực. app_id không đổi."
+        title="Cấp khoá API mới?"
+        description="Khoá cũ VẪN hoạt động — cấp mới không thu hồi gì cả. Chuyển app service sang khoá mới xong thì quay lại thu hồi khoá cũ. Khoá mới chỉ hiện đúng một lần."
         facts={[
           ['app_id', app.app_id],
-          ['secret mới', nextSecretHint(secrets)],
-          ['active sau khi sinh', `${activeCount + 1}/${MAX_ACTIVE_SECRETS}`],
+          ['active hiện tại', `${activeCount}/${MAX_ACTIVE_SECRETS}`],
+          ['active sau khi cấp', `${activeCount + 1}/${MAX_ACTIVE_SECRETS}`],
         ]}
-        confirmLabel="Sinh secret mới"
-        onConfirm={rotate}
-        onCancel={() => setRotateOpen(false)}
+        confirmLabel={pending ? 'Đang cấp…' : 'Cấp khoá mới'}
+        confirmDisabled={pending}
+        onConfirm={issue}
+        onCancel={() => setIssueOpen(false)}
       />
+
       <ConfirmDialog
         open={revoking !== null}
         tone="warning"
-        title="Thu hồi secret?"
-        description="Mọi access_token đổi từ secret này hết hiệu lực ngay. Không hoàn tác được."
+        title="Thu hồi khoá này?"
+        description="Mọi lời gọi /v1 dùng khoá này hỏng ngay lập tức. Không hoàn tác được."
         facts={
           revoking
             ? [
-                ['secret', revoking.hint],
-                ['tạo lúc', revoking.created_at],
+                ['khoá', revoking.hint],
+                ['tạo lúc', fmtIso(revoking.createdAt)],
                 ['active còn lại', `${activeCount - 1}/${MAX_ACTIVE_SECRETS}`],
               ]
-            : []
+            : undefined
         }
-        confirmLabel="Thu hồi"
+        confirmLabel={pending ? 'Đang thu hồi…' : 'Thu hồi'}
+        confirmDisabled={pending}
         onConfirm={() => revoking && revoke(revoking)}
         onCancel={() => setRevoking(null)}
       />
+
+      {issued && (
+        <CredentialDialog
+          app={app}
+          apiKey={issued.apiKey}
+          open
+          onClose={() => setIssued(null)}
+        />
+      )}
     </>
   )
 }

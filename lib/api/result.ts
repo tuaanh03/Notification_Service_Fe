@@ -1,0 +1,24 @@
+import { ApiError, messageOf } from './problem'
+
+/**
+ * Kết quả của một Server Action gọi backend.
+ *
+ * KHÔNG ném lỗi qua ranh giới server/client: ở bản production Next thay message thật
+ * bằng chuỗi chung, người trực mất luôn lý do. Trả `code` ổn định của backend để màn
+ * hình dựng exception path thật (CLAUDE.md mục 2.2).
+ *
+ * File này KHÔNG `server-only`: component client cần import type để nhận kết quả.
+ */
+export type ActionResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; message: string; code: string }
+
+/** Bọc một lời gọi backend thành `ActionResult`. Lỗi không phải `ApiError` là bug -> vẫn ném. */
+export async function toResult<T>(op: () => Promise<T>): Promise<ActionResult<T>> {
+  try {
+    return { ok: true, data: await op() }
+  } catch (err) {
+    if (!(err instanceof ApiError)) throw err
+    return { ok: false, message: messageOf(err), code: err.code }
+  }
+}

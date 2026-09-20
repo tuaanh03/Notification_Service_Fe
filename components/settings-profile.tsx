@@ -27,11 +27,12 @@ export function SettingsProfile() {
         }
       />
       <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
-        <Panel className="p-5" glow>
+        {/* min-w-0: con của grid mặc định min-width:auto -> track phình theo <pre>/mono bên trong (mục 6) */}
+        <Panel className="min-w-0 p-5" glow>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">{app.name}</h2>
-              <p className="mt-1 font-mono text-xs text-[var(--text-muted)]">
+              <p className="mt-1 break-all font-mono text-xs text-[var(--text-muted)]">
                 {app.slug} · {app.app_id}
               </p>
             </div>
@@ -56,10 +57,10 @@ export function SettingsProfile() {
             </div>
           </dl>
         </Panel>
-        <Panel className="p-5">
+        <Panel className="min-w-0 p-5">
           <h2 className="text-sm font-semibold">Gửi thử</h2>
           <p className="mt-1 text-xs text-[var(--text-secondary)]">Mô phỏng API call đầu tiên trên topic mới.</p>
-          <div className="mt-4">
+          <div className="mt-4 min-w-0 overflow-x-auto">
             <CodeBlock language="http" value={testSendResponse} />
           </div>
           {/* UC-001 BR-6: 0 người nhận ở đường API là bình thường — màu trung tính, không đỏ */}
