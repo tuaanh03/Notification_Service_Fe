@@ -1,6 +1,6 @@
 'use server'
 
-import { addNetworkRule, createApp, submitApp, toApp, type CreateAppInput } from '@/lib/api/apps'
+import { addNetworkRule, createApp, toApp, transitionApp, type CreateAppInput } from '@/lib/api/apps'
 import { createTopic, type CreateTopicInput } from '@/lib/api/topics'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
 import { ApiError, messageOf } from '@/lib/api/problem'
@@ -71,7 +71,7 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
     topicsCreated += 1
   }
 
-  const failed = await stop('Gửi duyệt', () => submitApp(app.app_id))
+  const failed = await stop('Gửi duyệt', () => transitionApp(app.app_id, 'submit'))
   if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
   return { ok: true, data: { app: { ...app, status: 'pending_approval' }, rulesAdded, topicsCreated, stoppedAt: null } }
 }

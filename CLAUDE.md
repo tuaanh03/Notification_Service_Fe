@@ -48,7 +48,8 @@ webservice/ews-astrolink/
 │   │                         # topic-segment-editor-dialog = TẠM NGƯNG sau MVP, KHÔNG xoá (mục 2.3)
 │   │                         # (CHƯA có topic-detail / tab)
 │   ├── apps/*                # wizard step-*, orbit-stepper, credential-dialog (UC-001)
-│   │                         # grant-fields (quyền cấp lúc duyệt, dùng chung), approve-app-dialog
+│   │                         # grant-fields (quyền cấp lúc duyệt, dùng chung), approve-app-dialog,
+│   │                         # app-transition-dialog (Tạm ngưng / Mở lại / Thu hồi — mục 2.6)
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
 │   ├── notifications/*       # notifications-table, notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel), scheduled-cards, error-codes-table, origin-badge
 │   ├── users/*               # users-page/-table, user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
@@ -265,6 +266,34 @@ Form của wizard **sao đúng body backend, không hơn**. Bản v0 từng có 
 là không có ô. Kênh và hạn mức hỏi ở **bước 4**, vì chúng là quyền cấp lúc duyệt, không phải
 thuộc tính lúc tạo.
 
+### 2.6. Vòng đời app trên `/admin/apps` — nút phải khớp máy trạng thái
+
+`ACTIONS_BY_STATUS` trong `app-admin-list.tsx` **sao đúng bảng `APP_TRANSITIONS`** của backend
+(`apps/domain/rules/app-transitions.ts`):
+
+| Trạng thái | Nút |
+|---|---|
+| `draft` | — (chỉ có `submit`, việc của wizard) |
+| `pending_approval` | Duyệt |
+| `active` | Tạm ngưng · Thu hồi |
+| `suspended` | Mở lại · Thu hồi |
+| `revoked` | — (**trạng thái kết thúc**, không có dòng trong bảng) |
+
+Đừng dựng nút rồi để backend trả 409 `INVALID_TRANSITION` — trạng thái nào không có đường đi
+hợp lệ thì **không có nút**.
+
+*   **Thu hồi dùng `tone="blocking"`** và nói thẳng "không có đường quay lại". Đó là sự thật của
+    máy trạng thái, không phải câu doạ cho sang.
+*   **Lý do bắt buộc nhập** (console ép; backend cho phép bỏ trống). Nó đi vào `audit_log` —
+    nhưng xem mục 6, chỗ này từng rơi mất im lặng.
+*   **`key` trên `<AppTransitionDialog>`** theo `app.id:action`. Không có nó, `reason` sống sót
+    qua lần đóng thành công và lý do của lần Tạm ngưng trước bị ghi cho lần Thu hồi sau.
+
+Ô chọn app: menu đã có `<StatusPill>` cho từng app; **chấm trên nút mở menu** lấy màu từ
+`statusColors` theo trạng thái thật — app đang tạm ngưng mà hiện chấm xanh là nói dối ở chỗ
+luôn nhìn thấy. Không làm mờ app bị ngưng: vẫn phải vào xem được chủ đề, khoá, nhật ký của
+chính app đang có vấn đề.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -300,6 +329,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
+| `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
@@ -402,6 +432,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
 | Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
 | Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
+| Ô nhập trong dialog giữ giá trị của lần mở trước | `<ConfirmDialog>` chỉ bật/tắt `open`, component không remount; reset trong `onCancel` không chạy khi đóng do thành công | `key` theo mục tiêu (`app.id:action`) để React dựng lại — với dialog ghi audit thì đây là bug **ghi sai dữ liệu**, không phải lỗi hiển thị |
 | Hành động chỉ có trong một phiên wizard | đặt nút duyệt ở bước cuối wizard, không có ở danh sách | thao tác đổi trạng thái phải có ở màn **danh sách**; wizard chỉ là lối tắt (mục 2.5) |
 | Số giả trên thanh trên / sidebar | `<PreviewBanner>` chỉ phủ vùng `<main>`, không phủ khung | số nào hiện ở khung phải lấy từ dữ liệu thật (`useApp().apps`), không từ `lib/mock-data.ts` |
 | Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |

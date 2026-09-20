@@ -1,6 +1,6 @@
 'use server'
 
-import { approveApp, issueSecret, toApp, type ApproveAppInput } from '@/lib/api/apps'
+import { approveApp, issueSecret, toApp, transitionApp, type ApproveAppInput, type AppTransition } from '@/lib/api/apps'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
 import type { IssuedAppSecretDto } from '@/lib/api/types'
 import type { App } from '@/lib/mock-data'
@@ -44,4 +44,22 @@ export async function approveAndIssueKeyAction(
           stoppedAt: { step: 'Cấp khoá API', message: issued.message, code: issued.code },
         },
       }
+}
+
+/**
+ * Tạm ngưng / Mở lại / Thu hồi (ĐX-0002 Việc 4).
+ *
+ * MỘT lời gọi, nên dùng thẳng `ActionResult` — không có chuyện "làm được một nửa" như chuỗi
+ * đăng ký app, và không cần `ActionStop`.
+ *
+ * `reason` đi vào audit của backend (`TransitionApp` ghi `reason` trong payload event). Console
+ * BẮT BUỘC nhập, backend thì cho phép bỏ trống — cắt đường gửi thư của cả một đội mà không ghi
+ * lý do thì sáu tháng sau không ai tra được vì sao.
+ */
+export async function transitionAppAction(
+  appId: string,
+  action: AppTransition,
+  reason: string,
+): Promise<ActionResult<App>> {
+  return toResult(async () => toApp(await transitionApp(appId, action, reason)))
 }

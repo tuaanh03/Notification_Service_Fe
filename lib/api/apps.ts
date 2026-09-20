@@ -94,9 +94,24 @@ export async function listNetworkRules(appId: string): Promise<NetworkRuleDto[]>
   return adminFetch<NetworkRuleDto[]>(`/apps/${encodeURIComponent(appId)}/network-rules`)
 }
 
-/** POST /admin/apps/:appId/submit — `draft -> pending_approval`. */
-export async function submitApp(appId: string): Promise<AppDto> {
-  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/submit`, { method: 'POST' })
+/**
+ * Chuyển trạng thái app — `POST /admin/apps/:appId/:action`, MỘT route cho mọi hành động
+ * không mang dữ liệu kèm (`admin-apps.routes.ts` hằng `TRANSITIONS`). `approve` có route
+ * riêng vì kèm quyền cấp, nên không nằm trong union này.
+ *
+ * Backend còn nhận `reject` (`pending_approval -> draft`); console chưa có luồng nào dùng nên
+ * không khai ở đây — thêm khi nào dựng màn từ chối hồ sơ.
+ *
+ * Đường đi hợp lệ do máy trạng thái backend quyết (`app-transitions.ts`); đi sai -> 409
+ * `INVALID_TRANSITION`. `revoked` là trạng thái KẾT THÚC, không có đường ra.
+ */
+export type AppTransition = 'submit' | 'suspend' | 'resume' | 'revoke'
+
+export async function transitionApp(appId: string, action: AppTransition, reason?: string): Promise<AppDto> {
+  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/${action}`, {
+    method: 'POST',
+    body: reason ? { reason } : {},
+  })
 }
 
 /**

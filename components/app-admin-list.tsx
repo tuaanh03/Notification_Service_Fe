@@ -14,8 +14,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ApproveAppDialog } from '@/components/apps/approve-app-dialog'
+import { AppTransitionDialog, type AppAction } from '@/components/apps/app-transition-dialog'
 import { CredentialDialog } from '@/components/apps/credential-dialog'
-import { approveAndIssueKeyAction, type ApproveResult } from '@/app/admin/apps/actions'
+import { approveAndIssueKeyAction, transitionAppAction, type ApproveResult } from '@/app/admin/apps/actions'
 
 const columns: Column<AppDto>[] = [
   {
@@ -71,23 +72,59 @@ const columns: Column<AppDto>[] = [
 ]
 
 /**
+ * Hành động cho phép theo trạng thái — SAO ĐÚNG bảng `APP_TRANSITIONS` của backend
+ * (`app-transitions.ts`). `draft` chỉ có `submit`, việc đó thuộc wizard nên để trống.
+ * `revoked` là trạng thái KẾT THÚC: không có dòng, nên không có nút.
+ */
+const ACTIONS_BY_STATUS: Record<string, readonly AppAction[]> = {
+  active: ['suspend', 'revoke'],
+  suspended: ['resume', 'revoke'],
+}
+
+const ACTION_LABEL: Record<AppAction, string> = {
+  suspend: 'Tạm ngưng',
+  resume: 'Mở lại',
+  revoke: 'Thu hồi',
+}
+
+/**
  * Cột hành động. `Column.key` là `keyof AppDto` nên mượn `id` — field này không hiện ở cột nào
  * khác, và `render` bỏ qua giá trị.
  *
- * Chỉ `pending_approval` mới có nút: Tạm ngưng / Mở lại / Thu hồi chưa có trong console
- * (ĐX-0002 Việc 4), nên các trạng thái khác để trống thay vì dựng nút không chạy.
+ * Trạng thái nào không có đường đi hợp lệ thì để trống, không dựng nút rồi để backend trả 409.
  */
-const actionColumn = (onApprove: (app: AppDto) => void): Column<AppDto> => ({
+const actionColumn = (
+  onApprove: (app: AppDto) => void,
+  onTransition: (app: AppDto, action: AppAction) => void,
+): Column<AppDto> => ({
   key: 'id',
   label: 'Hành động',
-  render: (app) =>
-    app.status === 'pending_approval' ? (
-      <Button size="sm" variant="outline" onClick={() => onApprove(app)}>
-        Duyệt
-      </Button>
-    ) : (
-      <span className="text-[var(--text-muted)]">—</span>
-    ),
+  render: (app) => {
+    if (app.status === 'pending_approval') {
+      return (
+        <Button size="sm" variant="outline" onClick={() => onApprove(app)}>
+          Duyệt
+        </Button>
+      )
+    }
+    const actions = ACTIONS_BY_STATUS[app.status] ?? []
+    if (actions.length === 0) return <span className="text-[var(--text-muted)]">—</span>
+    return (
+      <span className="flex gap-2">
+        {actions.map((action) => (
+          <Button
+            key={action}
+            size="sm"
+            variant={action === 'revoke' ? 'ghost' : 'outline'}
+            className={action === 'revoke' ? 'text-[var(--supernova)]' : undefined}
+            onClick={() => onTransition(app, action)}
+          >
+            {ACTION_LABEL[action]}
+          </Button>
+        ))}
+      </span>
+    )
+  },
 })
 // Cột "Số topic" và "Người liên hệ kỹ thuật" của bản mock đã bỏ: AppDto chưa có
 // hai field đó. Thêm lại khi backend bổ sung, đừng dựng số giả trên màn quản trị.
@@ -101,6 +138,7 @@ const actionColumn = (onApprove: (app: AppDto) => void): Column<AppDto> => ({
 export function AppAdminList({ rows }: { rows: AppDto[] }) {
   const router = useRouter()
   const [target, setTarget] = useState<AppDto | null>(null)
+  const [transitionTarget, setTransitionTarget] = useState<{ app: AppDto; action: AppAction } | null>(null)
   const [result, setResult] = useState<ApproveResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -114,6 +152,16 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
       setTarget(null)
       setResult(res.data)
       // Dòng vừa duyệt phải đổi sang `active` ngay — Server Component đọc lại /admin/apps.
+      router.refresh()
+    })
+
+  const transition = (reason: string) =>
+    startTransition(async () => {
+      if (!transitionTarget) return
+      setError(null)
+      const res = await transitionAppAction(transitionTarget.app.id, transitionTarget.action, reason)
+      if (!res.ok) return setError(res.message)
+      setTransitionTarget(null)
       router.refresh()
     })
 
@@ -142,7 +190,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
       )}
 
       <DataTable<AppDto>
-        columns={[...columns, actionColumn(setTarget)]}
+        columns={[...columns, actionColumn(setTarget, (app, action) => setTransitionTarget({ app, action }))]}
         rows={rows}
         filterKey="status"
         empty={<EmptyState icon={Database} title="Không có app" description="Không app nào ở trạng thái này." />}
@@ -157,6 +205,25 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
           setError(null)
         }}
         onConfirm={approve}
+      />
+
+      {/*
+        `key` theo app + hành động: đổi mục tiêu là React DỰNG LẠI dialog, nên ô Lý do trống.
+        Không có nó, `reason` sống sót qua lần đóng thành công (parent chỉ set target = null,
+        `onCancel` không chạy) -> lý do của lần Tạm ngưng trước bị ghi cho lần Thu hồi sau.
+        Đúng thứ mà việc bắt buộc nhập lý do định ngăn.
+      */}
+      <AppTransitionDialog
+        key={transitionTarget ? `${transitionTarget.app.id}:${transitionTarget.action}` : 'idle'}
+        app={transitionTarget?.app ?? null}
+        action={transitionTarget?.action ?? 'suspend'}
+        pending={pending}
+        error={error}
+        onCancel={() => {
+          setTransitionTarget(null)
+          setError(null)
+        }}
+        onConfirm={transition}
       />
 
       {result?.secret && (

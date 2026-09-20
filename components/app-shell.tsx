@@ -32,6 +32,7 @@ import { useApp } from './app-context'
 import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
+import { statusColors } from '@/lib/theme'
 import { useRole, type DemoRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
@@ -124,6 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Số thật từ danh sách app của AppProvider. Trước đây lấy `pendingApprovalCount()` của mock:
   // một con số bịa nằm trên khung luôn hiển thị, ngoài vùng <PreviewBanner> che phủ (mục 2.4).
   const pending = apps.filter((a) => a.status === 'pending_approval').length
+  const appDot = statusColors[app.status] ?? statusColors.draft
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
   const breadcrumbMap: Array<{ href: string; name: string; group: string }> = [
@@ -191,7 +193,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         className="h-8 w-full justify-between rounded-lg bg-[var(--void)]/60 border border-[var(--orbit)] px-2.5 text-xs hover:border-[var(--starlight)]/40 hover:bg-[var(--void)]/90 transition-all"
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <div className="size-1.5 rounded-full bg-[var(--aurora)] shadow-[0_0_6px_var(--aurora)] shrink-0" />
+                          {/* Chấm theo TRẠNG THÁI THẬT, không phải xanh cố định: app đang tạm ngưng
+                              mà hiện chấm xanh là nói dối ở chỗ luôn nhìn thấy. Màu lấy từ
+                              `statusColors` — cùng nguồn với <StatusPill> trong menu bên dưới. */}
+                          <div
+                            className="size-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: appDot, boxShadow: `0 0 6px ${appDot}` }}
+                          />
                           <span className="font-medium text-sidebar-foreground truncate">{app.name}</span>
                         </div>
                         <ChevronsUpDown className="size-3 text-muted-foreground shrink-0" />
