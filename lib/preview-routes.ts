@@ -7,7 +7,7 @@
  *
  * Đây là NƠI DUY NHẤT giữ danh sách này. Đấu xong một màn thì thêm một dòng, không sửa chỗ khác.
  */
-export const WIRED_ROUTES = ['/admin/apps', '/topics', '/settings/credentials'] as const
+export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/settings/credentials'] as const
 
 /** Khớp cả route con (`/topics/order_updates`), không khớp route chỉ trùng tiền tố chữ. */
 export function isPreviewRoute(pathname: string): boolean {

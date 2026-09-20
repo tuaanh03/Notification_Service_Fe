@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Panel } from '@/components/panel'
@@ -9,38 +9,81 @@ import { StepProfile } from './apps/step-profile'
 import { StepTopics } from './apps/step-topics'
 import { StepReview } from './apps/step-review'
 import { StepWaiting } from './apps/step-waiting'
-import { profileValid as isProfileValid, type ProfileDraft, type TopicDraft } from './apps/wizard-types'
+import {
+  DEFAULT_GRANT,
+  EMPTY_PROFILE,
+  EMPTY_TOPIC,
+  profileValid as isProfileValid,
+  toGrant,
+  topicsValid as areTopicsValid,
+  type GrantDraft,
+  type ProfileDraft,
+  type TopicDraft,
+} from './apps/wizard-types'
+import {
+  approveAndIssueKeyAction,
+  registerAppAction,
+  type ApproveResult,
+  type RegisterResult,
+} from '@/app/apps/new/actions'
 
-const steps = ['Hồ sơ app', 'Topic đầu tiên', 'Rà soát', 'Chờ duyệt']
+const steps = ['Hồ sơ app', 'Chủ đề đầu tiên', 'Rà soát', 'Chờ duyệt']
 
-/** UC-001 §B — wizard 4 bước; state ở đây, từng bước ở components/apps/step-*.tsx. */
+/**
+ * Wizard đăng ký app (UC-001) — state ở đây, từng bước ở `components/apps/step-*.tsx`.
+ *
+ * Bước 1–3 chỉ là nháp trong trình duyệt, chưa chạm hệ thống. Bấm gửi ở bước 3 mới ghi thật,
+ * và từ đó KHÔNG quay lại được: app đã tồn tại, bấm lại chỉ dính trùng slug.
+ */
 export function AppRegistrationWizard() {
   const reduced = useReducedMotion()
   const [step, setStep] = useState(0)
-  const [profile, setProfile] = useState<ProfileDraft>({
-    appSlug: 'ews-atlas',
-    external: false,
-    namespace: 'atlas',
-    channels: ['in_app', 'email'],
-    origins: ['https://atlas.enterprise.vn'],
-    ipAllowlist: [],
-  })
-  const [topics, setTopics] = useState<TopicDraft[]>([
-    {
-      suffix: 'data_quality',
-      name: 'Chất lượng dữ liệu',
-      description: 'Cảnh báo dataset lệch schema.',
-      channels: ['in_app'],
-      severity: 'warning',
-      userMutable: true,
-    },
-  ])
+  const [profile, setProfile] = useState<ProfileDraft>(EMPTY_PROFILE)
+  const [topics, setTopics] = useState<TopicDraft[]>([{ ...EMPTY_TOPIC }])
+  const [grant, setGrant] = useState<GrantDraft>(DEFAULT_GRANT)
+  const [registered, setRegistered] = useState<RegisterResult | null>(null)
+  const [approved, setApproved] = useState<ApproveResult | null>(null)
+  const [secretOpen, setSecretOpen] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
   const profileValid = isProfileValid(profile)
+  const topicsValid = areTopicsValid(topics)
+
+  const submit = () =>
+    startTransition(async () => {
+      setError(null)
+      const result = await registerAppAction({
+        profile: { slug: profile.slug, name: profile.name.trim(), namespace: profile.namespace, origin: profile.origin },
+        rules: [
+          ...profile.origins.map((value) => ({ kind: 'origin', value })),
+          ...profile.ipAllowlist.map((value) => ({ kind: 'ip', value })),
+        ],
+        topics: topics.map((t) => ({ ...t, name: t.name.trim() })),
+      })
+      if (!result.ok) return setError(result.message)
+      setRegistered(result.data)
+      setStep(3)
+    })
+
+  const approve = () =>
+    startTransition(async () => {
+      setError(null)
+      if (!registered) return
+      const result = await approveAndIssueKeyAction(registered.app.app_id, toGrant(grant))
+      if (!result.ok) return setError(result.message)
+      setApproved(result.data)
+      setSecretOpen(true)
+    })
+
   const next = () => {
     if (step === 0 && !profileValid) return
-    if (step === 1 && topics.length === 0) return
-    setStep((v) => Math.min(3, v + 1))
+    if (step === 1 && !topicsValid) return
+    setStep((v) => Math.min(2, v + 1))
   }
+
+  const current = approved?.app ?? registered?.app ?? null
+
   return (
     <div className="mx-auto max-w-5xl">
       <OrbitStepper steps={steps} step={step} />
@@ -52,16 +95,24 @@ export function AppRegistrationWizard() {
       >
         <Panel className="p-5 sm:p-7" glow={step === 3} ring={step === 3}>
           {step === 0 && <StepProfile draft={profile} onChange={setProfile} />}
-          {step === 1 && (
-            <StepTopics
-              namespace={profile.namespace}
-              declaredChannels={profile.channels}
-              topics={topics}
-              onChange={setTopics}
+          {step === 1 && <StepTopics topics={topics} onChange={setTopics} />}
+          {step === 2 && (
+            <StepReview profile={profile} topics={topics} pending={pending} error={error} onSubmit={submit} />
+          )}
+          {step === 3 && registered && current && (
+            <StepWaiting
+              app={current}
+              created={registered}
+              grant={grant}
+              onGrantChange={setGrant}
+              pending={pending}
+              error={error}
+              stop={approved?.stoppedAt ?? null}
+              secret={secretOpen ? (approved?.secret ?? null) : null}
+              onApprove={approve}
+              onCloseSecret={() => setSecretOpen(false)}
             />
           )}
-          {step === 2 && <StepReview profile={profile} topics={topics} onSubmit={() => setStep(3)} />}
-          {step === 3 && <StepWaiting />}
           {step < 2 && (
             <div className="mt-7 flex justify-between border-t border-[var(--orbit)] pt-5">
               {step > 0 ? (
@@ -71,14 +122,14 @@ export function AppRegistrationWizard() {
               ) : (
                 <span />
               )}
-              <Button onClick={next} disabled={step === 0 ? !profileValid : topics.length === 0}>
+              <Button onClick={next} disabled={step === 0 ? !profileValid : !topicsValid}>
                 Tiếp tục <ChevronRight data-icon="inline-end" />
               </Button>
             </div>
           )}
           {step === 2 && (
             <div className="mt-7 border-t border-[var(--orbit)] pt-5">
-              <Button variant="ghost" onClick={() => setStep(1)}>
+              <Button variant="ghost" disabled={pending} onClick={() => setStep(1)}>
                 <ChevronLeft /> Quay lại
               </Button>
             </div>

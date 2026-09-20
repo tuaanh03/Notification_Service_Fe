@@ -68,6 +68,16 @@ export type AppSecretDto = {
  */
 export type IssuedAppSecretDto = AppSecretDto & { apiKey: string }
 
+/**
+ * Sao đúng `NetworkRuleDto` của backend. Đây là allowlist nguồn gọi `/v1/*` của app:
+ * `origin` = header Origin của trình duyệt, `ip` = dải CIDR IPv4 của máy gọi.
+ */
+export type NetworkRuleDto = {
+  /** NETWORK_RULE_KINDS: ip | origin */
+  kind: string
+  value: string
+}
+
 /** Sao đúng `AuditEntryDto` của backend (`src/modules/audit/application/dto.ts`). */
 export type AuditEntryDto = {
   id: string

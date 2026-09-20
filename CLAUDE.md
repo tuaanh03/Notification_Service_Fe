@@ -35,7 +35,7 @@ webservice/ews-astrolink/
 │   ├── users/                # /users, /users/[id], /users/import (UC-002)
 │   ├── subscriptions/        # /subscriptions
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
-│   ├── apps/new/             # /apps/new    Đăng ký app (UC-001)
+│   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   ├── settings/{credentials,origins,profile,quota,sync}/
 │   │                         # credentials/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
@@ -216,7 +216,36 @@ Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách rout
 *   Nó **không thay** `<EmptyState>` khi backend chết (mục 2.2) — hai chuyện khác nhau: "màn này
     chưa làm" và "màn này làm rồi nhưng backend đang hỏng".
 
-Tính tới 09/2026 mới có 3 route thật: `/admin/apps` · `/topics` · `/settings/credentials`.
+Tính tới 09/2026 có 4 route thật: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials`.
+
+### 2.5. Wizard đăng ký app — chuỗi nhiều lời gọi, KHÔNG có transaction
+
+Backend không có lệnh gộp "đăng ký app". `registerAppAction` gọi lần lượt:
+
+```
+POST /admin/apps                      -> draft
+POST /admin/apps/:id/network-rules    (mỗi origin / CIDR một lời gọi)
+POST /admin/apps/:id/topics           (mỗi chủ đề một lời gọi)
+POST /admin/apps/:id/submit           -> pending_approval
+```
+
+Bốn bước này **không chung transaction**, nên chuỗi có thể dừng giữa chừng. Quy ước đã chốt:
+
+*   **Chỉ lời gọi đầu** (tạo app) mới trả `ok: false`. Lúc đó chưa có gì trong hệ thống.
+*   **Sau khi app đã tồn tại**, mọi lỗi đều trả `ok: true` kèm `stoppedAt` (bước nào, vì sao).
+    Nói "thất bại" trong khi app đã nằm trong DB là nói sai: người dùng cần biết `app_id` để vào
+    sửa nốt, chứ không phải bấm tạo lại rồi dính `APP_SLUG_TAKEN`.
+*   `approveAndIssueKeyAction` cũng vậy: duyệt xong mà cấp khoá hỏng thì app **vẫn active** —
+    trả `secret: null` + `stoppedAt`, không báo thất bại.
+
+**Bước 1–3 chỉ là nháp trong trình duyệt.** Bấm gửi ở bước 3 mới ghi thật, và từ đó không quay
+lại được — wizard bỏ nút Quay lại ở bước 4 đúng vì vậy.
+
+Form của wizard **sao đúng body backend, không hơn**. Bản v0 từng có `description`,
+`technical_contact`, `severity`, `userMutable`, kênh riêng cho từng chủ đề và ô "quota đề xuất"
+ở bước 1 — backend không có cột nào chứa chúng, nên đã bỏ. Nhập vào rồi mất im lặng còn tệ hơn
+là không có ô. Kênh và hạn mức hỏi ở **bước 4**, vì chúng là quyền cấp lúc duyệt, không phải
+thuộc tính lúc tạo.
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
@@ -349,6 +378,8 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
 | Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
 | Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
+| Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |
+| Báo "tạo app thất bại" trong khi app đã có trong DB | chuỗi nhiều lời gọi không transaction, lỗi giữa chừng bị quy hết về `ok: false` | `stoppedAt` (mục 2.5) — app đã tồn tại thì luôn trả `ok: true` kèm chỗ dừng |
 | Snippet hướng dẫn tích hợp dạy sai luồng thật | snippet mock dựng endpoint không tồn tại (`POST /v1/auth/token`) | snippet phải sao đúng route + body backend; đối chiếu `*-routes.ts` trước khi viết |
 | Lỗi Server Action ra màn hình thành câu chung chung | ném `Error` qua ranh giới server/client — production Next thay message | trả `ActionResult` của `lib/api/result.ts`, map theo `code` |
 | Build pass nhưng type sai | `ignoreBuildErrors: true` | `pnpm exec tsc --noEmit` |

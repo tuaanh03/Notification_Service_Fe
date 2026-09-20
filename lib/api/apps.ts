@@ -1,9 +1,9 @@
 import 'server-only'
 import { fmtIso, type App, type Channel } from '@/lib/mock-data'
 import { adminFetch, orgId } from './client'
-import type { AppDto, AppSecretDto, IssuedAppSecretDto } from './types'
+import type { AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto } from './types'
 
-export type { AppDto, AppSecretDto, IssuedAppSecretDto }
+export type { AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto }
 
 /** GET /admin/apps?orgId= — org lấy từ EWS_ORG_ID. */
 export async function listApps(): Promise<AppDto[]> {
@@ -62,4 +62,59 @@ export async function revokeSecret(appId: string, secretId: string): Promise<App
     `/apps/${encodeURIComponent(appId)}/secrets/${encodeURIComponent(secretId)}`,
     { method: 'DELETE' },
   )
+}
+
+// --- Đăng ký app mới (UC-001). Backend KHÔNG có lệnh gộp: mỗi bước một lời gọi. ---
+
+/** Body của `POST /admin/apps`. `orgId` do `lib/api/client.ts` điền từ `EWS_ORG_ID`. */
+export type CreateAppInput = {
+  /** `^[a-z0-9][a-z0-9-]{1,62}$` — định danh app trong tổ chức. */
+  slug: string
+  name: string
+  /** `^[a-z0-9][a-z0-9-]{1,62}$` — tiền tố sở hữu, KHOÁ CỨNG sau khi duyệt. */
+  namespace: string
+  origin: 'internal' | 'external'
+}
+
+/** POST /admin/apps -> app ở trạng thái `draft`. Chưa gửi được gì cho tới khi duyệt. */
+export async function createApp(input: CreateAppInput): Promise<AppDto> {
+  return adminFetch<AppDto>('/apps', { method: 'POST', body: { ...input, orgId: orgId() } })
+}
+
+/** POST /admin/apps/:appId/network-rules — thêm MỘT dòng allowlist. */
+export async function addNetworkRule(appId: string, rule: NetworkRuleDto): Promise<NetworkRuleDto> {
+  return adminFetch<NetworkRuleDto>(`/apps/${encodeURIComponent(appId)}/network-rules`, {
+    method: 'POST',
+    body: rule,
+  })
+}
+
+/** GET /admin/apps/:appId/network-rules */
+export async function listNetworkRules(appId: string): Promise<NetworkRuleDto[]> {
+  return adminFetch<NetworkRuleDto[]>(`/apps/${encodeURIComponent(appId)}/network-rules`)
+}
+
+/** POST /admin/apps/:appId/submit — `draft -> pending_approval`. */
+export async function submitApp(appId: string): Promise<AppDto> {
+  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/submit`, { method: 'POST' })
+}
+
+/**
+ * Body của `POST /admin/apps/:appId/approve` — `pending_approval -> active`.
+ *
+ * Đây là NƠI DUY NHẤT quyết định app được gửi kênh nào và trần bao nhiêu. Lúc tạo app
+ * chưa có quyền gì cả, nên đừng hỏi hai thông tin này ở bước tạo.
+ *
+ * Lưu ý: `rateLimitPerMinute` / `maxRecipientsPerEvent` hiện được LƯU và trả về cho app
+ * lúc xác thực, nhưng CHƯA có chỗ nào đối chiếu (kế hoạch mục 12.5 — quota theo app, 429
+ * ở API). Chỉ có trần gửi ra ngoài `EMAIL_MAX_PER_MINUTE` là đang chạy thật.
+ */
+export type ApproveAppInput = {
+  grantedChannels: readonly string[]
+  rateLimitPerMinute: number
+  maxRecipientsPerEvent: number
+}
+
+export async function approveApp(appId: string, grant: ApproveAppInput): Promise<AppDto> {
+  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/approve`, { method: 'POST', body: grant })
 }
