@@ -50,13 +50,15 @@ webservice/ews-astrolink/
 │   ├── users/*               # users-page/-table, user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
 │   ├── settings/*            # credentials-panel, quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
+│   │                         # AppShell render 1 lần, tự ẩn ở route trong WIRED_ROUTES (mục 2.4)
 │   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
 │   └── ui/*                  # shadcn v4 (base-ui) — chỉ thêm qua CLI, không sửa tay:
 │                             # alert avatar badge breadcrumb button checkbox collapsible dialog
 │                             # dropdown-menu input label native-select resizable separator sheet
 │                             # sidebar skeleton sonner switch table tabs textarea toggle
 │                             # toggle-group tooltip
-├── lib/{mock-data.ts,theme.ts,utils.ts}
+├── lib/{mock-data.ts,theme.ts,utils.ts,preview-routes.ts}   # preview-routes: WIRED_ROUTES (mục 2.4)
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
 │                             # · result.ts (ActionResult) · apps.ts · topics.ts · audit.ts · index.ts
 ├── public/                   # icon, placeholder
@@ -197,6 +199,25 @@ ssh $HOST "cd $APP/webservice/ews-astrolink && docker compose up -d --build"
 ssh $HOST "curl -I http://127.0.0.1:4001"
 ```
 
+### 2.4. Màn chưa đấu backend phải TỰ NHẬN là bản xem trước
+
+Console là công cụ vận hành. Một màn quản trị hiện số giả mà không nói gì thì **tệ hơn là không có
+màn đó** — người trực không phân biệt được "hệ thống yên" với "màn này bịa". Đây là Việc 1 của
+`../ews-astrolink-api/docs/de-xuat/0002-viec-can-lam-de-hoan-thien-mvp.md`.
+
+Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách route ĐÃ đọc dữ liệu thật.
+`<PreviewBanner>` render **một lần** trong `<AppShell>` và tự ẩn ở những route đó.
+
+*   Liệt kê theo chiều **ngược** là có chủ đích: route mới mặc định là "chưa thật". Quên cập nhật
+    thì sai về phía an toàn, thay vì im lặng hiện số giả.
+*   Đấu xong một màn -> **thêm một dòng vào `WIRED_ROUTES`**, không sửa chỗ nào khác, không gắn
+    tay vào page.
+*   Dải băng **cố ý không có nút tắt**. Tắt được là tắt xong quên mất.
+*   Nó **không thay** `<EmptyState>` khi backend chết (mục 2.2) — hai chuyện khác nhau: "màn này
+    chưa làm" và "màn này làm rồi nhưng backend đang hỏng".
+
+Tính tới 09/2026 mới có 3 route thật: `/admin/apps` · `/topics` · `/settings/credentials`.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -229,6 +250,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `/users/[id]` và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
+| `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
@@ -321,6 +343,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Hydration #418 khi `prefers-reduced-motion: reduce` | `useReducedMotion()` SSR trả `null`, client trả `true` → class/element khác nhau ngay lần render đầu | animation gate bằng CSS `@media (prefers-reduced-motion)` (đã có ở globals.css); chỉ dùng `useReducedMotion` cho phần render sau khi user tương tác |
 | Trang tràn ngang ở 375 dù bảng đã `overflow-x-auto` | grid/flex item `min-width:auto` → track phình theo min-content của `pre`/`table`/`TabsList w-fit` | `min-w-0` lên con của grid; `TabsList className="h-auto w-full flex-wrap"` |
 | Dialog cắt mất chữ bên TRÁI, có thanh cuộn ngang ẩn | `<DialogContent>` là `grid`, cột `auto` phình theo max-content của `<pre>`/chuỗi mono dài; dialog mở ra tự focus một nút nằm ngoài vùng nhìn → trình duyệt cuộn ngang container, nội dung trôi trái, `overflow-x-hidden` cắt đi | `grid-cols-[minmax(0,1fr)]` trên `DialogContent` (đã có ở `ConfirmDialog` và `CredentialDialog`); kiểm bằng `el.scrollWidth` vs `clientWidth`, không chỉ đọc `innerText` |
+| `border-<màu>` không ăn, viền luôn ra `--orbit` | `app/globals.css:88` có `* { border-color: var(--orbit) }` **ngoài `@layer`** — rule không layer thắng mọi utility Tailwind, bất kể specificity | biết trước là nó sẽ không ăn (`forbidden-notice.tsx` và `<PreviewBanner>` đều dính); cần viền màu thật thì theo `<StatusPill>` — `style={{ borderColor }}` lấy màu từ `lib/theme.ts`. Đừng gỡ dòng 88: nó đang đặt viền mặc định cho cả console |
 | Docker build fail ở `next/font` | build không có internet để tải Google Fonts | build trên máy có mạng; không đổi sang font local nếu chưa được duyệt |
 | Trang trắng, asset 404 sau khi đổi prefix | `BASE_PATH` lúc build khác đường dẫn đang phục vụ | `BASE_PATH` là quyết định BUILD-TIME, build lại khi đổi (mục 2.1) |
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |

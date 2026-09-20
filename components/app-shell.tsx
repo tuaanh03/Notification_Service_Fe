@@ -34,6 +34,7 @@ import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
 import { useRole, type DemoRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
+import { PreviewBanner } from './preview-banner'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -637,6 +638,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </header>
 
           <main className="w-full px-4 lg:px-6 py-6 min-w-0">
+            <PreviewBanner />
             {children}
           </main>
         </SidebarInset>
