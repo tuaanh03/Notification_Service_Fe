@@ -28,6 +28,7 @@ export function DataTable<T extends Record<string, unknown>>({
   filterKey,
   toolbarActions,
   searchPlaceholder,
+  hideSearch,
 }: {
   columns: Column<T>[]
   rows: T[]
@@ -39,6 +40,11 @@ export function DataTable<T extends Record<string, unknown>>({
   filterKey?: keyof T
   toolbarActions?: React.ReactNode
   searchPlaceholder?: string
+  /**
+   * Ẩn ô lọc dựng sẵn. Dùng khi màn hình đã có ô tìm PHÍA MÁY CHỦ: ô lọc ở đây chỉ lọc trang
+   * đang hiển thị, để cạnh nhau là hai ô trông giống nhau nhưng tìm ra kết quả khác nhau.
+   */
+  hideSearch?: boolean
 }) {
   const [q, setQ] = useState('')
   const [chip, setChip] = useState<string>('all')
@@ -51,6 +57,7 @@ export function DataTable<T extends Record<string, unknown>>({
   return (
     <Panel className="overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-[var(--orbit)] px-4 py-2.5">
+        {!hideSearch && (
         <div className="flex flex-1 items-center gap-2 max-w-sm rounded-lg border border-[var(--orbit)] bg-muted/20 px-2.5 py-1">
           <Search className="size-3.5 text-[var(--text-muted)]" />
           <Input
@@ -64,6 +71,7 @@ export function DataTable<T extends Record<string, unknown>>({
             ⌘K
           </kbd>
         </div>
+        )}
         {toolbarActions && <div className="ml-auto flex items-center gap-2">{toolbarActions}</div>}
         {filterKey && (
           <div className="ml-auto flex flex-wrap gap-1.5">

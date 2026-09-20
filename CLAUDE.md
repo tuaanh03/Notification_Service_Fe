@@ -32,7 +32,8 @@ webservice/ews-astrolink/
 │   ├── scheduled/            # /scheduled
 │   ├── topics/               # /topics + actions.ts (Server Action gọi /admin/apps/:appId/topics)
 │   │                         # (CHƯA có /topics/[key])
-│   ├── users/                # /users, /users/[id], /users/import (UC-002)
+│   ├── users/                # /users + actions.ts — màn Người nhận ĐÃ đấu API (mục 2.7)
+│   │                         # /users/[id] và /users/import vẫn mock (mục 2.4)
 │   ├── subscriptions/        # /subscriptions
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
@@ -52,7 +53,9 @@ webservice/ews-astrolink/
 │   │                         # app-transition-dialog (Tạm ngưng / Mở lại / Thu hồi — mục 2.6)
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
 │   ├── notifications/*       # notifications-table, notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel), scheduled-cards, error-codes-table, origin-badge
-│   ├── users/*               # users-page/-table, user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
+│   ├── users/*               # users-page (ĐÃ đấu API) + recipient-preferences;
+│   │                         # users-table, add-user-dialog nay KHÔNG ai dùng (mục 2.7);
+│   │                         # user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
 │   ├── settings/*            # credentials-panel, quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
@@ -63,9 +66,10 @@ webservice/ews-astrolink/
 │                             # dropdown-menu input label native-select resizable separator sheet
 │                             # sidebar skeleton sonner switch table tabs textarea toggle
 │                             # toggle-group tooltip
-├── lib/{mock-data.ts,theme.ts,utils.ts,preview-routes.ts}   # preview-routes: WIRED_ROUTES (mục 2.4)
+├── lib/{mock-data.ts,theme.ts,utils.ts,preview-routes.ts}   # preview-routes: WIRED_ROUTES + WIRED_EXACT_ROUTES (mục 2.4)
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
-│                             # · result.ts (ActionResult) · apps.ts · topics.ts · audit.ts · index.ts
+│                             # · result.ts (ActionResult + ActionStop) · apps.ts · topics.ts
+│                             # · users.ts · audit.ts · index.ts
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
 ├── next.config.mjs           # output: 'standalone', basePath RỖNG (console có domain riêng)
@@ -221,7 +225,12 @@ Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách rout
 *   Nó **không thay** `<EmptyState>` khi backend chết (mục 2.2) — hai chuyện khác nhau: "màn này
     chưa làm" và "màn này làm rồi nhưng backend đang hỏng".
 
-Tính tới 09/2026 có 4 route thật: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials`.
+`WIRED_EXACT_ROUTES` là danh sách thứ hai: route **đã đấu nhưng chỉ chính nó**, route con vẫn là
+bản xem trước. `/users` nằm ở đây vì `/users/[id]` và `/users/import` chưa đấu (và `/users/import`
+sẽ không bao giờ đấu — backend không có nhập CSV).
+
+Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` (kèm route con)
+và `/users` (chỉ chính nó).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
 chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useApp().apps`.
@@ -294,6 +303,26 @@ hợp lệ thì **không có nút**.
 luôn nhìn thấy. Không làm mờ app bị ngưng: vẫn phải vào xem được chủ đề, khoá, nhật ký của
 chính app đang có vấn đề.
 
+### 2.7. Màn Người nhận — chỉ đọc, và vì sao
+
+`/users` đọc `GET /admin/apps/:appId/users` + `.../users/:externalId/preferences`
+(`implementation_plan.md` §5 — bề mặt đọc cho vận hành, ĐX-0004).
+
+*   **KHÔNG có Thêm / Import CSV / Xuất CSV.** Backend không có đường nào cho chúng, và người nhận
+    là do app service khai qua `/v1`, không phải quản trị nhập tay. `users-table.tsx` và
+    `add-user-dialog.tsx` của bản v0 vì vậy **không còn ai dùng** — giữ lại như segment filter
+    (mục 2.3), không xoá, nhưng đừng nối lại nếu chưa có backend.
+*   **KHÔNG có công tắc bật/tắt chủ đề.** Consent là ý muốn của người dùng; admin sửa hộ là mất
+    hết ý nghĩa của cổng L0/L1/L3. App service tự ghi qua `PUT /v1/users/:id/preferences`.
+*   **Hai cột phải hiện CẢ HAI**, chúng trả lời hai câu khác nhau:
+    - *Người này đã chọn* = `optedIn`. `null` -> "chưa chọn", đang theo `defaultMode`.
+    - *Qua được lớp chủ đề* = `effectiveOptIn`, **CHỈ lớp L3**.
+*   **Phải nói rõ `effectiveOptIn` không phải câu trả lời cuối.** Email chết (L0) hoặc
+    `optedOutOptional` (L1) vẫn chặn thư dù cột đó ghi "có". `<RecipientPreferences>` hiện một
+    `<Alert>` ở đầu panel khi L0/L1 đang chặn — bỏ dòng đó là để người trực đọc sai màn hình.
+*   Địa chỉ email lấy từ **dòng trong danh sách**, không phải từ route preferences: backend cố ý
+    không đưa địa chỉ vào `UserEmailSummary`. Đừng nới DTO của backend chỉ để tiện cho một màn.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -317,7 +346,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |
 | `<StatPill label value delta?>` | `components/stat-pill.tsx` | ✓ | số lớn mono + sparkline |
-| `<DataTable columns rows onRowClick empty rowClassName?>` | `components/data-table.tsx` | ✓ | bọc shadcn `<Table>`; 13px, row 44px; `Column<T>` có `mono` / `numeric` / `render(row)`. Chưa có filter chip theo cột |
+| `<DataTable columns rows onRowClick empty rowClassName? hideSearch?>` | `components/data-table.tsx` | ✓ | bọc shadcn `<Table>`; 13px, row 44px; `Column<T>` có `mono` / `numeric` / `render(row)`. `hideSearch` khi màn đã có ô tìm phía máy chủ (bẫy ở mục 6) |
 | `<EmptyState icon title description action>` | `components/empty-state.tsx` | ✓ | orbit SVG, không emoji |
 | `<CodeBlock language value copyable>` | `components/code-block.tsx` | ✓ | toast "Đã sao chép" |
 | `<ConfirmDialog title facts confirmLabel onConfirm>` | `components/confirm-dialog.tsx` | ✓ | bọc shadcn `<Dialog>`; `facts` = 3 dòng mono; `confirmLabel` nói rõ hậu quả (`Gửi cho 43 người`); prop `tone="blocking"` / `confirmHref` / `children` / `confirmDisabled` cho modal chặn hoặc có form bên trong |
@@ -329,6 +358,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
+| `<RecipientPreferences recipient preferences error loading onClose>` | `components/users/recipient-preferences.tsx` | ✓ | panel cài đặt nhận tin của một người nhận; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7) |
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
@@ -433,6 +463,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
 | Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
 | Ô nhập trong dialog giữ giá trị của lần mở trước | `<ConfirmDialog>` chỉ bật/tắt `open`, component không remount; reset trong `onCancel` không chạy khi đóng do thành công | `key` theo mục tiêu (`app.id:action`) để React dựng lại — với dialog ghi audit thì đây là bug **ghi sai dữ liệu**, không phải lỗi hiển thị |
+| Hai ô tìm kiếm cạnh nhau, ra kết quả khác nhau | `<DataTable>` luôn dựng ô lọc riêng (lọc **trang đang hiển thị**), màn lại có thêm ô tìm phía máy chủ | `hideSearch` trên `<DataTable>` khi đã có tìm server-side; hai ô trông giống nhau nhưng một cái chỉ thấy 25 dòng đang mở |
 | Hành động chỉ có trong một phiên wizard | đặt nút duyệt ở bước cuối wizard, không có ở danh sách | thao tác đổi trạng thái phải có ở màn **danh sách**; wizard chỉ là lối tắt (mục 2.5) |
 | Số giả trên thanh trên / sidebar | `<PreviewBanner>` chỉ phủ vùng `<main>`, không phủ khung | số nào hiện ở khung phải lấy từ dữ liệu thật (`useApp().apps`), không từ `lib/mock-data.ts` |
 | Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |

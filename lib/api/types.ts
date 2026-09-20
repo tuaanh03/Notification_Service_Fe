@@ -68,6 +68,62 @@ export type AppSecretDto = {
  */
 export type IssuedAppSecretDto = AppSecretDto & { apiKey: string }
 
+/** Email của một người nhận, sao đúng `UserEmailView` của backend. */
+export type UserEmailDto = {
+  address: string
+  /** SUBSCRIPTION_STATUSES: active | unsubscribed (tự ngắt) | invalid (thư dội về) */
+  status: string
+  /** user_unsubscribe | hard_bounce | complaint | null */
+  suppressedReason: string | null
+  /** Công tắc tổng L1: tắt mọi tin không bắt buộc. */
+  optedOutOptional: boolean
+}
+
+/** Một người nhận trong danh sách, sao đúng `UserDto` của backend. */
+export type RecipientDto = {
+  userId: string
+  /** Mã nhân viên do CHÍNH app service đặt — không duy nhất giữa các app. */
+  externalId: string
+  createdAt: string
+  /** null = chưa khai email; đó thường là đáp án của "sao người này không nhận được thư". */
+  email: UserEmailDto | null
+}
+
+/** Sao đúng `UserPageDto`. `total` để biết còn bao nhiêu trang. */
+export type RecipientPageDto = {
+  rows: RecipientDto[]
+  total: number
+  limit: number
+  offset: number
+}
+
+/**
+ * Một dòng trong bảng cài đặt nhận tin, sao đúng `TopicPreferenceDto`.
+ *
+ * HAI cột khác nhau, phải hiện cả hai:
+ * - `optedIn`: người này ĐÃ BẤM gì. `null` = chưa đụng đến, đang theo `defaultMode`.
+ * - `effectiveOptIn`: kết quả lớp L3 — CHỈ lớp này. Email chết (L0) hoặc `optedOutOptional` (L1)
+ *   vẫn chặn thư dù `effectiveOptIn` là true.
+ */
+export type TopicPreferenceDto = {
+  key: string
+  name: string
+  mandatory: boolean
+  defaultMode: string
+  optedIn: boolean | null
+  effectiveOptIn: boolean
+}
+
+/**
+ * Sao đúng `UserPreferencesDto`. `email` ở đây CỐ TÌNH không có địa chỉ — backend chỉ đưa trạng
+ * thái. Địa chỉ lấy từ dòng trong danh sách người nhận.
+ */
+export type UserPreferencesDto = {
+  externalId: string
+  email: { status: string; optedOutOptional: boolean } | null
+  topics: TopicPreferenceDto[]
+}
+
 /**
  * Sao đúng `NetworkRuleDto` của backend. Đây là allowlist nguồn gọi `/v1/*` của app:
  * `origin` = header Origin của trình duyệt, `ip` = dải CIDR IPv4 của máy gọi.
