@@ -82,8 +82,11 @@ Spec & use case nằm **ngoài** thư mục này:
 ## 1. Nguyên tắc cốt lõi khi dựng và chỉnh UI
 
 *   **Giữ vững Design System Cosmic.** Token định nghĩa **một lần** trong `app/globals.css` và
-    `lib/theme.ts` (bảng màu ở `01_prompt_foundation.md` §1). Chỉ dùng token (`--void`, `--starlight`,
-    `--orbit`…), không hard-code hex ở component. Không có theme sáng — dự án chỉ dark.
+    `lib/theme.ts`. Chỉ dùng token (`--void`, `--starlight`, `--orbit`…), không hard-code hex ở component.
+*   **Repo đang chạy theme SÁNG** (`Light Modern Theme`, `color-scheme: light`, `--void #F8FAFC`) —
+    tên token vẫn giữ metaphor vũ trụ nhưng giá trị là bảng sáng (mục 7). Spec
+    `01_prompt_foundation.md` §1 mô tả bảng TỐI; khi hai bên lệch thì **code là nguồn đúng**, đừng
+    "sửa" màn sáng thành tối vì tưởng hỏng. Chỉ có một theme — không có biến thể dark song song.
 *   **Shared component là nguồn duy nhất.** `<StatusPill>` là nơi duy nhất định nghĩa màu trạng thái;
     `<Panel>` là nơi duy nhất định nghĩa glass surface; `<ConfirmDialog>` là dialog xác nhận duy nhất.
     Cần biến thể → thêm prop, **không** tạo component song song.
@@ -317,6 +320,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Hydration mismatch ở starfield | `Math.random()` lúc render | seeded PRNG |
 | Hydration #418 khi `prefers-reduced-motion: reduce` | `useReducedMotion()` SSR trả `null`, client trả `true` → class/element khác nhau ngay lần render đầu | animation gate bằng CSS `@media (prefers-reduced-motion)` (đã có ở globals.css); chỉ dùng `useReducedMotion` cho phần render sau khi user tương tác |
 | Trang tràn ngang ở 375 dù bảng đã `overflow-x-auto` | grid/flex item `min-width:auto` → track phình theo min-content của `pre`/`table`/`TabsList w-fit` | `min-w-0` lên con của grid; `TabsList className="h-auto w-full flex-wrap"` |
+| Dialog cắt mất chữ bên TRÁI, có thanh cuộn ngang ẩn | `<DialogContent>` là `grid`, cột `auto` phình theo max-content của `<pre>`/chuỗi mono dài; dialog mở ra tự focus một nút nằm ngoài vùng nhìn → trình duyệt cuộn ngang container, nội dung trôi trái, `overflow-x-hidden` cắt đi | `grid-cols-[minmax(0,1fr)]` trên `DialogContent` (đã có ở `ConfirmDialog` và `CredentialDialog`); kiểm bằng `el.scrollWidth` vs `clientWidth`, không chỉ đọc `innerText` |
 | Docker build fail ở `next/font` | build không có internet để tải Google Fonts | build trên máy có mạng; không đổi sang font local nếu chưa được duyệt |
 | Trang trắng, asset 404 sau khi đổi prefix | `BASE_PATH` lúc build khác đường dẫn đang phục vụ | `BASE_PATH` là quyết định BUILD-TIME, build lại khi đổi (mục 2.1) |
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
@@ -337,12 +341,15 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 
 ## 7. Style Cosmic — tóm tắt để không phải mở spec
 
-Palette: `--void #05060F` · `--deep #0A0B1A` · nebula indigo `#1E1B4B` / violet `#3B0764` / teal `#042F2E` ·
-`--starlight #22D3EE` (primary) · `--pulsar #A855F7` · `--solar #FBBF24` · `--supernova #FB7185` ·
-`--aurora #34D399` · text `#E8ECFF / #9BA3C7 / #5A6288` · hairline `rgba(255,255,255,.08)`.
+Palette THẬT trong `app/globals.css` (`:root`) và `lib/theme.ts` — bảng **sáng**:
+`--void #F8FAFC` (nền) · `--deep #FFFFFF` (bề mặt) · nebula indigo `#E0E7FF` / violet `#EDE9FE` /
+teal `#CCFBF1` · `--starlight #0284C7` (primary) · `--pulsar #9333EA` · `--solar #D97706` ·
+`--supernova #E11D48` · `--aurora #059669` · text `#0F172A / #475569 / #94A3B8` ·
+`--orbit #E2E8F0` (hairline).
 
-Glass panel: `bg rgba(255,255,255,.035)`, `backdrop-blur-xl`, border hairline, radius 16, inset top highlight;
-`glow` = `0 0 40px -12px rgba(34,211,238,.35)`; orbit ring = gradient border 1px cyan→violet→transparent.
+Surface `.cosmic-surface`: `bg rgba(255,255,255,.85)`, `backdrop-blur(16px)`, border `--orbit`,
+radius 16, shadow mảnh; `--glow-panel` là bóng đổ nhạt (không phải quầng sáng neon);
+`.orbit-ring` = gradient border 1px starlight→pulsar→transparent.
 
 StatusPill 11 trạng thái: `draft` slate · `pending_approval` amber · `scheduled` violet · `queued` cyan ·
 `sending` cyan pulsing · `sent` emerald · `partially_failed` amber · `no_recipient` slate dashed ·

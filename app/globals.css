@@ -94,7 +94,7 @@ h1, h2, h3 { @apply font-sans; letter-spacing: -0.01em; }
 .orbit-ring:before { content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; background: linear-gradient(110deg, var(--starlight), var(--pulsar), transparent 65%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 [data-slot='dialog-overlay'] { background: var(--overlay); }
-[data-slot='dialog-content'] { background: #FFFFFF; border: 1px solid var(--orbit); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+[data-slot='dialog-content'] { background: var(--deep); border: 1px solid var(--orbit); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
 .mail-body h2 { font-size: 1.05rem; font-weight: 700; margin: 0 0 .5rem; }
 .mail-body p { margin: 0 0 .6rem; }
 .mail-body a { color: var(--mail-link); text-decoration: underline; }

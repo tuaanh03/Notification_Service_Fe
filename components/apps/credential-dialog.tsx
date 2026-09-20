@@ -45,7 +45,10 @@ export function CredentialDialog({
       <Dialog open={open} onOpenChange={(next) => !next && saved && requestClose()}>
         <DialogContent
           showCloseButton={false}
-          className="orbit-ring z-[100] max-h-[calc(100vh-2rem)] max-w-2xl overflow-x-hidden overflow-y-auto rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-2xl"
+          // grid-cols-[minmax(0,1fr)]: <DialogContent> là grid, cột `auto` phình theo max-content
+          // của <pre> trong <CodeBlock> (khoá API 80 ký tự không xuống dòng). Cột phình > hộp
+          // -> dialog tự cuộn ngang khi focus nút "Sao chép", nội dung trôi sang trái và bị cắt.
+          className="orbit-ring z-[100] grid-cols-[minmax(0,1fr)] max-h-[calc(100vh-2rem)] max-w-2xl overflow-x-hidden overflow-y-auto rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-2xl"
         >
           <DialogHeader className="items-center text-center">
             <div className="mx-auto mb-2 flex size-14 items-center justify-center rounded-full border border-[var(--starlight)] text-[var(--starlight)] shadow-[var(--glow-starlight-lg)]">

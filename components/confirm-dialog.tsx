@@ -56,7 +56,9 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
       <DialogContent
         showCloseButton={false}
-        className="z-[100] max-w-lg rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-lg"
+        // grid-cols-[minmax(0,1fr)]: `children` có thể chứa <pre>/chuỗi mono dài; cột grid `auto`
+        // sẽ phình theo max-content và làm dialog cắt mất nội dung bên trái (bẫy mục 6).
+        className="z-[100] grid-cols-[minmax(0,1fr)] max-w-lg rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-lg"
       >
         <DialogHeader>
           <Icon
