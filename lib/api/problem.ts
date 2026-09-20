@@ -49,6 +49,10 @@ const MESSAGES: Readonly<Record<string, string>> = {
   API_NOT_CONFIGURED: 'Console chưa được cấu hình để gọi API. Kiểm tra biến môi trường EWS_*.',
   ADMIN_CALLER_REQUIRED: 'Token quản trị không hợp lệ hoặc đã hết hạn.',
   NOT_FOUND: 'Không tìm thấy dữ liệu.',
+  VALIDATION: 'Dữ liệu nhập không hợp lệ.',
+  TOPIC_KEY_TAKEN: 'Mã chủ đề này đã có trong app. Chọn mã khác.',
+  INVALID_TRANSITION: 'Không chuyển được trạng thái này. Tải lại trang để xem trạng thái mới nhất.',
+  CONCURRENT_TRANSITION: 'Người khác vừa đổi trạng thái trước bạn. Tải lại trang rồi thử lại.',
 }
 
 /** Câu hiển thị cho người vận hành. Chưa có bản dịch thì trả `detail` của backend. */

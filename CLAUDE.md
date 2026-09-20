@@ -30,7 +30,8 @@ webservice/ews-astrolink/
 │   ├── compose/              # /compose     Composer (UC-008)
 │   ├── notifications/        # /notifications, /notifications/[id], /notifications/errors  Delivery log (UC-005)
 │   ├── scheduled/            # /scheduled
-│   ├── topics/               # /topics          (CHƯA có /topics/[key])
+│   ├── topics/               # /topics + actions.ts (Server Action gọi /admin/apps/:appId/topics)
+│   │                         # (CHƯA có /topics/[key])
 │   ├── users/                # /users, /users/[id], /users/import (UC-002)
 │   ├── subscriptions/        # /subscriptions
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
@@ -39,7 +40,9 @@ webservice/ews-astrolink/
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
-│   ├── topics/*              # topic-segment-editor-dialog (CHƯA có topic-detail / tab)
+│   ├── topics/*              # topics-page, create-topic-dialog (đã đấu API);
+│   │                         # topic-segment-editor-dialog = TẠM NGƯNG sau MVP, KHÔNG xoá (mục 2.3)
+│   │                         # (CHƯA có topic-detail / tab)
 │   ├── apps/*                # wizard step-*, orbit-stepper, credential-dialog (UC-001)
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
 │   ├── notifications/*       # notifications-table, notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel), scheduled-cards, error-codes-table, origin-badge
@@ -53,7 +56,8 @@ webservice/ews-astrolink/
 │                             # sidebar skeleton sonner switch table tabs textarea toggle
 │                             # toggle-group tooltip
 ├── lib/{mock-data.ts,theme.ts,utils.ts}
-├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts · apps.ts · index.ts
+├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
+│                             # · apps.ts · topics.ts · index.ts
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
 ├── next.config.mjs           # output: 'standalone', basePath RỖNG (console có domain riêng)
@@ -170,6 +174,15 @@ network `ews-net`. Nhờ vậy backend không cần CORS, và `EWS_ADMIN_TOKEN` 
     `detail`. Exception path là UI thật (`<EmptyState>` nêu mã lỗi), không phải toast.
 *   Backend hỏng **không được** biến thành màn trống im lặng — người trực phải đọc được lý do.
 
+Hai cách gọi, chọn theo việc server có biết `appId` lúc render hay không:
+
+*   **Server Component** khi dữ liệu không phụ thuộc app đang chọn (`/admin/apps`) — đọc thẳng
+    trong `page.tsx`, `export const dynamic = 'force-dynamic'`.
+*   **Server Action** khi dữ liệu thuộc app đang chọn (`/topics`). App đang chọn nằm trong state
+    client của `<AppProvider>`, server lúc render chưa biết `appId`. Action vẫn chạy phía server nên
+    token không lộ. **Không ném lỗi qua ranh giới server/client** (Next nuốt message ở production
+    build) — trả `ActionResult` có `code` để màn hình dựng exception path thật.
+
 Deploy lên server (theo `../../docs/QUY_TRINH_LAM_VIEC_SUA_CODE_VA_DEPLOY.md` §5):
 
 ```bash
@@ -179,6 +192,14 @@ ssh $HOST "cd $APP/webservice/ews-astrolink && docker compose up -d --build"
 ```bash
 ssh $HOST "curl -I http://127.0.0.1:4001"
 ```
+
+### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
+
+`components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
+code **đang chờ**, không phải code chết. Segment nằm ngoài MVP
+(`../ews-astrolink-api/implementation_plan.md` mục 3, làm tiếp ở mục 12.6) và backend chưa có endpoint
+nào cho nó. Màn `/topics` đã gỡ lời gọi để chỉ hiện đúng field `TopicDto` có thật. Khi backend làm
+segment thì nối lại từ file đó.
 
 ---
 

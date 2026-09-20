@@ -1,3 +1,14 @@
+/**
+ * KHÔNG XOÁ — file này đang TẠM NGƯNG, không phải code chết.
+ *
+ * Segment (lọc người nhận động) là feature RIÊNG, nằm ngoài MVP:
+ * `ews-astrolink-api/implementation_plan.md` mục 3 (ngoài phạm vi) và mục 12.6
+ * (việc tiếp theo sau MVP). Backend chưa có endpoint nào cho nó.
+ *
+ * Màn `/topics` đã gỡ lời gọi dialog này để chỉ hiển thị đúng những gì backend có
+ * (`TopicDto`: key / name / status / mandatory / defaultMode). Khi backend làm segment
+ * thì nối lại từ đây, không dựng lại từ đầu.
+ */
 'use client'
 
 import { useState, useEffect } from 'react'
