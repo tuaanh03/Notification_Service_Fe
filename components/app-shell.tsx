@@ -201,10 +201,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     align="start"
                     sideOffset={6}
                   >
-                    <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
-                      Chuyển App Service
-                    </DropdownMenuLabel>
+                    {/* DropdownMenuLabel là Menu.GroupLabel -> bắt buộc nằm TRONG
+                        <DropdownMenuGroup>; để ngoài sẽ ném Base UI error #31
+                        ("MenuGroupContext is missing") và trắng trang khi mở menu. */}
                     <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
+                        Chuyển App Service
+                      </DropdownMenuLabel>
                       {apps.map((a) => (
                         <DropdownMenuItem
                           key={a.slug}
@@ -539,10 +542,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
                     <DropdownMenuSeparator className="my-1 bg-border/60" />
 
-                    <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
-                      Chế độ xem demo (Role)
-                    </DropdownMenuLabel>
+                    {/* GroupLabel phải nằm trong Group — xem ghi chú ở app switcher bên trên. */}
                     <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
+                        Chế độ xem demo (Role)
+                      </DropdownMenuLabel>
                       {(['App Owner', 'App Admin', 'Super Admin', 'End User'] as DemoRole[]).map((r) => (
                         <DropdownMenuItem
                           key={r}
