@@ -20,12 +20,8 @@ import {
   type ProfileDraft,
   type TopicDraft,
 } from './apps/wizard-types'
-import {
-  approveAndIssueKeyAction,
-  registerAppAction,
-  type ApproveResult,
-  type RegisterResult,
-} from '@/app/apps/new/actions'
+import { registerAppAction, type RegisterResult } from '@/app/apps/new/actions'
+import { approveAndIssueKeyAction, type ApproveResult } from '@/app/admin/apps/actions'
 
 const steps = ['Hồ sơ app', 'Chủ đề đầu tiên', 'Rà soát', 'Chờ duyệt']
 
@@ -41,6 +37,7 @@ export function AppRegistrationWizard() {
   const [profile, setProfile] = useState<ProfileDraft>(EMPTY_PROFILE)
   const [topics, setTopics] = useState<TopicDraft[]>([{ ...EMPTY_TOPIC }])
   const [grant, setGrant] = useState<GrantDraft>(DEFAULT_GRANT)
+  const [acknowledged, setAcknowledged] = useState(false)
   const [registered, setRegistered] = useState<RegisterResult | null>(null)
   const [approved, setApproved] = useState<ApproveResult | null>(null)
   const [secretOpen, setSecretOpen] = useState(true)
@@ -105,6 +102,8 @@ export function AppRegistrationWizard() {
               created={registered}
               grant={grant}
               onGrantChange={setGrant}
+              acknowledged={acknowledged}
+              onAcknowledgedChange={setAcknowledged}
               pending={pending}
               error={error}
               stop={approved?.stoppedAt ?? null}

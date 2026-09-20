@@ -4,13 +4,12 @@ import Link from 'next/link'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import type { App } from '@/lib/mock-data'
+import type { ActionStop } from '@/lib/api/result'
 import type { IssuedAppSecretDto } from '@/lib/api/types'
 import { CredentialDialog } from './credential-dialog'
+import { GrantFields } from './grant-fields'
 import type { GrantDraft } from './wizard-types'
-import type { RegisterStop } from '@/app/apps/new/actions'
 
 /**
  * Bước 4 — app đã nằm trong hệ thống, đang chờ duyệt.
@@ -25,6 +24,8 @@ export function StepWaiting({
   created,
   grant,
   onGrantChange,
+  acknowledged,
+  onAcknowledgedChange,
   pending,
   error,
   stop,
@@ -33,12 +34,14 @@ export function StepWaiting({
   onCloseSecret,
 }: {
   app: App
-  created: { rulesAdded: number; topicsCreated: number; stoppedAt: RegisterStop | null }
+  created: { rulesAdded: number; topicsCreated: number; stoppedAt: ActionStop | null }
   grant: GrantDraft
   onGrantChange: (next: GrantDraft) => void
+  acknowledged: boolean
+  onAcknowledgedChange: (next: boolean) => void
   pending: boolean
   error: string | null
-  stop: RegisterStop | null
+  stop: ActionStop | null
   secret: IssuedAppSecretDto | null
   onApprove: () => void
   onCloseSecret: () => void
@@ -80,44 +83,20 @@ export function StepWaiting({
               <span className="font-mono">email</span>.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor="wz-rate" className="text-xs">rate_limit_per_minute</Label>
-              <Input
-                id="wz-rate"
-                type="number"
-                min={1}
-                value={grant.rateLimitPerMinute}
-                onChange={(e) => onGrantChange({ ...grant, rateLimitPerMinute: Number(e.target.value) })}
-                className="font-mono"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="wz-recipients" className="text-xs">max_recipients_per_event</Label>
-              <Input
-                id="wz-recipients"
-                type="number"
-                min={1}
-                value={grant.maxRecipientsPerEvent}
-                onChange={(e) => onGrantChange({ ...grant, maxRecipientsPerEvent: Number(e.target.value) })}
-                className="font-mono"
-              />
-            </div>
-          </div>
-          <Alert className="bg-[var(--solar)]/10">
-            <TriangleAlert className="text-[var(--solar)]" />
-            <AlertDescription>
-              Hai con số này hiện được <strong>lưu nhưng chưa ai đối chiếu</strong> — app vượt hạn
-              mức không bị từ chối. Quota theo app nằm ở kế hoạch mục 12.5.
-            </AlertDescription>
-          </Alert>
+          <GrantFields
+            id="wz"
+            grant={grant}
+            onGrantChange={onGrantChange}
+            acknowledged={acknowledged}
+            onAcknowledgedChange={onAcknowledgedChange}
+          />
           {error && (
             <Alert variant="destructive">
               <TriangleAlert />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Button className="w-full" disabled={pending} onClick={onApprove}>
+          <Button className="w-full" disabled={pending || !acknowledged} onClick={onApprove}>
             {pending ? 'Đang duyệt…' : 'Duyệt và cấp khoá đầu tiên'}
           </Button>
         </div>

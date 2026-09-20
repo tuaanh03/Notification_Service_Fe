@@ -27,7 +27,7 @@ import {
   PanelLeftOpen,
   RadioTower,
 } from 'lucide-react'
-import { CURRENT_USER, pendingApprovalCount } from '@/lib/mock-data'
+import { CURRENT_USER } from '@/lib/mock-data'
 import { useApp } from './app-context'
 import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
@@ -121,7 +121,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, setRole } = useRole()
   // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock.
   const { app, apps, setApp } = useApp()
-  const pending = pendingApprovalCount()
+  // Số thật từ danh sách app của AppProvider. Trước đây lấy `pendingApprovalCount()` của mock:
+  // một con số bịa nằm trên khung luôn hiển thị, ngoài vùng <PreviewBanner> che phủ (mục 2.4).
+  const pending = apps.filter((a) => a.status === 'pending_approval').length
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
   const breadcrumbMap: Array<{ href: string; name: string; group: string }> = [
@@ -138,7 +140,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/settings/quota', name: 'Kênh & Quota', group: 'Cài đặt App' },
     { href: '/settings/origins', name: 'Allowed origins', group: 'Cài đặt App' },
     { href: '/settings/sync', name: 'Sync danh bạ', group: 'Cài đặt App' },
-    { href: '/admin/approvals', name: 'Duyệt hồ sơ', group: 'EWS Tổng' },
     { href: '/admin/send-approvals', name: 'Duyệt lần gửi', group: 'EWS Tổng' },
     { href: '/admin/apps', name: 'Tất cả app', group: 'EWS Tổng' },
     { href: '/admin/audit', name: 'Audit log', group: 'EWS Tổng' },
@@ -440,11 +441,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       />
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href="/admin/approvals" />} isActive={path.startsWith('/admin/approvals')}>
-                              <span>Duyệt hồ sơ</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
                           <SidebarMenuSubItem>
                             <SidebarMenuSubButton render={<Link href="/admin/send-approvals" />} isActive={path.startsWith('/admin/send-approvals')}>
                               <span>Duyệt lần gửi</span>

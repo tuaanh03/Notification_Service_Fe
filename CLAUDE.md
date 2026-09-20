@@ -36,15 +36,19 @@ webservice/ews-astrolink/
 │   ├── subscriptions/        # /subscriptions
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
+│   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
 │   ├── settings/{credentials,origins,profile,quota,sync}/
 │   │                         # credentials/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
+│                             # apps/ có actions.ts (approveAndIssueKeyAction — CỬA DUYỆT CHÍNH, mục 2.5)
+│                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
 │   ├── topics/*              # topics-page, create-topic-dialog (đã đấu API);
 │   │                         # topic-segment-editor-dialog = TẠM NGƯNG sau MVP, KHÔNG xoá (mục 2.3)
 │   │                         # (CHƯA có topic-detail / tab)
 │   ├── apps/*                # wizard step-*, orbit-stepper, credential-dialog (UC-001)
+│   │                         # grant-fields (quyền cấp lúc duyệt, dùng chung), approve-app-dialog
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
 │   ├── notifications/*       # notifications-table, notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel), scheduled-cards, error-codes-table, origin-badge
 │   ├── users/*               # users-page/-table, user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
@@ -218,6 +222,9 @@ Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách rout
 
 Tính tới 09/2026 có 4 route thật: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials`.
 
+Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
+chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useApp().apps`.
+
 ### 2.5. Wizard đăng ký app — chuỗi nhiều lời gọi, KHÔNG có transaction
 
 Backend không có lệnh gộp "đăng ký app". `registerAppAction` gọi lần lượt:
@@ -237,6 +244,17 @@ Bốn bước này **không chung transaction**, nên chuỗi có thể dừng g
     sửa nốt, chứ không phải bấm tạo lại rồi dính `APP_SLUG_TAKEN`.
 *   `approveAndIssueKeyAction` cũng vậy: duyệt xong mà cấp khoá hỏng thì app **vẫn active** —
     trả `secret: null` + `stoppedAt`, không báo thất bại.
+
+**Cửa duyệt chính là `/admin/apps`, không phải wizard.** Bước 4 của wizard chỉ là lối tắt cho
+người vừa tạo xong; phiên đó đóng lại là mất. App `pending_approval` phải duyệt được từ danh
+sách, nếu không là **đường cụt** — app kẹt vĩnh viễn, không màn nào mở ra được. Vì vậy
+`approveAndIssueKeyAction` đặt ở `app/admin/apps/actions.ts` và wizard import ngược lại.
+
+Hệ quả: `/admin/approvals` (còn mock) **đã gỡ khỏi menu** — hai cửa duyệt, một cửa giả, là cách
+chắc chắn để người mới bấm nhầm. Thư mục route giữ nguyên cho ai còn bookmark.
+
+Phần nhập quyền cấp nằm ở **`<GrantFields>`**, dùng chung cả hai cửa. Có hai bản là sớm muộn
+lệch nhau — và lệch ở đây nghĩa là một cửa bỏ qua ô xác nhận bắt buộc.
 
 **Bước 1–3 chỉ là nháp trong trình duyệt.** Bấm gửi ở bước 3 mới ghi thật, và từ đó không quay
 lại được — wizard bỏ nút Quay lại ở bước 4 đúng vì vậy.
@@ -280,6 +298,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
+| `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
+| `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
@@ -317,6 +337,10 @@ chuyện thẩm mỹ. Nguồn: `../../use_case_template/use_case_*.md`, `../../u
     dạng `ews_<32 hex>_<43 ký tự>`; `/v1/*` xác thực THẲNG bằng `Authorization: Bearer <khoá>`,
     **không** có bước đổi token. Cấp khoá mới **không** thu hồi khoá cũ — tối đa 2 khoá active
     đúng để xoay vòng không mất kết nối.
+*   **Ô tick trước khi duyệt app**: "đội này đã có màn Cài đặt nhận thông báo". Backend không
+    lưu, không vào audit — nó là **gờ giảm tốc, không phải hàng rào**. Giữ vì nhân viên chỉ tắt
+    được thông báo nếu app tự dựng màn đó; không có thì cổng consent L0/L1/L3 vô dụng (ĐX-0003).
+    Đừng bỏ ở một cửa mà giữ ở cửa kia — cả hai cùng dùng `<GrantFields>` đúng vì vậy.
 *   **11 trạng thái notification**, đúng tên, đúng màu, qua `<StatusPill>` (SM §3).
 *   **`GET` trang unsubscribe không đổi trạng thái** — chỉ `POST` (UC-007 BR-3).
 *   **Exception path là UI thật**, không phải toast — mỗi spec màn hình có mục riêng cho nó.
@@ -378,6 +402,8 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
 | Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
 | Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
+| Hành động chỉ có trong một phiên wizard | đặt nút duyệt ở bước cuối wizard, không có ở danh sách | thao tác đổi trạng thái phải có ở màn **danh sách**; wizard chỉ là lối tắt (mục 2.5) |
+| Số giả trên thanh trên / sidebar | `<PreviewBanner>` chỉ phủ vùng `<main>`, không phủ khung | số nào hiện ở khung phải lấy từ dữ liệu thật (`useApp().apps`), không từ `lib/mock-data.ts` |
 | Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |
 | Báo "tạo app thất bại" trong khi app đã có trong DB | chuỗi nhiều lời gọi không transaction, lỗi giữa chừng bị quy hết về `ok: false` | `stoppedAt` (mục 2.5) — app đã tồn tại thì luôn trả `ok: true` kèm chỗ dừng |
 | Snippet hướng dẫn tích hợp dạy sai luồng thật | snippet mock dựng endpoint không tồn tại (`POST /v1/auth/token`) | snippet phải sao đúng route + body backend; đối chiếu `*-routes.ts` trước khi viết |

@@ -875,9 +875,6 @@ export const statTrends = {
   emptyTopics: [2, 2, 1, 1, 1, 1, 1],
 }
 /** Chuông ở top bar: hồ sơ app + lần gửi đang chờ Super Admin duyệt */
-export const pendingApprovalCount = () =>
-  apps.filter((a) => a.status === 'pending_approval').length +
-  sendApprovals.filter((r) => r.status === 'pending_approval').length
 /** App đang chọn ở app switcher (AppShell) — mock cố định ews-hypervisor. */
 export const currentApp = apps[0]
 export const appBySlug = (slug: string) => apps.find((app) => app.slug === slug) ?? apps[0]

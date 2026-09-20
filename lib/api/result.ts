@@ -22,3 +22,13 @@ export async function toResult<T>(op: () => Promise<T>): Promise<ActionResult<T>
     return { ok: false, message: messageOf(err), code: err.code }
   }
 }
+
+/**
+ * Chỗ một CHUỖI nhiều lời gọi dừng lại.
+ *
+ * Backend không có lệnh gộp cho vòng đời app, nên vài thao tác là nhiều lời gọi liên tiếp
+ * KHÔNG chung transaction. Khi phần đầu đã ghi thật rồi phần sau mới hỏng, trả `ActionResult`
+ * thất bại là nói sai — màn hình phải nói được "đã làm tới đâu, dừng vì sao"
+ * (CLAUDE.md mục 2.5).
+ */
+export type ActionStop = { step: string; message: string; code: string }
