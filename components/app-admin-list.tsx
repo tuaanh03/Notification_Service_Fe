@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { Database, Plus, ShieldAlert } from 'lucide-react'
-import { apps, type App } from '@/lib/mock-data'
+import type { AppDto } from '@/lib/api/types'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -10,7 +10,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-const columns: Column<App>[] = [
+/**
+ * Backend trả ISO-8601 UTC. Format cố định theo UTC (không theo locale máy) để
+ * server và client render ra cùng một chuỗi — lệch là hydration mismatch.
+ */
+function formatUtc(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`
+}
+
+const columns: Column<AppDto>[] = [
   {
     key: 'name',
     label: 'Tên app',
@@ -41,11 +52,11 @@ const columns: Column<App>[] = [
   },
   { key: 'status', label: 'Trạng thái', render: (app) => <StatusPill status={app.status} /> },
   {
-    key: 'granted_channels',
+    key: 'grantedChannels',
     label: 'Kênh được cấp',
     render: (app) => (
       <span className="flex gap-1">
-        {app.granted_channels.map((c) => (
+        {app.grantedChannels.map((c) => (
           <Badge key={c} variant="outline" className="font-mono text-[10px]">
             {c}
           </Badge>
@@ -53,14 +64,20 @@ const columns: Column<App>[] = [
       </span>
     ),
   },
-  { key: 'quota', label: 'Quota', numeric: true, render: (app) => <>{app.quota}/min</> },
-  { key: 'topic_count', label: 'Số topic', numeric: true },
-  { key: 'technical_contact', label: 'Người liên hệ kỹ thuật' },
-  { key: 'updated_at', label: 'Cập nhật' },
+  { key: 'rateLimitPerMinute', label: 'Quota', numeric: true, render: (app) => <>{app.rateLimitPerMinute}/min</> },
+  {
+    key: 'maxRecipientsPerEvent',
+    label: 'Tối đa người nhận',
+    numeric: true,
+    render: (app) => <>{app.maxRecipientsPerEvent.toLocaleString('vi-VN')}</>,
+  },
+  { key: 'updatedAt', label: 'Cập nhật', render: (app) => <>{formatUtc(app.updatedAt)}</> },
 ]
+// Cột "Số topic" và "Người liên hệ kỹ thuật" của bản mock đã bỏ: AppDto chưa có
+// hai field đó. Thêm lại khi backend bổ sung, đừng dựng số giả trên màn quản trị.
 
-/** UC-001 §A — /admin/apps (Super Admin). */
-export function AppAdminList() {
+/** UC-001 §A — /admin/apps (Super Admin). Dữ liệu do Server Component truyền vào. */
+export function AppAdminList({ rows }: { rows: AppDto[] }) {
   return (
     <>
       <PageHeader
@@ -73,9 +90,9 @@ export function AppAdminList() {
           </Button>
         }
       />
-      <DataTable<App>
+      <DataTable<AppDto>
         columns={columns}
-        rows={apps}
+        rows={rows}
         filterKey="status"
         empty={<EmptyState icon={Database} title="Không có app" description="Không app nào ở trạng thái này." />}
       />
