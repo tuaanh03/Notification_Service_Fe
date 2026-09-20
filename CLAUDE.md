@@ -22,13 +22,15 @@ file này); gốc portal là `../../`.
 ```
 webservice/ews-astrolink/
 ├── app/                      # Next.js App Router
-│   ├── layout.tsx            # RootLayout: fonts + <AppShell> (bọc đúng 1 lần)
+│   ├── layout.tsx            # RootLayout: fonts + <AppShell> (bọc đúng 1 lần);
+│   │                         # server component — nơi DUY NHẤT nạp danh sách app (/admin/apps)
+│   ├── api/ai/generate-html/ # route handler gọi API AI (Template editor)
 │   ├── globals.css           # token Cosmic (--void, --starlight, …)
 │   ├── page.tsx              # /            Tổng quan
 │   ├── compose/              # /compose     Composer (UC-008)
 │   ├── notifications/        # /notifications, /notifications/[id], /notifications/errors  Delivery log (UC-005)
 │   ├── scheduled/            # /scheduled
-│   ├── topics/               # /topics, /topics/[key]
+│   ├── topics/               # /topics          (CHƯA có /topics/[key])
 │   ├── users/                # /users, /users/[id], /users/import (UC-002)
 │   ├── subscriptions/        # /subscriptions
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
@@ -37,20 +39,24 @@ webservice/ews-astrolink/
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
-│   ├── topics/*              # topic-detail + 4 tab (UC-002)
+│   ├── topics/*              # topic-segment-editor-dialog (CHƯA có topic-detail / tab)
 │   ├── apps/*                # wizard step-*, orbit-stepper, credential-dialog (UC-001)
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
 │   ├── notifications/*       # notifications-table, notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel), scheduled-cards, error-codes-table, origin-badge
 │   ├── users/*               # users-page/-table, user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
 │   ├── settings/*            # credentials-panel, quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
 │   └── ui/*                  # shadcn v4 (base-ui) — chỉ thêm qua CLI, không sửa tay:
-│                             # alert badge button checkbox dialog input label native-select sonner
-│                             # switch table tabs textarea toggle toggle-group tooltip
+│                             # alert avatar badge breadcrumb button checkbox collapsible dialog
+│                             # dropdown-menu input label native-select resizable separator sheet
+│                             # sidebar skeleton sonner switch table tabs textarea toggle
+│                             # toggle-group tooltip
 ├── lib/{mock-data.ts,theme.ts,utils.ts}
+├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts · apps.ts · index.ts
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
-├── next.config.mjs           # output: 'standalone', basePath /apps/ews-astrolink
+├── next.config.mjs           # output: 'standalone', basePath RỖNG (console có domain riêng)
 └── package.json · pnpm-lock.yaml (v9) · pnpm-workspace.yaml · tsconfig.json · components.json
 ```
 
@@ -112,17 +118,21 @@ Spec & use case nằm **ngoài** thư mục này:
 *   **Shell:** `<AppShell>` render **đúng một lần** từ `app/layout.tsx`. Page không tự bọc lại.
 *   **Route:** mỗi route một thư mục thật. Không dùng catch-all `[...slug]` làm stub. Route chưa build
     → stub `<EmptyState title="Đang xây dựng">` trong folder riêng.
-*   **Link nội bộ:** luôn `next/link` (`<Link href="/topics">`). App chạy dưới `basePath`
-    `/apps/ews-astrolink` — `<a href="/...">` thô sẽ **không** được gắn prefix và rơi ra ngoài app.
+*   **Link nội bộ:** luôn `next/link` (`<Link href="/topics">`). `basePath` hiện **rỗng** (console
+    có domain riêng), nhưng nếu build lại với prefix thì `<a href="/...">` thô sẽ **không** được gắn
+    prefix và rơi ra ngoài app — `next/link` giữ đúng trong cả hai trường hợp.
 *   **Kích thước file:** một page / tab / block một file trong `components/<area>/*.tsx`. File > ~400 dòng
     là tín hiệu cần tách.
-*   **Mock data:** `lib/mock-data.ts` là nguồn duy nhất. Thêm field mới phải **optional** để màn hình
-    khác không vỡ. Không có API route, không backend.
+*   **Dữ liệu:** màn nào ĐÃ đấu backend thì đọc qua `lib/api/*` (mục 2.2); `lib/mock-data.ts` chỉ
+    còn phục vụ các màn CHƯA đấu. Thêm field mới vào type dùng chung phải **optional** để màn hình
+    khác không vỡ — và field nào backend không có thì để trống (`—`), **không dựng số giả** trên màn
+    quản trị.
 
 ### 2.1. Build & chạy — bằng Docker (trên WSL)
 
-Không có nginx gateway. Next standalone chạy trong container với `basePath /apps/ews-astrolink`, publish
-thẳng `127.0.0.1:4001`. Mọi build/run đều qua lệnh docker trong thư mục này.
+Không có nginx gateway. Next standalone chạy trong container với `basePath` **rỗng** (console có
+domain riêng), publish thẳng `127.0.0.1:4001`. Mọi build/run đều qua lệnh docker trong thư mục này.
+Container phải nằm trên network `ews-net` để gọi được backend (mục 2.2).
 
 | Lệnh | Khi nào |
 |---|---|
@@ -130,13 +140,35 @@ thẳng `127.0.0.1:4001`. Mọi build/run đều qua lệnh docker trong thư m�
 | `docker compose build --no-cache` | Khi đổi dependency / lockfile mà cache làm sai. |
 | `docker compose logs -f ews-astrolink` | Xem log build/runtime, hydration warning phía server. |
 | `docker compose down` | Tắt. |
-| `pnpm dev` | **Chỉ** để hot-reload khi đang code. Mở `http://localhost:3000/apps/ews-astrolink`. Không dùng để kết luận "build pass". |
+| `pnpm dev` | **Chỉ** để hot-reload khi đang code. Mở `http://localhost:3000`. Không dùng để kết luận "build pass". Dev chạy trên host nên KHÔNG phân giải được DNS `ews-astrolink-api` — phải đặt `EWS_API_URL=http://127.0.0.1:4002`, nếu không mọi trang chỉ ra `<NoAppsScreen>`. |
 
-URL verify sau build: **`http://127.0.0.1:4001/apps/ews-astrolink`** (+ `/compose`, `/topics/...`).
-Đổi slug → sửa **cả hai** chỗ: `next.config.mjs` (`BASE_PATH`) và `Dockerfile` (`ARG BASE_PATH`).
+URL verify sau build: **`http://127.0.0.1:4001`** (+ `/compose`, `/topics`, `/admin/apps`).
+Muốn đặt lại console sau prefix → build với `BASE_PATH=/apps/ews-astrolink`; giá trị đó được
+`next.config.mjs` inline lúc build (`env.BASE_PATH`), **không** đọc được lúc chạy.
 
 Thêm primitive shadcn: `pnpm dlx shadcn@latest add <name>` rồi sửa `import { cn } from "cn"` →
 `@/lib/utils` (bẫy §6). Không được overwrite `button.tsx` khi CLI hỏi.
+
+### 2.2. Đấu nối backend (`ews-astrolink-api`)
+
+Browser **không bao giờ** gọi thẳng backend. Mọi request quản trị đi qua phía server của Next (BFF):
+server component / route handler / server action gọi `http://ews-astrolink-api:3000/admin/*` qua
+network `ews-net`. Nhờ vậy backend không cần CORS, và `EWS_ADMIN_TOKEN` — token cấp TOÀN QUYỀN
+`/admin/*` (ADR-0015 §4 của backend) — không có đường ra browser.
+
+| Biến (`.env`) | Nghĩa |
+|---|---|
+| `EWS_API_URL` | `http://ews-astrolink-api:3000` trong docker; `http://127.0.0.1:4002` khi `pnpm dev` |
+| `EWS_ADMIN_TOKEN` | trùng `ADMIN_TOKEN` của backend |
+| `EWS_ORG_ID` | org console đang quản trị — `GET /admin/apps` bắt buộc query `orgId` |
+
+*   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho ba biến trên. `lib/api/client.ts` mở đầu bằng
+    `import 'server-only'` nên build sẽ đỏ ngay nếu có component client lỡ import.
+*   **Kiểu dữ liệu sao đúng DTO của backend**, để ở `lib/api/types.ts` (không `server-only` — component
+    client cần import type). Đổi tên field là đổi hợp đồng, phải sửa cả hai bên.
+*   **Lỗi backend theo RFC 9457** (`application/problem+json`). UI map theo `code`, **không** parse
+    `detail`. Exception path là UI thật (`<EmptyState>` nêu mã lỗi), không phải toast.
+*   Backend hỏng **không được** biến thành màn trống im lặng — người trực phải đọc được lý do.
 
 Deploy lên server (theo `../../docs/QUY_TRINH_LAM_VIEC_SUA_CODE_VA_DEPLOY.md` §5):
 
@@ -145,7 +177,7 @@ ssh $HOST "cd $APP/webservice/ews-astrolink && docker compose up -d --build"
 ```
 
 ```bash
-ssh $HOST "curl -I http://127.0.0.1:4001/apps/ews-astrolink"
+ssh $HOST "curl -I http://127.0.0.1:4001"
 ```
 
 ---
@@ -226,7 +258,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 4.  **Build:** `docker compose up -d --build` phải pass (mục 2.1). **Build pass không có nghĩa màn hình
     chạy** — và vì `next.config.mjs` đang `ignoreBuildErrors: true`, build pass cũng **không** chứng
     minh hết lỗi TypeScript; chạy thêm `pnpm exec tsc --noEmit` khi sửa type/props dùng chung.
-5.  **Verify trong browser** (mở `http://127.0.0.1:4001/apps/ews-astrolink/<route>` qua Playwright, không chạy server bằng
+5.  **Verify trong browser** (mở `http://127.0.0.1:4001/<route>` qua Playwright, không chạy server bằng
     Bash): mở đúng route, thao tác đúng luồng, xác nhận bằng **chuỗi cụ thể** (tên nút, trạng thái, số).
     Với luồng có state machine đi hết chuỗi `draft → confirm → countdown → queued → sending → stopped/sent`.
 6.  **Kiểm tra tương thích:** mobile 375 / desktop, `prefers-reduced-motion`, không hydration mismatch,
@@ -261,8 +293,10 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Hydration #418 khi `prefers-reduced-motion: reduce` | `useReducedMotion()` SSR trả `null`, client trả `true` → class/element khác nhau ngay lần render đầu | animation gate bằng CSS `@media (prefers-reduced-motion)` (đã có ở globals.css); chỉ dùng `useReducedMotion` cho phần render sau khi user tương tác |
 | Trang tràn ngang ở 375 dù bảng đã `overflow-x-auto` | grid/flex item `min-width:auto` → track phình theo min-content của `pre`/`table`/`TabsList w-fit` | `min-w-0` lên con của grid; `TabsList className="h-auto w-full flex-wrap"` |
 | Docker build fail ở `next/font` | build không có internet để tải Google Fonts | build trên máy có mạng; không đổi sang font local nếu chưa được duyệt |
-| Trang trắng, asset 404 | thiếu `basePath` | giữ `basePath`; đổi slug phải sửa 2 chỗ (mục 2.1) |
-| Link nhảy ra ngoài `/apps/ews-astrolink` | dùng `<a href="/…">` thô | dùng `next/link` |
+| Trang trắng, asset 404 sau khi đổi prefix | `BASE_PATH` lúc build khác đường dẫn đang phục vụ | `BASE_PATH` là quyết định BUILD-TIME, build lại khi đổi (mục 2.1) |
+| Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
+| Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
+| Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
 | Build pass nhưng type sai | `ignoreBuildErrors: true` | `pnpm exec tsc --noEmit` |
 | Container "Up 1 second" liên tục, browser navigate fail ngẫu nhiên | chạy docker qua `wsl -e ...` từ Windows: WSL **tự tắt khi idle** sau mỗi lệnh → dockerd chết → container restart | giữ WSL sống: `Start-Process wsl -ArgumentList '-e','sleep','infinity' -WindowStyle Hidden` (hoặc mở sẵn 1 terminal WSL) |
 | Font/token khai trong `@theme inline` nhưng rule CSS thường `var(--font-sans)` không ăn | `inline` chỉ inline vào utility, **không** phát biến ra runtime | trong `globals.css` dùng `@apply font-sans` / `@apply font-heading`, không `var()` |
