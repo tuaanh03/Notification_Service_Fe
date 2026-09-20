@@ -10,8 +10,9 @@ export type App = {
   origin: 'internal' | 'external'
   granted_channels: Channel[]
   quota: number
-  topic_count: number
-  technical_contact: string
+  /** Backend chưa có hai field này (AppDto) — app thật để trống, UI hiện `—`. */
+  topic_count?: number
+  technical_contact?: string
   updated_at: string
   ip_allowlist?: string[]
   allowed_origins?: string[]

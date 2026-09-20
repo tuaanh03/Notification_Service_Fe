@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { Database, Plus, ShieldAlert } from 'lucide-react'
 import type { AppDto } from '@/lib/api/types'
+import { fmtIso } from '@/lib/mock-data'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -9,17 +10,6 @@ import { StatusPill } from '@/components/status-pill'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-
-/**
- * Backend trả ISO-8601 UTC. Format cố định theo UTC (không theo locale máy) để
- * server và client render ra cùng một chuỗi — lệch là hydration mismatch.
- */
-function formatUtc(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`
-}
 
 const columns: Column<AppDto>[] = [
   {
@@ -71,7 +61,7 @@ const columns: Column<AppDto>[] = [
     numeric: true,
     render: (app) => <>{app.maxRecipientsPerEvent.toLocaleString('vi-VN')}</>,
   },
-  { key: 'updatedAt', label: 'Cập nhật', render: (app) => <>{formatUtc(app.updatedAt)}</> },
+  { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (app) => <>{fmtIso(app.updatedAt)}</> },
 ]
 // Cột "Số topic" và "Người liên hệ kỹ thuật" của bản mock đã bỏ: AppDto chưa có
 // hai field đó. Thêm lại khi backend bổ sung, đừng dựng số giả trên màn quản trị.

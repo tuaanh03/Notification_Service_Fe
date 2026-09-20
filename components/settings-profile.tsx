@@ -44,7 +44,7 @@ export function SettingsProfile() {
             </div>
             <div>
               <dt className="text-xs text-[var(--text-muted)]">Người liên hệ kỹ thuật</dt>
-              <dd className="mt-1">{app.technical_contact}</dd>
+              <dd className="mt-1">{app.technical_contact ?? '—'}</dd>
             </div>
             <div>
               <dt className="text-xs text-[var(--text-muted)]">Kênh được cấp</dt>

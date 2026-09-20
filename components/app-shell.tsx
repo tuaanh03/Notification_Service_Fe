@@ -27,7 +27,7 @@ import {
   PanelLeftOpen,
   RadioTower,
 } from 'lucide-react'
-import { apps, CURRENT_USER, pendingApprovalCount } from '@/lib/mock-data'
+import { CURRENT_USER, pendingApprovalCount } from '@/lib/mock-data'
 import { useApp } from './app-context'
 import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
@@ -118,7 +118,8 @@ function CustomSidebarTrigger({
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname()
   const { role, setRole } = useRole()
-  const { app, setApp } = useApp()
+  // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock.
+  const { app, apps, setApp } = useApp()
   const pending = pendingApprovalCount()
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
