@@ -1,6 +1,5 @@
 'use client'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { AppLink, useAppRouter } from '@/components/app-link'
 import { useState, useTransition } from 'react'
 import { Database, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
 import type { AppDto } from '@/lib/api/types'
@@ -136,7 +135,7 @@ const actionColumn = (
  * lại là mất, nên app `pending_approval` phải duyệt được từ đây.
  */
 export function AppAdminList({ rows }: { rows: AppDto[] }) {
-  const router = useRouter()
+  const router = useAppRouter()
   const [target, setTarget] = useState<AppDto | null>(null)
   const [transitionTarget, setTransitionTarget] = useState<{ app: AppDto; action: AppAction } | null>(null)
   const [result, setResult] = useState<ApproveResult | null>(null)
@@ -171,7 +170,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
         title="Tất cả app"
         subtitle="Quản lý đăng ký publisher và quyền gửi trong EWS Tổng"
         actions={
-          <Button render={<Link href="/apps/new" />}>
+          <Button render={<AppLink href="/apps/new" />}>
             <Plus />
             Đăng ký App Service
           </Button>
@@ -184,7 +183,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
           <AlertTitle>Đã duyệt {result.app.name}, nhưng chưa cấp được khoá</AlertTitle>
           <AlertDescription>
             {result.stoppedAt.message} App đã <span className="font-mono">active</span> — vào{' '}
-            <Link href="/settings/credentials" className="underline">Khoá API</Link> cấp lại.
+            <AppLink href="/settings/credentials" className="underline">Khoá API</AppLink> cấp lại.
           </AlertDescription>
         </Alert>
       )}

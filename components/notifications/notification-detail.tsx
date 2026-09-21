@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { Ban, Copy, Download, FilePlus2, History, Square } from 'lucide-react'
 import { toast } from 'sonner'
 import { AuditTrail } from '@/components/audit-trail'
@@ -25,7 +25,7 @@ export function NotificationDetail({ id }: { id: string }) {
     return (
       <>
         <PageHeader title="Chi tiết lần gửi" />
-        <EmptyState icon={History} title="Không tìm thấy lần gửi" description={`Không có bản ghi ${id}.`} action={<Button variant="outline" render={<Link href="/notifications" />}>Về Lịch sử gửi</Button>} />
+        <EmptyState icon={History} title="Không tìm thấy lần gửi" description={`Không có bản ghi ${id}.`} action={<Button variant="outline" render={<AppLink href="/notifications" />}>Về Lịch sử gửi</Button>} />
       </>
     )
   const c = notificationCounters(n)
@@ -66,11 +66,11 @@ export function NotificationDetail({ id }: { id: string }) {
               <Square /> Dừng gửi
             </Button>
           )}
-          <Button variant="outline" render={<Link href="/compose" />}>
+          <Button variant="outline" render={<AppLink href="/compose" />}>
             <Copy /> Nhân bản
           </Button>
           {left !== 'Chưa' && (
-            <Button variant="outline" render={<Link href="/compose" />}>
+            <Button variant="outline" render={<AppLink href="/compose" />}>
               <FilePlus2 /> Gửi thư đính chính
             </Button>
           )}

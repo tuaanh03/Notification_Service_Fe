@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/app-link'
 import { FilePlus2, Sparkles, TerminalSquare } from 'lucide-react'
 import { CodeBlock } from '@/components/code-block'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -18,7 +18,7 @@ API chỉ tạo draft — người thật vẫn phải xem thử và Xuất bả
 
 /** UC-006 §A — 3 action: Tạo template / Nhờ AI soạn / Import từ API (read-only). */
 export function TemplatesPage() {
-  const router = useRouter()
+  const router = useAppRouter()
   const { app } = useApp()
   const [ai, setAi] = useState(false)
   const [apiInfo, setApiInfo] = useState(false)

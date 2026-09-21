@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { ChevronLeft, ChevronRight, ShieldX } from 'lucide-react'
 import { OrbitStepper } from '@/components/apps/orbit-stepper'
 import { Panel } from '@/components/panel'
@@ -97,7 +97,7 @@ export function ImportWizard() {
             <p className="text-xs text-[var(--text-muted)]">
               {p.conflicts.length} quyết định mâu thuẫn đã ghi audit kèm ghi chú của bạn.
             </p>
-            <Button variant="outline" render={<Link href="/users" />}>
+            <Button variant="outline" render={<AppLink href="/users" />}>
               Về Users
             </Button>
           </div>

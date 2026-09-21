@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { ShieldOff } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -32,7 +32,7 @@ export function ForbiddenNotice({
         <AlertDescription className="text-[var(--text-primary)]">
           {description} Sự kiện đã được ghi vào audit log.
         </AlertDescription>
-        <Button variant="link" render={<Link href={backHref} />} className="justify-self-start px-0">
+        <Button variant="link" render={<AppLink href={backHref} />} className="justify-self-start px-0">
           {backLabel}
         </Button>
       </Alert>

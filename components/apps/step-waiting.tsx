@@ -1,6 +1,6 @@
 'use client'
 import { LockKeyhole, TriangleAlert } from 'lucide-react'
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -69,7 +69,7 @@ export function StepWaiting({
           <AlertDescription>
             {created.stoppedAt.message} App đang ở trạng thái{' '}
             <span className="font-mono">{app.status}</span> — đừng bấm tạo lại (sẽ trùng slug), vào{' '}
-            <Link href="/admin/apps" className="underline">Danh sách app</Link> làm nốt.
+            <AppLink href="/admin/apps" className="underline">Danh sách app</AppLink> làm nốt.
           </AlertDescription>
         </Alert>
       )}
@@ -110,13 +110,13 @@ export function StepWaiting({
               <AlertTitle>Đã duyệt, nhưng chưa cấp được khoá</AlertTitle>
               <AlertDescription>
                 {stop.message} App đã <span className="font-mono">active</span> — vào{' '}
-                <Link href="/settings/credentials" className="underline">Khoá API</Link> cấp lại.
+                <AppLink href="/settings/credentials" app={app.slug} className="underline">Khoá API</AppLink> cấp lại.
               </AlertDescription>
             </Alert>
           ) : (
             <p className="text-sm text-[var(--text-secondary)]">
               App đã hoạt động. Chủ đề vừa tạo còn ở <span className="font-mono">draft</span> — sang{' '}
-              <Link href="/topics" className="underline">Chủ đề</Link> kích hoạt trước khi app gửi được thư.
+              <AppLink href="/topics" app={app.slug} className="underline">Chủ đề</AppLink> kích hoạt trước khi app gửi được thư.
             </p>
           )}
         </div>

@@ -1,5 +1,5 @@
 'use client'
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { ExternalLink } from 'lucide-react'
 import { CodeBlock } from '@/components/code-block'
 import { PageHeader } from '@/components/page-header'
@@ -21,7 +21,7 @@ export function SettingsProfile() {
         title="Hồ sơ app"
         subtitle={`Thông tin đăng ký của ${app.slug}`}
         actions={
-          <Button variant="outline" render={<Link href="/apps/new" />}>
+          <Button variant="outline" render={<AppLink href="/apps/new" />}>
             Đăng ký app khác
           </Button>
         }
@@ -69,7 +69,7 @@ export function SettingsProfile() {
               0 người nhận là đúng như mong đợi: topic vừa tạo chưa có subscriber. Đây không phải lỗi.
             </AlertDescription>
           </Alert>
-          <Button variant="link" className="mt-3 px-0" render={<Link href="/topics" />}>
+          <Button variant="link" className="mt-3 px-0" render={<AppLink href="/topics" />}>
             Quản lý subscriber <ExternalLink data-icon="inline-end" />
           </Button>
         </Panel>

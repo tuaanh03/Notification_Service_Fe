@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import {
   Trash2,
   Users,
@@ -64,7 +64,7 @@ export function UserDetail({ id }: { id: string }) {
           title="Không tìm thấy user"
           description={`Không có hồ sơ ${id}.`}
           action={
-            <Button variant="outline" render={<Link href="/users" />}>
+            <Button variant="outline" render={<AppLink href="/users" />}>
               Về danh sách Users
             </Button>
           }

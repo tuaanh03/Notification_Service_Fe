@@ -4,6 +4,7 @@ import './globals.css'
 import { AppShell } from '@/components/app-shell'
 import { RoleProvider } from '@/components/role-context'
 import { AppProvider } from '@/components/app-context'
+import { AppGate } from '@/components/app-gate'
 import { NoAppsScreen } from '@/components/no-apps-screen'
 import { Toaster } from '@/components/ui/sonner'
 import { listApps, toApp } from '@/lib/api/apps'
@@ -50,7 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <NoAppsScreen error={error} />
           ) : (
             <AppProvider apps={apps}>
-              <AppShell>{children}</AppShell>
+              {/* App nằm trên đường dẫn (`?app=`); thiếu thì AppGate bắt chọn (lib/app-routes.ts). */}
+              <AppGate>
+                <AppShell>{children}</AppShell>
+              </AppGate>
             </AppProvider>
           )}
         </RoleProvider>

@@ -1,13 +1,12 @@
 'use client'
 
-import Link from 'next/link'
 import { Info, TriangleAlert, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { recipientHref } from '@/components/users/recipient-href'
+import { AppLink } from '@/components/app-link'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
 
@@ -50,15 +49,15 @@ function Step({ label, at }: { label: string; at: string | null }) {
  * (có ở màn Người nhận) và không hiện nội dung thư (app service đã giữ nội dung đó).
  * Không có nút Huỷ / Dừng / Gửi lại: MVP không có lệnh nào như vậy.
  *
- * `appSlug` = null khi panel đã nằm trong chính trang của người nhận — không dẫn về chính nó.
+ * `linkRecipient = false` khi panel đã nằm trong chính trang của người nhận — không dẫn về chính nó.
  */
 export function NotificationOutcome({
   notification: n,
-  appSlug,
+  linkRecipient,
   onClose,
 }: {
   notification: NotificationSummaryDto
-  appSlug: string | null
+  linkRecipient: boolean
   onClose: () => void
 }) {
   const unknown = n.recipient?.error?.startsWith(OUTCOME_UNKNOWN) ?? false
@@ -140,15 +139,15 @@ export function NotificationOutcome({
         <Step label="Kết thúc" at={n.finishedAt} />
       </div>
 
-      {n.externalId && appSlug && (
+      {n.externalId && linkRecipient && (
         <p className="mt-3 text-[11px] text-[var(--text-muted)]">
           Muốn biết vì sao người này bị chặn: xem{' '}
-          <Link
-            href={recipientHref(appSlug, n.externalId)}
+          <AppLink
+            href={`/users/${encodeURIComponent(n.externalId)}`}
             className="text-[var(--starlight)] underline-offset-2 hover:underline"
           >
             trang của <span className="font-mono">{n.externalId}</span>
-          </Link>
+          </AppLink>
           . Cài đặt ở đó là hiện tại, không phải lúc gửi.
         </p>
       )}

@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/app-link'
 import { Files, Sparkles } from 'lucide-react'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -55,7 +55,7 @@ const columns: Column<Row>[] = [
 
 /** UC-006 §A — list template; 0 binding = viền gạch đứt + hint. */
 export function TemplatesTable() {
-  const router = useRouter()
+  const router = useAppRouter()
   const { app } = useApp()
   const [channel, setChannel] = useState<string[]>([])
   const [status, setStatus] = useState<string[]>([])

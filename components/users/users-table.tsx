@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/app-link'
 import {
   Users,
   Filter,
@@ -37,7 +37,7 @@ type Row = User & Record<string, unknown> & { channels: string; status: Subscrip
 
 /** UC-002 §A — bảng user (con người); trạng thái = trạng thái tệ nhất trong các subscription. */
 export function UsersTable() {
-  const router = useRouter()
+  const router = useAppRouter()
   const [source, setSource] = useState('')
   const [channel, setChannel] = useState('')
   const [status, setStatus] = useState('')

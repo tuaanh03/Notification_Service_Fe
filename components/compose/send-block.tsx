@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { Ban, CalendarClock, CheckCircle2, Copy, FilePlus2, Save, Send, Square, Undo2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Panel } from '@/components/panel'
@@ -222,9 +222,9 @@ function ResultPanel({ topic }: { topic: string }) {
       <p className="text-sm text-[var(--text-muted)]">
         Không có nút thu hồi. Recall của Outlook chỉ chạy nội bộ và thường thất bại nếu thư đã mở.
       </p>
-      <Link className="text-sm text-[var(--starlight)] underline" href={`/notifications/ntf_demo_${topic}`}>
+      <AppLink className="text-sm text-[var(--starlight)] underline" href={`/notifications/ntf_demo_${topic}`}>
         Mở chi tiết notification
-      </Link>
+      </AppLink>
     </div>
   )
 }

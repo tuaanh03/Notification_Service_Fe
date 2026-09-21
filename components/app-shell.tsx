@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Bell,
@@ -28,7 +27,9 @@ import {
   RadioTower,
 } from 'lucide-react'
 import { CURRENT_USER } from '@/lib/mock-data'
-import { useApp } from './app-context'
+import { useAppSelection } from './app-context'
+import { AppLink, useAppRouter } from './app-link'
+import { switchAppPath } from '@/lib/app-routes'
 import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
@@ -120,12 +121,14 @@ function CustomSidebarTrigger({
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname()
   const { role, setRole } = useRole()
-  // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock.
-  const { app, apps, setApp } = useApp()
+  // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock. `app` đọc từ `?app=`
+  // trên đường dẫn — null ở màn `/admin` mở chưa kèm app (lib/app-routes.ts).
+  const { app, apps } = useAppSelection()
+  const router = useAppRouter()
   // Số thật từ danh sách app của AppProvider. Trước đây lấy `pendingApprovalCount()` của mock:
   // một con số bịa nằm trên khung luôn hiển thị, ngoài vùng <PreviewBanner> che phủ (mục 2.4).
   const pending = apps.filter((a) => a.status === 'pending_approval').length
-  const appDot = statusColors[app.status] ?? statusColors.draft
+  const appDot = app ? (statusColors[app.status] ?? statusColors.draft) : statusColors.draft
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
   const breadcrumbMap: Array<{ href: string; name: string; group: string }> = [
@@ -161,7 +164,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] space-y-2 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:space-y-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
             {/* 1. System Brand Logo */}
             <div className="flex items-center justify-between gap-1 w-full group-data-[collapsible=icon]:justify-center">
-              <Link
+              <AppLink
                 href="/"
                 className="flex items-center gap-2.5 px-1 py-1 rounded-lg group transition-colors hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center min-w-0"
               >
@@ -176,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     Notification Hub
                   </span>
                 </div>
-              </Link>
+              </AppLink>
               <div className="group-data-[collapsible=icon]:hidden">
                 <CustomSidebarTrigger className="text-muted-foreground/70 hover:text-foreground" />
               </div>
@@ -200,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             className="size-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: appDot, boxShadow: `0 0 6px ${appDot}` }}
                           />
-                          <span className="font-medium text-sidebar-foreground truncate">{app.name}</span>
+                          <span className="font-medium text-sidebar-foreground truncate">{app?.name ?? 'Chọn app'}</span>
                         </div>
                         <ChevronsUpDown className="size-3 text-muted-foreground shrink-0" />
                       </SidebarMenuButton>
@@ -222,10 +225,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       {apps.map((a) => (
                         <DropdownMenuItem
                           key={a.slug}
-                          onClick={() => setApp(a.slug)}
+                          // Đổi app = đổi `?app=`: ở lại màn này, hoặc về danh sách nếu đang ở trang chi tiết.
+                          onClick={() => router.push(switchAppPath(path), { app: a.slug })}
                           className={cn(
                             'flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs',
-                            a.slug === app.slug && 'bg-sidebar-accent font-medium',
+                            a.slug === app?.slug && 'bg-sidebar-accent font-medium',
                           )}
                         >
                           <div className="flex flex-col min-w-0">
@@ -234,7 +238,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <StatusPill status={a.status} />
-                            {a.slug === app.slug && <Check className="size-3.5 text-[var(--starlight)]" />}
+                            {a.slug === app?.slug && <Check className="size-3.5 text-[var(--starlight)]" />}
                           </div>
                         </DropdownMenuItem>
                       ))}
@@ -256,7 +260,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {/* Tổng quan */}
                 <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    render={<Link href="/" />}
+                    render={<AppLink href="/" />}
                     isActive={path === '/'}
                     tooltip="Tổng quan"
                   >
@@ -286,17 +290,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/compose" />} isActive={path === '/compose'}>
+                          <SidebarMenuSubButton render={<AppLink href="/compose" />} isActive={path === '/compose'}>
                             <span>Soạn thông báo</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/notifications" />} isActive={path.startsWith('/notifications')}>
+                          <SidebarMenuSubButton render={<AppLink href="/notifications" />} isActive={path.startsWith('/notifications')}>
                             <span>Lịch sử gửi</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/scheduled" />} isActive={path === '/scheduled'}>
+                          <SidebarMenuSubButton render={<AppLink href="/scheduled" />} isActive={path === '/scheduled'}>
                             <span>Đã lên lịch</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -308,7 +312,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {/* Chủ đề */}
                 <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    render={<Link href="/topics" />}
+                    render={<AppLink href="/topics" />}
                     isActive={path.startsWith('/topics')}
                     tooltip="Chủ đề"
                   >
@@ -338,7 +342,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/users" />} isActive={path.startsWith('/users')}>
+                          <SidebarMenuSubButton render={<AppLink href="/users" />} isActive={path.startsWith('/users')}>
                             <span>Users</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -352,7 +356,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {/* Templates */}
                 <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    render={<Link href="/templates" />}
+                    render={<AppLink href="/templates" />}
                     isActive={path.startsWith('/templates')}
                     tooltip="Templates"
                   >
@@ -389,27 +393,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/settings/profile" />} isActive={path === '/settings/profile'}>
+                          <SidebarMenuSubButton render={<AppLink href="/settings/profile" />} isActive={path === '/settings/profile'}>
                             <span>Hồ sơ</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/settings/credentials" />} isActive={path === '/settings/credentials'}>
+                          <SidebarMenuSubButton render={<AppLink href="/settings/credentials" />} isActive={path === '/settings/credentials'}>
                             <span>Credentials</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/settings/quota" />} isActive={path === '/settings/quota'}>
+                          <SidebarMenuSubButton render={<AppLink href="/settings/quota" />} isActive={path === '/settings/quota'}>
                             <span>Kênh & Quota</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/settings/origins" />} isActive={path === '/settings/origins'}>
+                          <SidebarMenuSubButton render={<AppLink href="/settings/origins" />} isActive={path === '/settings/origins'}>
                             <span>Allowed origins</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/settings/sync" />} isActive={path === '/settings/sync'}>
+                          <SidebarMenuSubButton render={<AppLink href="/settings/sync" />} isActive={path === '/settings/sync'}>
                             <span>Sync danh bạ</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -447,22 +451,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href="/admin/send-approvals" />} isActive={path.startsWith('/admin/send-approvals')}>
+                            <SidebarMenuSubButton render={<AppLink href="/admin/send-approvals" />} isActive={path.startsWith('/admin/send-approvals')}>
                               <span>Duyệt lần gửi</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                           <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href="/admin/apps" />} isActive={path === '/admin/apps'}>
+                            <SidebarMenuSubButton render={<AppLink href="/admin/apps" />} isActive={path === '/admin/apps'}>
                               <span>Tất cả app</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                           <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href="/admin/audit" />} isActive={path === '/admin/audit'}>
+                            <SidebarMenuSubButton render={<AppLink href="/admin/audit" />} isActive={path === '/admin/audit'}>
                               <span>Audit log</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                           <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href="/admin/directory" />} isActive={path === '/admin/directory'}>
+                            <SidebarMenuSubButton render={<AppLink href="/admin/directory" />} isActive={path === '/admin/directory'}>
                               <span>Danh bạ & Resolver</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -594,7 +598,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {crumb && crumb.group !== crumb.name && (
                   <>
                     <BreadcrumbItem>
-                      <BreadcrumbLink href={crumb.href} className="text-muted-foreground hover:text-foreground">
+                      <BreadcrumbLink render={<AppLink href={crumb.href} />} className="text-muted-foreground hover:text-foreground">
                         {crumb.group}
                       </BreadcrumbLink>
                     </BreadcrumbItem>
@@ -617,16 +621,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ⌘K
                 </kbd>
               </div>
-              <div
-                className="hidden items-center gap-2 text-xs md:flex rounded-lg border border-[var(--orbit)] bg-muted/30 px-2.5 py-1"
-                title={`Quota phút: ${app.quota_used ?? 0}/${app.quota}`}
-              >
-                <QuotaArc used={app.quota_used ?? 0} max={app.quota} className="size-4" />
-                <span className="text-muted-foreground">Quota:</span>
-                <span className="font-mono tabular-nums font-semibold text-[var(--starlight)]">
-                  {app.quota_used ?? 0}/{app.quota}
-                </span>
-              </div>
+              {app && (
+                <div
+                  className="hidden items-center gap-2 text-xs md:flex rounded-lg border border-[var(--orbit)] bg-muted/30 px-2.5 py-1"
+                  title={`Quota phút: ${app.quota_used ?? 0}/${app.quota}`}
+                >
+                  <QuotaArc used={app.quota_used ?? 0} max={app.quota} className="size-4" />
+                  <span className="text-muted-foreground">Quota:</span>
+                  <span className="font-mono tabular-nums font-semibold text-[var(--starlight)]">
+                    {app.quota_used ?? 0}/{app.quota}
+                  </span>
+                </div>
+              )}
               <Button variant="ghost" size="icon-sm" className="relative text-muted-foreground hover:text-foreground" aria-label={`${pending} yêu cầu chờ duyệt`}>
                 <Bell className="size-4" />
                 {pending > 0 && (

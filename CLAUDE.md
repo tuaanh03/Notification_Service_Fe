@@ -22,7 +22,7 @@ file này); gốc portal là `../../`.
 ```
 webservice/ews-astrolink/
 ├── app/                      # Next.js App Router
-│   ├── layout.tsx            # RootLayout: fonts + <AppShell> (bọc đúng 1 lần);
+│   ├── layout.tsx            # RootLayout: fonts + <AppProvider> > <AppGate> > <AppShell> (bọc đúng 1 lần);
 │   │                         # server component — nơi DUY NHẤT nạp danh sách app (/admin/apps)
 │   ├── api/ai/generate-html/ # route handler gọi API AI (Template editor)
 │   ├── globals.css           # token Cosmic (--void, --starlight, …)
@@ -58,12 +58,14 @@ webservice/ews-astrolink/
 │   ├── notifications/*       # notifications-table (ĐÃ đấu API) + notification-outcome (panel chi tiết);
 │   │                         # notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel) còn mock cho /notifications/[id];
 │   │                         # scheduled-cards, error-codes-table, origin-badge
-│   ├── users/*               # users-page + recipient-detail (+ recipient-preferences, recipient-href) — ĐÃ đấu API;
+│   ├── users/*               # users-page + recipient-detail (+ recipient-preferences) — ĐÃ đấu API;
 │   │                         # users-table, add-user-dialog, user-detail (+ profile-panel, subscriptions-panel,
 │   │                         # data-tags-panel, event-log-panel) nay KHÔNG ai dùng (mục 2.7);
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
 │   ├── settings/*            # credentials-panel, quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx
+│   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
 │   │                         # AppShell render 1 lần, tự ẩn ở route trong WIRED_ROUTES (mục 2.4)
 │   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
@@ -72,7 +74,9 @@ webservice/ews-astrolink/
 │                             # dropdown-menu input label native-select resizable separator sheet
 │                             # sidebar skeleton sonner switch table tabs textarea toggle
 │                             # toggle-group tooltip
-├── lib/{mock-data.ts,theme.ts,utils.ts,preview-routes.ts}   # preview-routes: WIRED_ROUTES + WIRED_EXACT_ROUTES (mục 2.4)
+├── lib/{mock-data.ts,theme.ts,utils.ts,preview-routes.ts,app-routes.ts}
+│                             # preview-routes: WIRED_ROUTES + WIRED_EXACT_ROUTES + WIRED_DETAIL_ROUTES (mục 2.4)
+│                             # app-routes: ?app= trên đường dẫn — ORG_ROUTES, APP_DETAIL_ROUTES (mục 2.9)
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
 │                             # · result.ts (ActionResult + ActionStop) · apps.ts · topics.ts
 │                             # · users.ts · notifications.ts · audit.ts · index.ts
@@ -200,8 +204,8 @@ Hai cách gọi, chọn theo việc server có biết `appId` lúc render hay kh
 
 *   **Server Component** khi dữ liệu không phụ thuộc app đang chọn (`/admin/apps`) — đọc thẳng
     trong `page.tsx`, `export const dynamic = 'force-dynamic'`.
-*   **Server Action** khi dữ liệu thuộc app đang chọn (`/topics`, `/settings/credentials`). App đang chọn nằm trong state
-    client của `<AppProvider>`, server lúc render chưa biết `appId`. Action vẫn chạy phía server nên
+*   **Server Action** khi dữ liệu thuộc app đang chọn (`/topics`, `/settings/credentials`). App đang chọn đọc từ `?app=`
+    ở client (`<AppProvider>`, mục 2.9) — server component của từng màn không nhận nó. Action vẫn chạy phía server nên
     token không lộ. **Không ném lỗi qua ranh giới server/client** (Next nuốt message ở production
     build) — trả `ActionResult` có `code` để màn hình dựng exception path thật.
 
@@ -246,7 +250,7 @@ Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/cre
 `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
-chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useApp().apps`.
+chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useAppSelection().apps`.
 
 ### 2.5. Wizard đăng ký app — chuỗi nhiều lời gọi, KHÔNG có transaction
 
@@ -311,7 +315,7 @@ hợp lệ thì **không có nút**.
 *   **`key` trên `<AppTransitionDialog>`** theo `app.id:action`. Không có nó, `reason` sống sót
     qua lần đóng thành công và lý do của lần Tạm ngưng trước bị ghi cho lần Thu hồi sau.
 
-Ô chọn app: menu đã có `<StatusPill>` cho từng app; **chấm trên nút mở menu** lấy màu từ
+Ô chọn app (đổi `?app=`, mục 2.9): menu đã có `<StatusPill>` cho từng app; **chấm trên nút mở menu** lấy màu từ
 `statusColors` theo trạng thái thật — app đang tạm ngưng mà hiện chấm xanh là nói dối ở chỗ
 luôn nhìn thấy. Không làm mờ app bị ngưng: vẫn phải vào xem được chủ đề, khoá, nhật ký của
 chính app đang có vấn đề.
@@ -325,11 +329,8 @@ chính app đang có vấn đề.
 *   **Trang chi tiết trả lời cả hai câu hỏi hỗ trợ trên một màn**, xếp dọc, không chia tab:
     "có bị chặn không" (`<RecipientPreferences>`) và "thư đã ra sao" (`<NotificationsTable
     recipient>`). Chia tab là bắt người trực bấm qua lại giữa hai nửa của cùng một câu trả lời.
-*   **Link sang trang chi tiết phải mang `?app=`** — luôn dựng bằng `recipientHref()`, không tự
-    ghép chuỗi. App đang chọn chỉ nằm trong state client; tải lại là về app đầu tiên, và cùng
-    mã ở hai app là hai người khác nhau. Mở trang -> ô chọn app chuyển theo `?app=`; SAU ĐÓ người
-    dùng đổi app -> về `/users`. Đồng bộ bằng `useEffect` (không đặt state của `<AppProvider>` lúc
-    render được) và chỉ gọi API khi app đã khớp — gọi sớm là đọc nhầm app.
+*   App đi theo đường dẫn như mọi màn (mục 2.9). `/users/[id]` nằm trong `APP_DETAIL_ROUTES`:
+    đổi app ở đây thì về `/users` — cùng mã ở hai app là hai người khác nhau.
 *   Mở thẳng bằng link thì không có dòng danh sách để lấy địa chỉ -> đọc
     `GET .../users/:externalId` (khớp ĐỦ mã). **Không** thay bằng `listRecipients({ q })`: `q`
     khớp một phần.
@@ -382,6 +383,42 @@ chặn không". Hai màn nối nhau: cột **Mã người nhận** là link sang
 `/subscriptions` (còn mock) **đã gỡ khỏi menu**: nó hiện đúng dữ liệu mà màn Người nhận giờ hiện
 bằng số thật. Cùng lý do với `/admin/approvals` ở mục 2.5. Thư mục route giữ nguyên.
 
+### 2.9. App trên đường dẫn (`?app=<slug>`) — không đoán, bắt chọn
+
+**Đường dẫn là nguồn DUY NHẤT** cho câu hỏi "đang xem app nào" (`lib/app-routes.ts`).
+`<AppProvider>` đọc `?app=`, không giữ state; ô chọn app chỉ hiển thị và đổi tham số đó. Trước
+đây app nằm trong state client: tải lại / mở tab mới / gửi link là rơi về app đầu tiên và màn
+hiện dữ liệu của app khác mà không báo gì.
+
+`<AppGate>` (bọc ngoài `<AppShell>` trong `layout.tsx`) quyết định theo đường dẫn:
+
+| Đường dẫn | Hiện |
+| --- | --- |
+| `ORG_ROUTES` (`/admin`, `/apps` — toàn tổ chức, đăng ký app) | vào thẳng, có hay không có `?app=` |
+| màn của app, `?app=` hợp lệ | màn như thường |
+| thiếu `?app=`, tổ chức CHỈ có 1 app | tự thêm `?app=` (`router.replace`) |
+| thiếu hoặc sai `?app=` | `<AppChooser>` toàn màn, thay cả AppShell |
+
+*   **Không đoán app.** "Dùng gần nhất" (`localStorage`) chỉ là NHÃN trên thẻ ở trang chọn app,
+    không bao giờ tự chọn — đoán sai là đúng cái lỗi đang sửa.
+*   **Trang chọn app hiện TẠI đường dẫn đang mở**, không phải route riêng: chọn xong là tới đúng
+    màn đã định (`/users/NV-01` -> `/users/NV-01?app=x`), không về trang đầu.
+*   **Route mới mặc định CẦN app** (liệt kê theo chiều `ORG_ROUTES`) — quên khai báo thì bị bắt
+    chọn app, sai về phía an toàn.
+*   **Đổi app** = `switchAppPath()`: ở lại màn đang xem, hoặc về danh sách nếu đang ở
+    `APP_DETAIL_ROUTES`; **bỏ mọi tham số khác** (`?externalId=` của app cũ vô nghĩa ở app mới).
+    Màn vẫn không dựng lại khi chỉ đổi `?app=`, nên các chỗ xoá bộ lọc theo `appId` ở `/users` và
+    `/notifications` **vẫn cần**.
+*   **Link nội bộ CHỈ qua `<AppLink>` / `useAppRouter()`** (`components/app-link.tsx`) — tự gắn
+    `?app=`. `app-link.tsx` là file duy nhất được import `next/link` và `useRouter`. Link tới app
+    KHÁC app đang xem thì truyền `app=` (trang chọn app, bước 4 wizard tạo app).
+*   `useApp()` (luôn có app) cho màn của một app; `useAppSelection()` (app có thể null) cho khung
+    — sidebar, ô chọn app, `<AppLink>`. Gọi `useApp()` trong màn `/admin` là ném lỗi.
+*   **Danh sách app nạp ở `layout.tsx` (server)**: thêm / duyệt app xong phải `router.refresh()`,
+    không thì app mới không có trong danh sách và link `?app=<slug mới>` rơi vào trang chọn app.
+*   Chưa có đăng nhập nên trang chọn app liệt kê mọi app của tổ chức. Lọc theo vai trò làm ở
+    `<AppChooser>` khi có RBAC (plan §12.4 của backend) — đừng giả lập bằng ô Role demo.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -401,7 +438,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 |---|---|---|---|
 | `<CosmicBackground>` | `components/cosmic-background.tsx` | ✓ | nền nebula + starfield seeded, fixed |
 | `<Panel glow? ring?>` | `components/panel.tsx` | ✓ | glass surface (`.cosmic-surface`), orbit ring tuỳ chọn; forward mọi prop `<section>` |
-| `<AppShell>` | `components/app-shell.tsx` | ✓ | left rail 240px, app switcher, role switcher, top bar |
+| `<AppShell>` | `components/app-shell.tsx` | ✓ | left rail 240px, app switcher (đổi `?app=` qua `switchAppPath`), role switcher, top bar |
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |
 | `<StatPill label value delta?>` | `components/stat-pill.tsx` | ✓ | số lớn mono + sparkline |
@@ -417,11 +454,12 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
-| `<RecipientDetail externalId appSlug>` | `components/users/recipient-detail.tsx` | ✓ | trang chi tiết một người nhận (mục 2.7): đầu trang có địa chỉ + tình trạng, rồi cài đặt nhận tin, rồi các lần gửi; `page.tsx` truyền `key` theo app + mã |
-| `recipientHref(appSlug, externalId)` | `components/users/recipient-href.ts` | ✓ | **nguồn duy nhất** của link sang `/users/[id]` — luôn kèm `?app=` |
+| `<RecipientDetail externalId>` | `components/users/recipient-detail.tsx` | ✓ | trang chi tiết một người nhận (mục 2.7): đầu trang có địa chỉ + tình trạng, rồi cài đặt nhận tin, rồi các lần gửi; `page.tsx` truyền `key` theo app + mã |
+| `<AppLink href app?>` / `useAppRouter()` | `components/app-link.tsx` | ✓ | **nguồn duy nhất** của link nội bộ — tự gắn `?app=` (mục 2.9); file duy nhất import `next/link` / `useRouter` |
+| `<AppGate>` / `<AppChooser apps requested here>` | `components/app-gate.tsx`, `app-chooser.tsx` | ✓ | cổng theo `?app=` + trang chọn app toàn màn (mục 2.9) |
 | `<RecipientPreferences recipient preferences error loading>` | `components/users/recipient-preferences.tsx` | ✓ | khối cài đặt nhận tin trong trang chi tiết; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); kèm `SUPPRESSED_LABEL` |
 | `<NotificationsTable initialExternalId? recipient?>` | `components/notifications/notifications-table.tsx` | ✓ | bảng lịch sử gửi (mục 2.8); `recipient` = cố định một người: ẩn ô gõ mã và cột mã |
-| `<NotificationOutcome notification appSlug onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `appSlug = null` khi đã ở trang của người đó (không link về chính nó) |
+| `<NotificationOutcome notification linkRecipient onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `linkRecipient = false` khi đã ở trang của người đó (không link về chính nó) |
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
@@ -528,7 +566,8 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Ô nhập trong dialog giữ giá trị của lần mở trước | `<ConfirmDialog>` chỉ bật/tắt `open`, component không remount; reset trong `onCancel` không chạy khi đóng do thành công | `key` theo mục tiêu (`app.id:action`) để React dựng lại — với dialog ghi audit thì đây là bug **ghi sai dữ liệu**, không phải lỗi hiển thị |
 | Hai ô tìm kiếm cạnh nhau, ra kết quả khác nhau | `<DataTable>` luôn dựng ô lọc riêng (lọc **trang đang hiển thị**), màn lại có thêm ô tìm phía máy chủ | `hideSearch` trên `<DataTable>` khi đã có tìm server-side; hai ô trông giống nhau nhưng một cái chỉ thấy 25 dòng đang mở |
 | Hành động chỉ có trong một phiên wizard | đặt nút duyệt ở bước cuối wizard, không có ở danh sách | thao tác đổi trạng thái phải có ở màn **danh sách**; wizard chỉ là lối tắt (mục 2.5) |
-| Số giả trên thanh trên / sidebar | `<PreviewBanner>` chỉ phủ vùng `<main>`, không phủ khung | số nào hiện ở khung phải lấy từ dữ liệu thật (`useApp().apps`), không từ `lib/mock-data.ts` |
+| Link nội bộ làm mất app — bấm vào là ra trang chọn app giữa chừng | dùng `next/link` / `useRouter` / `<a href="/…">` trần thay vì `<AppLink>` / `useAppRouter()` (mục 2.9) | `grep -rnE "from 'next/link'\|useRouter\b\|<a href=\"/" app components --include=*.tsx \| grep -v "components/ui/\|app-link.tsx\|useAppRouter"` phải rỗng |
+| Số giả trên thanh trên / sidebar | `<PreviewBanner>` chỉ phủ vùng `<main>`, không phủ khung | số nào hiện ở khung phải lấy từ dữ liệu thật (`useAppSelection().apps`), không từ `lib/mock-data.ts` |
 | Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |
 | Báo "tạo app thất bại" trong khi app đã có trong DB | chuỗi nhiều lời gọi không transaction, lỗi giữa chừng bị quy hết về `ok: false` | `stoppedAt` (mục 2.5) — app đã tồn tại thì luôn trả `ok: true` kèm chỗ dừng |
 | Snippet hướng dẫn tích hợp dạy sai luồng thật | snippet mock dựng endpoint không tồn tại (`POST /v1/auth/token`) | snippet phải sao đúng route + body backend; đối chiếu `*-routes.ts` trước khi viết |

@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { ChevronRight } from 'lucide-react'
 
 export type Breadcrumb = { label: string; href?: string }
@@ -22,9 +22,9 @@ export function PageHeader({
             {breadcrumb.map((crumb, i) => (
               <span key={`${crumb.label}-${i}`} className="flex items-center gap-1">
                 {crumb.href ? (
-                  <Link href={crumb.href} className="hover:text-[var(--text-secondary)]">
+                  <AppLink href={crumb.href} className="hover:text-[var(--text-secondary)]">
                     {crumb.label}
-                  </Link>
+                  </AppLink>
                 ) : (
                   crumb.label
                 )}

@@ -1,7 +1,7 @@
 'use client'
 import { Activity, AlertTriangle, BellRing, CheckCircle2, CircleDashed, Send } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Panel } from '@/components/panel'
@@ -25,7 +25,7 @@ export default function Page() {
         title="Tổng quan"
         subtitle={`Theo dõi sức khỏe gửi thông báo của ${app.slug}`}
         actions={
-          <Button render={<Link href="/compose" />}>
+          <Button render={<AppLink href="/compose" />}>
             <Send />
             Soạn thông báo
           </Button>
@@ -169,7 +169,7 @@ export default function Page() {
             <h2 className="text-sm font-semibold">Lần gửi gần đây</h2>
             <p className="mt-1 text-xs text-[var(--text-muted)]">Các sự kiện mới nhất trong app</p>
           </div>
-          <Button variant="link" size="sm" render={<Link href="/notifications" />}>
+          <Button variant="link" size="sm" render={<AppLink href="/notifications" />}>
             Xem tất cả →
           </Button>
         </div>

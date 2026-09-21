@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { PlugZap, UserX } from 'lucide-react'
 import { loadPreferencesAction, loadRecipientAction } from '@/app/users/actions'
 import { useApp } from '@/components/app-context'
+import { AppLink } from '@/components/app-link'
 import { EmptyState } from '@/components/empty-state'
 import { NotificationsTable } from '@/components/notifications/notifications-table'
 import { PageHeader } from '@/components/page-header'
@@ -24,29 +23,11 @@ type Failure = { message: string; code: string }
  *
  * CHỈ ĐỌC, như `/users` và `/notifications` — không công tắc chủ đề, không Gửi lại / Huỷ.
  *
- * App lấy từ `?app=` (xem `recipientHref`), không lấy từ app đang chọn: link mở ở tab mới hoặc
- * gửi cho đồng nghiệp phải ra đúng người. Mở trang là chuyển ô chọn app theo link; SAU ĐÓ người
- * dùng tự đổi app thì về `/users` — cùng mã ở app khác là người khác.
+ * App lấy từ `?app=` như mọi màn (`lib/app-routes.ts`); đổi app ở đây thì về `/users`
+ * (`APP_DETAIL_ROUTES`) — cùng mã ở app khác là người khác.
  */
-export function RecipientDetail({ externalId, appSlug }: { externalId: string; appSlug: string | null }) {
-  const router = useRouter()
-  const { app, apps, setApp } = useApp()
-  /** App trang này gắn vào; `null` = chưa đồng bộ với ô chọn app. */
-  const [bound, setBound] = useState<string | null>(null)
-
-  // Không đặt state của `<AppProvider>` trong lúc render được (component khác) -> phải là effect.
-  useEffect(() => {
-    if (bound === null) {
-      // `?app=` sai hoặc app đã bị thu hồi -> ở lại app đang chọn; không tìm thấy thì màn nói rõ app nào.
-      const slug = apps.some((a) => a.slug === appSlug) ? (appSlug as string) : app.slug
-      if (slug !== app.slug) setApp(slug)
-      setBound(slug)
-      return
-    }
-    if (app.slug !== bound) router.push('/users')
-  }, [bound, app.slug, apps, appSlug, setApp, router])
-
-  const ready = bound !== null && app.slug === bound
+export function RecipientDetail({ externalId }: { externalId: string }) {
+  const { app } = useApp()
   const appId = app.app_id
 
   const [recipient, setRecipient] = useState<RecipientDto | null>(null)
@@ -55,7 +36,6 @@ export function RecipientDetail({ externalId, appSlug }: { externalId: string; a
   const [preferencesError, setPreferencesError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!ready) return
     let live = true
     Promise.all([loadRecipientAction(appId, externalId), loadPreferencesAction(appId, externalId)]).then(
       ([person, prefs]) => {
@@ -69,11 +49,11 @@ export function RecipientDetail({ externalId, appSlug }: { externalId: string; a
     return () => {
       live = false
     }
-  }, [ready, appId, externalId])
+  }, [appId, externalId])
 
   const breadcrumb = [{ label: 'Người nhận', href: '/users' }, { label: externalId }]
   const back = (
-    <Button variant="outline" render={<Link href="/users" />}>
+    <Button variant="outline" render={<AppLink href="/users" />}>
       Về danh sách Người nhận
     </Button>
   )

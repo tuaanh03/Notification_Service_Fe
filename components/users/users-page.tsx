@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, MailX, PlugZap, Search, Users } from 'lucide-react'
 import { loadRecipientsAction } from '@/app/users/actions'
 import { DataTable, type Column } from '@/components/data-table'
@@ -10,7 +9,7 @@ import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
-import { recipientHref } from '@/components/users/recipient-href'
+import { useAppRouter } from '@/components/app-link'
 import { SUPPRESSED_LABEL } from '@/components/users/recipient-preferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,7 +29,7 @@ const PAGE_SIZE = 25
  * Bấm một dòng -> trang chi tiết `/users/[id]` (cài đặt nhận tin + các lần gửi của người đó).
  */
 export function UsersPage() {
-  const router = useRouter()
+  const router = useAppRouter()
   const { app } = useApp()
   const appId = app.app_id
 
@@ -159,7 +158,7 @@ export function UsersPage() {
             hideSearch
             columns={columns}
             rows={(rows ?? []) as Row[]}
-            onRowClick={(row) => router.push(recipientHref(app.slug, row.externalId))}
+            onRowClick={(row) => router.push(`/users/${encodeURIComponent(row.externalId)}`)}
             empty={
               <EmptyState
                 icon={Users}

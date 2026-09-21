@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { ChevronLeft, ChevronRight, History, PlugZap, Search } from 'lucide-react'
 import { loadNotificationsAction } from '@/app/notifications/actions'
 import { loadTopicsAction } from '@/app/topics/actions'
@@ -15,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { recipientHref } from '@/components/users/recipient-href'
+import { AppLink } from '@/components/app-link'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
 import { NotificationOutcome, outcomeOf } from './notification-outcome'
@@ -32,23 +31,23 @@ const PAGE_SIZE = 25
 const MVP_STATUSES = ['queued', 'sending', 'sent', 'no_recipient', 'failed'] as const
 
 /** Mã người nhận dẫn sang trang chi tiết người đó — không mở panel của dòng (`stopPropagation`). */
-const recipientColumn = (appSlug: string): Column<Row> => ({
+const recipientColumn: Column<Row> = {
   key: 'externalId',
   label: 'Mã người nhận',
   mono: true,
   render: (n) =>
     n.externalId ? (
-      <Link
-        href={recipientHref(appSlug, n.externalId)}
+      <AppLink
+        href={`/users/${encodeURIComponent(n.externalId)}`}
         onClick={(e) => e.stopPropagation()}
         className="text-[var(--starlight)] underline-offset-2 hover:underline"
       >
         {n.externalId}
-      </Link>
+      </AppLink>
     ) : (
       <span className="text-[var(--text-muted)]">—</span>
     ),
-})
+}
 
 const leadingColumns: Column<Row>[] = [
   { key: 'createdAt', label: 'App gọi lúc', mono: true, render: (n) => fmtIso(n.createdAt) },
@@ -149,7 +148,7 @@ export function NotificationsTable({
   }
 
   const filtered = Boolean(status || topic || (!recipient && externalId))
-  const columns = [...leadingColumns, ...(recipient ? [] : [recipientColumn(app.slug)]), ...trailingColumns]
+  const columns = [...leadingColumns, ...(recipient ? [] : [recipientColumn]), ...trailingColumns]
   const clear = () => {
     setStatus('')
     setTopic('')
@@ -302,7 +301,7 @@ export function NotificationsTable({
         <NotificationOutcome
           key={selected.id}
           notification={selected}
-          appSlug={recipient ? null : app.slug}
+          linkRecipient={!recipient}
           onClose={() => setSelected(null)}
         />
       )}

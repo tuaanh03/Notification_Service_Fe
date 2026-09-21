@@ -16,7 +16,7 @@ import { useTemplateEditor } from '@/hooks/use-template-editor'
 import { EditorPane, Highlight } from './editor-pane'
 import { PreviewPane } from './preview-pane'
 import { SchemaPane } from './schema-pane'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/app-link'
 import { cn } from '@/lib/utils'
 import {
   ResizableHandle,
@@ -43,7 +43,7 @@ export function TemplateEditor({
   aiPrompt?: string
   isNew?: boolean
 }) {
-  const router = useRouter()
+  const router = useAppRouter()
   const { app } = useApp()
   const isCreation = isNew || templateKey === 'new'
   const [nameInput, setNameInput] = useState(isCreation ? '' : (templateKey === 'new' ? '' : templateKey))

@@ -1,5 +1,5 @@
 'use client'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/app-link'
 import { ClipboardCheck } from 'lucide-react'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -18,7 +18,7 @@ const columns: Column<Row>[] = [
 
 /** UC-008 §F — danh sách lần gửi chờ Super Admin duyệt. */
 export function SendApprovalsTable() {
-  const router = useRouter()
+  const router = useAppRouter()
   return (
     <DataTable<Row>
       columns={columns}

@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useAppRouter } from '@/components/app-link'
 import { Panel } from '@/components/panel'
 import { Button } from '@/components/ui/button'
 import { OrbitStepper } from './apps/orbit-stepper'
@@ -43,6 +44,9 @@ export function AppRegistrationWizard() {
   const [secretOpen, setSecretOpen] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  // Danh sách app nạp ở layout (server). Không đọc lại thì app vừa tạo không có trong ô chọn app,
+  // và link "Khoá API" / "Chủ đề" ở bước 4 (`?app=<slug mới>`) rơi vào trang chọn app báo "không có".
+  const router = useAppRouter()
 
   const profileValid = isProfileValid(profile)
   const topicsValid = areTopicsValid(topics)
@@ -61,6 +65,7 @@ export function AppRegistrationWizard() {
       if (!result.ok) return setError(result.message)
       setRegistered(result.data)
       setStep(3)
+      router.refresh()
     })
 
   const approve = () =>
@@ -71,6 +76,7 @@ export function AppRegistrationWizard() {
       if (!result.ok) return setError(result.message)
       setApproved(result.data)
       setSecretOpen(true)
+      router.refresh()
     })
 
   const next = () => {

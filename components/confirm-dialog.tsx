@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/app-link'
 import { AlertTriangle, Ban } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,7 +26,7 @@ type ConfirmDialogProps = {
   onConfirm?: () => void
   onCancel: () => void
   confirmLabel?: string
-  /** có href → nút confirm là <Link> (CTA điều hướng, ví dụ "Sửa người nhận của topic") */
+  /** có href → nút confirm là <AppLink> (CTA điều hướng, ví dụ "Sửa người nhận của topic") */
   confirmHref?: string
   cancelLabel?: string
   /** khoá nút confirm khi form trong `children` chưa hợp lệ */
@@ -91,7 +91,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           {confirmHref ? (
-            <Button render={<Link href={confirmHref} />} onClick={onCancel}>
+            <Button render={<AppLink href={confirmHref} />} onClick={onCancel}>
               {confirmLabel}
             </Button>
           ) : (
