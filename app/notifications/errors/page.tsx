@@ -6,7 +6,7 @@ export default function Page() {
     <>
       <PageHeader
         title="Mã lỗi API"
-        subtitle="Bảng tra cho developer tích hợp POST /v1/notifications"
+        subtitle="Mã lỗi mọi đường /v1, sao đúng máy chủ. Hướng dẫn đầy đủ: docs/huong-dan-tich-hop-cho-doi-app.md của ews-astrolink-api."
       />
       <ErrorCodesTable />
     </>

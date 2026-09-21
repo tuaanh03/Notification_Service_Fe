@@ -16,9 +16,12 @@ export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/settings/c
  * đường nào cho nhập CSV, và chi tiết một người đã nằm ngay trong `/users`.
  *
  * `/notifications` cũng vậy: `/notifications/[id]` (chi tiết đã nằm trong panel của chính màn
- * danh sách) và `/notifications/errors` (bảng mã lỗi) vẫn là bản mẫu.
+ * danh sách) vẫn là bản mẫu.
+ *
+ * `/notifications/errors` không gọi API nhưng vẫn là số thật: bảng mã lỗi là hợp đồng tĩnh, sao
+ * đúng backend (`lib/api/v1-errors.ts`).
  */
-export const WIRED_EXACT_ROUTES = ['/users', '/notifications'] as const
+export const WIRED_EXACT_ROUTES = ['/users', '/notifications', '/notifications/errors'] as const
 
 /** Khớp cả route con (`/topics/order_updates`), không khớp route chỉ trùng tiền tố chữ. */
 export function isPreviewRoute(pathname: string): boolean {

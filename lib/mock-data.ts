@@ -1253,21 +1253,6 @@ export const scheduledSends: ScheduledSend[] = [
   },
 ]
 
-/* ---- /notifications/errors (07 §D) ---- */
-export type ApiErrorCode = { code: number; error: string; meaning: string; action: string }
-export const apiErrorCodes: ApiErrorCode[] = [
-  { code: 401, error: 'invalid_token', meaning: 'token sai hoặc của app khác', action: 'không retry, kiểm credential' },
-  { code: 401, error: 'token_expired', meaning: 'token hết hạn', action: 'lấy token mới, giữ nguyên Idempotency-Key' },
-  { code: 401, error: 'invalid_credentials', meaning: 'secret sai hoặc đã xoay', action: 'không retry, cập nhật secret' },
-  { code: 403, error: 'app_suspended', meaning: 'app bị đình chỉ', action: 'dừng, liên hệ Super Admin' },
-  { code: 403, error: 'topic_out_of_scope', meaning: 'topic của app khác', action: 'sửa topic_key' },
-  { code: 404, error: 'topic_not_found', meaning: 'sai topic_key', action: 'sửa; hệ thống gợi ý topic gần đúng trong namespace của chính app' },
-  { code: 422, error: 'missing_variable', meaning: 'thiếu biến bắt buộc', action: 'thêm vào custom_data — response liệt kê đúng tên biến' },
-  { code: 422, error: 'invalid_type', meaning: 'sai kiểu', action: 'sửa kiểu; hệ thống không tự ép kiểu' },
-  { code: 422, error: 'no_template_bound', meaning: 'kênh chưa bind template', action: 'bind template, không có fallback email trơ' },
-  { code: 429, error: 'rate_limited', meaning: 'vượt quota phút', action: 'retry sau Retry-After, giữ Idempotency-Key. App không bị khoá' },
-]
-
 /* ---- UC-006 / 05 Templates — helper cho editor, 1 chỗ parse `{{ }}` ---- */
 export const templateByKey = (key: string) => templates.find((t) => t.key === key)
 /** Tên biến xuất hiện trong subject + body (thứ tự gặp, không trùng) */

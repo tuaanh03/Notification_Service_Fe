@@ -29,7 +29,8 @@ webservice/ews-astrolink/
 │   ├── page.tsx              # /            Tổng quan
 │   ├── compose/              # /compose     Composer (UC-008)
 │   ├── notifications/        # /notifications + actions.ts — Lịch sử gửi ĐÃ đấu API (mục 2.8)
-│   │                         # /notifications/[id], /notifications/errors vẫn mock (mục 2.4)
+│   │                         # /notifications/errors = bảng mã lỗi /v1 THẬT (tĩnh, lib/api/v1-errors.ts);
+│   │                         # /notifications/[id] vẫn mock (mục 2.4)
 │   ├── scheduled/            # /scheduled
 │   ├── topics/               # /topics + actions.ts (Server Action gọi /admin/apps/:appId/topics)
 │   │                         # (CHƯA có /topics/[key])
@@ -73,6 +74,7 @@ webservice/ews-astrolink/
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
 │                             # · result.ts (ActionResult + ActionStop) · apps.ts · topics.ts
 │                             # · users.ts · notifications.ts · audit.ts · index.ts
+│                             # · v1-errors.ts (bảng mã lỗi /v1 — hợp đồng tĩnh, không server-only)
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
 ├── next.config.mjs           # output: 'standalone', basePath RỖNG (console có domain riêng)
@@ -231,10 +233,11 @@ Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách rout
 `WIRED_EXACT_ROUTES` là danh sách thứ hai: route **đã đấu nhưng chỉ chính nó**, route con vẫn là
 bản xem trước. `/users` nằm ở đây vì `/users/[id]` và `/users/import` chưa đấu (và `/users/import`
 sẽ không bao giờ đấu — backend không có nhập CSV). `/notifications` cũng vậy: `/notifications/[id]`
-và `/notifications/errors` vẫn là bản mẫu.
+vẫn là bản mẫu. `/notifications/errors` nằm riêng trong danh sách này: không gọi API, nhưng bảng
+mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật.
 
 Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` (kèm route con)
-và `/users` · `/notifications` (chỉ chính nó).
+và `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
 chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useApp().apps`.
@@ -501,6 +504,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |
 | Báo "tạo app thất bại" trong khi app đã có trong DB | chuỗi nhiều lời gọi không transaction, lỗi giữa chừng bị quy hết về `ok: false` | `stoppedAt` (mục 2.5) — app đã tồn tại thì luôn trả `ok: true` kèm chỗ dừng |
 | Snippet hướng dẫn tích hợp dạy sai luồng thật | snippet mock dựng endpoint không tồn tại (`POST /v1/auth/token`) | snippet phải sao đúng route + body backend; đối chiếu `*-routes.ts` trước khi viết |
+| Bảng mã lỗi dạy mã không tồn tại | bản v0 có `token_expired`, `missing_variable`, `rate_limited`, header `Idempotency-Key` — không mã nào backend trả | `lib/api/v1-errors.ts` sao đúng backend + `docs/huong-dan-tich-hop-cho-doi-app.md` mục 8; backend đổi mã thì sửa cả hai. Nhớ: `422` có mã cụ thể trong `issues[].code`, `code` ngoài chỉ là `VALIDATION` |
 | Lỗi Server Action ra màn hình thành câu chung chung | ném `Error` qua ranh giới server/client — production Next thay message | trả `ActionResult` của `lib/api/result.ts`, map theo `code` |
 | Build pass nhưng type sai | `ignoreBuildErrors: true` | `pnpm exec tsc --noEmit` |
 | Container "Up 1 second" liên tục, browser navigate fail ngẫu nhiên | chạy docker qua `wsl -e ...` từ Windows: WSL **tự tắt khi idle** sau mỗi lệnh → dockerd chết → container restart | giữ WSL sống: `Start-Process wsl -ArgumentList '-e','sleep','infinity' -WindowStyle Hidden` (hoặc mở sẵn 1 terminal WSL) |
