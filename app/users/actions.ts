@@ -1,9 +1,11 @@
 'use server'
 
 import {
+  getRecipient,
   getRecipientPreferences,
   listRecipients,
   type ListRecipientsInput,
+  type RecipientDto,
   type RecipientPageDto,
   type UserPreferencesDto,
 } from '@/lib/api/users'
@@ -19,6 +21,10 @@ export async function loadRecipientsAction(
   input: ListRecipientsInput = {},
 ): Promise<ActionResult<RecipientPageDto>> {
   return toResult(() => listRecipients(appId, input))
+}
+
+export async function loadRecipientAction(appId: string, externalId: string): Promise<ActionResult<RecipientDto>> {
+  return toResult(() => getRecipient(appId, externalId))
 }
 
 export async function loadPreferencesAction(

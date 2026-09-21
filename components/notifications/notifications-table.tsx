@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { ChevronLeft, ChevronRight, History, PlugZap, Search } from 'lucide-react'
 import { loadNotificationsAction } from '@/app/notifications/actions'
 import { loadTopicsAction } from '@/app/topics/actions'
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { recipientHref } from '@/components/users/recipient-href'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
 import { NotificationOutcome, outcomeOf } from './notification-outcome'
@@ -29,15 +31,31 @@ const PAGE_SIZE = 25
  */
 const MVP_STATUSES = ['queued', 'sending', 'sent', 'no_recipient', 'failed'] as const
 
-const columns: Column<Row>[] = [
+/** Mã người nhận dẫn sang trang chi tiết người đó — không mở panel của dòng (`stopPropagation`). */
+const recipientColumn = (appSlug: string): Column<Row> => ({
+  key: 'externalId',
+  label: 'Mã người nhận',
+  mono: true,
+  render: (n) =>
+    n.externalId ? (
+      <Link
+        href={recipientHref(appSlug, n.externalId)}
+        onClick={(e) => e.stopPropagation()}
+        className="text-[var(--starlight)] underline-offset-2 hover:underline"
+      >
+        {n.externalId}
+      </Link>
+    ) : (
+      <span className="text-[var(--text-muted)]">—</span>
+    ),
+})
+
+const leadingColumns: Column<Row>[] = [
   { key: 'createdAt', label: 'App gọi lúc', mono: true, render: (n) => fmtIso(n.createdAt) },
   { key: 'topic', label: 'Chủ đề', mono: true, render: (n) => n.topic || '—' },
-  {
-    key: 'externalId',
-    label: 'Mã người nhận',
-    mono: true,
-    render: (n) => n.externalId ?? <span className="text-[var(--text-muted)]">—</span>,
-  },
+]
+
+const trailingColumns: Column<Row>[] = [
   {
     key: 'status',
     label: 'Trạng thái',
@@ -61,8 +79,17 @@ const columns: Column<Row>[] = [
  *
  * CHỈ ĐỌC. Không có Huỷ / Dừng / Gửi lại (MVP không có lệnh nào như vậy), không có địa chỉ
  * email và nội dung thư. Lọc theo mã người nhận là khớp ĐÚNG — câu hỏi luôn là "thư gửi anh A".
+ *
+ * `recipient` = cố định một người (trang chi tiết `/users/[id]`): không có ô gõ mã, không có cột
+ * mã người nhận — cả bảng đã là của người đó.
  */
-export function NotificationsTable({ initialExternalId = '' }: { initialExternalId?: string }) {
+export function NotificationsTable({
+  initialExternalId = '',
+  recipient,
+}: {
+  initialExternalId?: string
+  recipient?: string
+}) {
   const { app } = useApp()
   const appId = app.app_id
 
@@ -73,7 +100,8 @@ export function NotificationsTable({ initialExternalId = '' }: { initialExternal
   const [topic, setTopic] = useState('')
   /** Ô mã đang gõ — chỉ áp dụng khi bấm Tìm, để mỗi phím không thành một lời gọi. */
   const [draft, setDraft] = useState(initialExternalId)
-  const [externalId, setExternalId] = useState(initialExternalId)
+  const [searched, setSearched] = useState(initialExternalId)
+  const externalId = recipient ?? searched
   const [topicKeys, setTopicKeys] = useState<string[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selected, setSelected] = useState<NotificationSummaryDto | null>(null)
@@ -108,7 +136,7 @@ export function NotificationsTable({ initialExternalId = '' }: { initialExternal
 
   // Đổi app là đổi hẳn lịch sử — bỏ chọn, về trang đầu, xoá bộ lọc (mã người nhận không dùng chung giữa app).
   // So trong lúc render, không dùng useEffect như `/users`: effect chạy cả lần mount và sẽ xoá
-  // `initialExternalId` mà màn Người nhận vừa truyền sang.
+  // `initialExternalId` vừa lấy từ `?externalId=`.
   const [lastAppId, setLastAppId] = useState(appId)
   if (lastAppId !== appId) {
     setLastAppId(appId)
@@ -117,15 +145,16 @@ export function NotificationsTable({ initialExternalId = '' }: { initialExternal
     setStatus('')
     setTopic('')
     setDraft('')
-    setExternalId('')
+    setSearched('')
   }
 
-  const filtered = Boolean(status || topic || externalId)
+  const filtered = Boolean(status || topic || (!recipient && externalId))
+  const columns = [...leadingColumns, ...(recipient ? [] : [recipientColumn(app.slug)]), ...trailingColumns]
   const clear = () => {
     setStatus('')
     setTopic('')
     setDraft('')
-    setExternalId('')
+    setSearched('')
     setOffset(0)
   }
   const to = Math.min(offset + PAGE_SIZE, total)
@@ -141,36 +170,38 @@ export function NotificationsTable({ initialExternalId = '' }: { initialExternal
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="ntf-external" className="text-xs">
-            Mã người nhận
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="ntf-external"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter') return
-                setOffset(0)
-                setExternalId(draft.trim())
-              }}
-              placeholder="khớp đúng, vd. NV-0123"
-              className="w-56 font-mono"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                setOffset(0)
-                setExternalId(draft.trim())
-              }}
-            >
-              <Search /> Tìm
-            </Button>
+        {!recipient && (
+          <div className="space-y-1">
+            <Label htmlFor="ntf-external" className="text-xs">
+              Mã người nhận
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="ntf-external"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return
+                  setOffset(0)
+                  setSearched(draft.trim())
+                }}
+                placeholder="khớp đúng, vd. NV-0123"
+                className="w-56 font-mono"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pending}
+                onClick={() => {
+                  setOffset(0)
+                  setSearched(draft.trim())
+                }}
+              >
+                <Search /> Tìm
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
         <div className="space-y-1">
           <Label htmlFor="ntf-status" className="text-xs">
             Trạng thái
@@ -232,11 +263,15 @@ export function NotificationsTable({ initialExternalId = '' }: { initialExternal
             icon={History}
             title={filtered ? 'Không có lần gửi khớp bộ lọc' : 'Chưa có lần gửi nào'}
             description={
-              filtered
-                ? externalId
-                  ? `Không có thư nào gửi cho «${externalId}» khớp bộ lọc. Mã phải khớp đúng từng ký tự.`
-                  : 'Nới bộ lọc trạng thái hoặc chủ đề.'
-                : `${app.name} chưa gọi POST /v1/notifications lần nào.`
+              recipient
+                ? filtered
+                  ? 'Nới bộ lọc trạng thái hoặc chủ đề.'
+                  : `${app.name} chưa gửi thư nào cho «${recipient}».`
+                : filtered
+                  ? externalId
+                    ? `Không có thư nào gửi cho «${externalId}» khớp bộ lọc. Mã phải khớp đúng từng ký tự.`
+                    : 'Nới bộ lọc trạng thái hoặc chủ đề.'
+                  : `${app.name} chưa gọi POST /v1/notifications lần nào.`
             }
           />
         }
@@ -263,7 +298,14 @@ export function NotificationsTable({ initialExternalId = '' }: { initialExternal
         </div>
       )}
 
-      {selected && <NotificationOutcome key={selected.id} notification={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <NotificationOutcome
+          key={selected.id}
+          notification={selected}
+          appSlug={recipient ? null : app.slug}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   )
 }

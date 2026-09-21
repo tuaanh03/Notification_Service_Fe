@@ -1,15 +1,19 @@
 'use client'
 
-import Link from 'next/link'
-import { History, Lock, TriangleAlert, X } from 'lucide-react'
+import { Lock, TriangleAlert } from 'lucide-react'
 import { Panel } from '@/components/panel'
-import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { RecipientDto, TopicPreferenceDto, UserPreferencesDto } from '@/lib/api/types'
+
+/** Vì sao địa chỉ không dùng được nữa — chữ cho người vận hành, không phải mã kỹ thuật. */
+export const SUPPRESSED_LABEL: Readonly<Record<string, string>> = {
+  user_unsubscribe: 'người dùng tự ngắt',
+  hard_bounce: 'thư dội về vĩnh viễn',
+  complaint: 'bị báo là thư rác',
+}
 
 /** Người này đã BẤM gì — khác với "rốt cuộc có nhận không". */
 function Chosen({ topic }: { topic: TopicPreferenceDto }) {
@@ -28,7 +32,8 @@ function Chosen({ topic }: { topic: TopicPreferenceDto }) {
 }
 
 /**
- * Cài đặt nhận tin của một người nhận (ĐX-0004).
+ * Cài đặt nhận tin của một người nhận (ĐX-0004) — một khối của trang chi tiết `/users/[id]`.
+ * Mã, địa chỉ và tình trạng email nằm ở đầu trang, không lặp lại ở đây.
  *
  * CHỈ ĐỌC — không có công tắc. Consent là ý muốn của người dùng; admin sửa hộ là mất hết ý nghĩa
  * của cổng L0/L1/L3. App service tự ghi qua `PUT /v1/users/:id/preferences`.
@@ -38,13 +43,11 @@ export function RecipientPreferences({
   preferences,
   error,
   loading,
-  onClose,
 }: {
   recipient: RecipientDto
   preferences: UserPreferencesDto | null
   error: string | null
   loading: boolean
-  onClose: () => void
 }) {
   // L0 / L1 chặn thư BẤT KỂ từng chủ đề bật hay tắt — phải nói trước khi người trực đọc bảng dưới.
   const blocked =
@@ -58,30 +61,7 @@ export function RecipientPreferences({
 
   return (
     <Panel className="p-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <span className="font-mono">{recipient.externalId}</span>
-            {recipient.email && <StatusPill status={recipient.email.status} />}
-          </h2>
-          <p className="mt-1 font-mono text-xs text-[var(--text-secondary)]">
-            {recipient.email?.address ?? 'chưa khai email'}
-          </p>
-        </div>
-        <span className="flex shrink-0 items-center gap-1">
-          {/* Nửa còn lại của câu hỏi hỗ trợ: có bị chặn không (ở đây) -> thư đã ra sao (Lịch sử gửi). */}
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={`/notifications?externalId=${encodeURIComponent(recipient.externalId)}`} />}
-          >
-            <History /> Xem các lần gửi
-          </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Đóng" onClick={onClose}>
-            <X />
-          </Button>
-        </span>
-      </div>
+      <h2 className="mb-4 text-sm font-semibold">Cài đặt nhận tin</h2>
 
       {blocked && (
         <Alert className="mb-4 bg-[var(--solar)]/10">

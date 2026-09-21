@@ -12,8 +12,8 @@ export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/settings/c
 /**
  * Đã đấu nhưng CHỈ chính nó — route con vẫn là bản xem trước.
  *
- * `/users` đọc dữ liệu thật, nhưng `/users/[id]` và `/users/import` thì chưa: backend không có
- * đường nào cho nhập CSV, và chi tiết một người đã nằm ngay trong `/users`.
+ * `/users` đọc dữ liệu thật, `/users/import` thì chưa: backend không có đường nào cho nhập CSV.
+ * Trang chi tiết `/users/[id]` đã đấu — nằm ở `WIRED_DETAIL_ROUTES` bên dưới.
  *
  * `/notifications` cũng vậy: `/notifications/[id]` (chi tiết đã nằm trong panel của chính màn
  * danh sách) vẫn là bản mẫu.
@@ -23,8 +23,25 @@ export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/settings/c
  */
 export const WIRED_EXACT_ROUTES = ['/users', '/notifications', '/notifications/errors'] as const
 
+/**
+ * Đã đấu trang chi tiết `[id]` NGAY DƯỚI route này — đúng một đoạn đường dẫn, không sâu hơn.
+ *
+ * `preview` là route tĩnh cùng cấp vẫn là hàng mẫu: Next ưu tiên route tĩnh, nên `/users/import`
+ * không phải trang chi tiết của người có mã `import`. Thiếu dòng đó là gỡ nhãn khỏi màn mẫu.
+ */
+export const WIRED_DETAIL_ROUTES = [{ base: '/users', preview: ['/users/import'] }] as const
+
 /** Khớp cả route con (`/topics/order_updates`), không khớp route chỉ trùng tiền tố chữ. */
 export function isPreviewRoute(pathname: string): boolean {
   if (WIRED_EXACT_ROUTES.some((route) => pathname === route)) return false
+  if (
+    WIRED_DETAIL_ROUTES.some(
+      ({ base, preview }) =>
+        pathname.startsWith(`${base}/`) &&
+        !pathname.slice(base.length + 1).includes('/') &&
+        !(preview as readonly string[]).includes(pathname),
+    )
+  )
+    return false
   return !WIRED_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 }

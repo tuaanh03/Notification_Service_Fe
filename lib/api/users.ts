@@ -1,15 +1,15 @@
 import 'server-only'
 import { adminFetch } from './client'
-import type { RecipientPageDto, UserPreferencesDto } from './types'
+import type { RecipientDto, RecipientPageDto, UserPreferencesDto } from './types'
 
-export type { RecipientPageDto, UserPreferencesDto }
+export type { RecipientDto, RecipientPageDto, UserPreferencesDto }
 
 const base = (appId: string) => `/apps/${encodeURIComponent(appId)}/users`
 
 /**
  * Bề mặt ĐỌC cho vận hành (`implementation_plan.md` §5, ĐX-0004).
  *
- * Hai đường này CHỈ ĐỌC — không có bản ghi. Admin không sửa lựa chọn topic hộ người dùng;
+ * Các đường này CHỈ ĐỌC — không có bản ghi. Admin không sửa lựa chọn topic hộ người dùng;
  * app service tự ghi qua `/v1` bằng khoá của chính nó.
  */
 
@@ -22,6 +22,15 @@ export async function listRecipients(appId: string, input: ListRecipientsInput =
   if (input.offset !== undefined) query['offset'] = String(input.offset)
   if (input.q) query['q'] = input.q
   return adminFetch<RecipientPageDto>(base(appId), { query })
+}
+
+/**
+ * GET /admin/apps/:appId/users/:externalId — đúng MỘT người, khớp đủ mã; không có -> 404.
+ *
+ * Cho trang chi tiết mở thẳng bằng link. KHÔNG thay bằng `listRecipients({ q })`: `q` khớp một phần.
+ */
+export async function getRecipient(appId: string, externalId: string): Promise<RecipientDto> {
+  return adminFetch<RecipientDto>(`${base(appId)}/${encodeURIComponent(externalId)}`)
 }
 
 /**

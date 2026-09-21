@@ -1,38 +1,36 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, MailX, PlugZap, Search, Users } from 'lucide-react'
-import { loadPreferencesAction, loadRecipientsAction } from '@/app/users/actions'
+import { loadRecipientsAction } from '@/app/users/actions'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
-import { RecipientPreferences } from '@/components/users/recipient-preferences'
+import { recipientHref } from '@/components/users/recipient-href'
+import { SUPPRESSED_LABEL } from '@/components/users/recipient-preferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { RecipientDto, UserPreferencesDto } from '@/lib/api/types'
+import type { RecipientDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
 
 type Row = RecipientDto & Record<string, unknown>
 
 const PAGE_SIZE = 25
 
-/** Vì sao địa chỉ không dùng được nữa — chữ cho người vận hành, không phải mã kỹ thuật. */
-const SUPPRESSED_LABEL: Readonly<Record<string, string>> = {
-  user_unsubscribe: 'người dùng tự ngắt',
-  hard_bounce: 'thư dội về vĩnh viễn',
-  complaint: 'bị báo là thư rác',
-}
-
 /**
  * UC-002 §A — màn Người nhận, đọc dữ liệu thật (`implementation_plan.md` §5, ĐX-0004).
  *
  * CHỈ ĐỌC. Không có Thêm / Import CSV / Xuất CSV: backend không có đường nào cho chúng, và
  * người nhận là do app service khai qua `/v1`, không phải quản trị nhập tay.
+ *
+ * Bấm một dòng -> trang chi tiết `/users/[id]` (cài đặt nhận tin + các lần gửi của người đó).
  */
 export function UsersPage() {
+  const router = useRouter()
   const { app } = useApp()
   const appId = app.app_id
 
@@ -43,9 +41,6 @@ export function UsersPage() {
   const [draft, setDraft] = useState('')
   const [query, setQuery] = useState('')
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<RecipientDto | null>(null)
-  const [preferences, setPreferences] = useState<UserPreferencesDto | null>(null)
-  const [detailError, setDetailError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const load = useCallback(async () => {
@@ -64,24 +59,12 @@ export function UsersPage() {
     startTransition(load)
   }, [load])
 
-  // Đổi app là đổi hẳn sổ người nhận — bỏ chọn, về trang đầu, xoá ô tìm.
+  // Đổi app là đổi hẳn sổ người nhận — về trang đầu, xoá ô tìm.
   useEffect(() => {
-    setSelected(null)
-    setPreferences(null)
     setOffset(0)
     setDraft('')
     setQuery('')
   }, [appId])
-
-  const open = (row: RecipientDto) =>
-    startTransition(async () => {
-      setSelected(row)
-      setPreferences(null)
-      setDetailError(null)
-      const result = await loadPreferencesAction(appId, row.externalId)
-      if (result.ok) setPreferences(result.data)
-      else setDetailError(`${result.message} (mã: ${result.code})`)
-    })
 
   const search = () => {
     setOffset(0)
@@ -176,8 +159,7 @@ export function UsersPage() {
             hideSearch
             columns={columns}
             rows={(rows ?? []) as Row[]}
-            onRowClick={open}
-            rowClassName={(row) => (row.externalId === selected?.externalId ? 'bg-sidebar-accent' : undefined)}
+            onRowClick={(row) => router.push(recipientHref(app.slug, row.externalId))}
             empty={
               <EmptyState
                 icon={Users}
@@ -215,19 +197,6 @@ export function UsersPage() {
                 </Button>
               </span>
             </div>
-          )}
-
-          {selected && (
-            <RecipientPreferences
-              recipient={selected}
-              preferences={preferences}
-              error={detailError}
-              loading={pending && preferences === null && detailError === null}
-              onClose={() => {
-                setSelected(null)
-                setPreferences(null)
-              }}
-            />
           )}
         </>
       )}

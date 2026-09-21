@@ -35,7 +35,8 @@ webservice/ews-astrolink/
 │   ├── topics/               # /topics + actions.ts (Server Action gọi /admin/apps/:appId/topics)
 │   │                         # (CHƯA có /topics/[key])
 │   ├── users/                # /users + actions.ts — màn Người nhận ĐÃ đấu API (mục 2.7)
-│   │                         # /users/[id] và /users/import vẫn mock (mục 2.4)
+│   │                         # /users/[id]?app= = trang chi tiết một người, ĐÃ đấu (mục 2.7);
+│   │                         # /users/import vẫn mock (mục 2.4)
 │   ├── subscriptions/        # /subscriptions — còn mock, ĐÃ GỠ KHỎI MENU (mục 2.8)
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
@@ -57,9 +58,10 @@ webservice/ews-astrolink/
 │   ├── notifications/*       # notifications-table (ĐÃ đấu API) + notification-outcome (panel chi tiết);
 │   │                         # notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel) còn mock cho /notifications/[id];
 │   │                         # scheduled-cards, error-codes-table, origin-badge
-│   ├── users/*               # users-page (ĐÃ đấu API) + recipient-preferences;
-│   │                         # users-table, add-user-dialog nay KHÔNG ai dùng (mục 2.7);
-│   │                         # user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
+│   ├── users/*               # users-page + recipient-detail (+ recipient-preferences, recipient-href) — ĐÃ đấu API;
+│   │                         # users-table, add-user-dialog, user-detail (+ profile-panel, subscriptions-panel,
+│   │                         # data-tags-panel, event-log-panel) nay KHÔNG ai dùng (mục 2.7);
+│   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
 │   ├── settings/*            # credentials-panel, quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
@@ -231,13 +233,17 @@ Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách rout
     chưa làm" và "màn này làm rồi nhưng backend đang hỏng".
 
 `WIRED_EXACT_ROUTES` là danh sách thứ hai: route **đã đấu nhưng chỉ chính nó**, route con vẫn là
-bản xem trước. `/users` nằm ở đây vì `/users/[id]` và `/users/import` chưa đấu (và `/users/import`
-sẽ không bao giờ đấu — backend không có nhập CSV). `/notifications` cũng vậy: `/notifications/[id]`
+bản xem trước. `/users` nằm ở đây vì `/users/import` chưa đấu (và sẽ không bao giờ đấu — backend
+không có nhập CSV). `/notifications` cũng vậy: `/notifications/[id]`
 vẫn là bản mẫu. `/notifications/errors` nằm riêng trong danh sách này: không gọi API, nhưng bảng
 mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật.
 
-Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` (kèm route con)
-và `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó).
+`WIRED_DETAIL_ROUTES` là danh sách thứ ba: trang chi tiết `[id]` **đúng một đoạn** dưới một route,
+kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
+cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
+
+Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` (kèm route con),
+`/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
 chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useApp().apps`.
@@ -312,8 +318,21 @@ chính app đang có vấn đề.
 
 ### 2.7. Màn Người nhận — chỉ đọc, và vì sao
 
-`/users` đọc `GET /admin/apps/:appId/users` + `.../users/:externalId/preferences`
-(`implementation_plan.md` §5 — bề mặt đọc cho vận hành, ĐX-0004).
+`/users` đọc `GET /admin/apps/:appId/users`. Bấm một dòng -> trang chi tiết
+`/users/[externalId]?app=<slug>`, đọc `.../users/:externalId` + `.../users/:externalId/preferences`
++ lịch sử gửi của người đó (`implementation_plan.md` §5 — bề mặt đọc cho vận hành, ĐX-0004).
+
+*   **Trang chi tiết trả lời cả hai câu hỏi hỗ trợ trên một màn**, xếp dọc, không chia tab:
+    "có bị chặn không" (`<RecipientPreferences>`) và "thư đã ra sao" (`<NotificationsTable
+    recipient>`). Chia tab là bắt người trực bấm qua lại giữa hai nửa của cùng một câu trả lời.
+*   **Link sang trang chi tiết phải mang `?app=`** — luôn dựng bằng `recipientHref()`, không tự
+    ghép chuỗi. App đang chọn chỉ nằm trong state client; tải lại là về app đầu tiên, và cùng
+    mã ở hai app là hai người khác nhau. Mở trang -> ô chọn app chuyển theo `?app=`; SAU ĐÓ người
+    dùng đổi app -> về `/users`. Đồng bộ bằng `useEffect` (không đặt state của `<AppProvider>` lúc
+    render được) và chỉ gọi API khi app đã khớp — gọi sớm là đọc nhầm app.
+*   Mở thẳng bằng link thì không có dòng danh sách để lấy địa chỉ -> đọc
+    `GET .../users/:externalId` (khớp ĐỦ mã). **Không** thay bằng `listRecipients({ q })`: `q`
+    khớp một phần.
 
 *   **KHÔNG có Thêm / Import CSV / Xuất CSV.** Backend không có đường nào cho chúng, và người nhận
     là do app service khai qua `/v1`, không phải quản trị nhập tay. `users-table.tsx` và
@@ -326,16 +345,21 @@ chính app đang có vấn đề.
     - *Qua được lớp chủ đề* = `effectiveOptIn`, **CHỈ lớp L3**.
 *   **Phải nói rõ `effectiveOptIn` không phải câu trả lời cuối.** Email chết (L0) hoặc
     `optedOutOptional` (L1) vẫn chặn thư dù cột đó ghi "có". `<RecipientPreferences>` hiện một
-    `<Alert>` ở đầu panel khi L0/L1 đang chặn — bỏ dòng đó là để người trực đọc sai màn hình.
-*   Địa chỉ email lấy từ **dòng trong danh sách**, không phải từ route preferences: backend cố ý
-    không đưa địa chỉ vào `UserEmailSummary`. Đừng nới DTO của backend chỉ để tiện cho một màn.
+    `<Alert>` ở đầu khối khi L0/L1 đang chặn — bỏ dòng đó là để người trực đọc sai màn hình.
+*   Địa chỉ email lấy từ **`GET .../users/:externalId`** (cùng dạng dòng danh sách), không phải từ
+    route preferences: backend cố ý không đưa địa chỉ vào `UserEmailSummary`. Đừng nới DTO của
+    backend chỉ để tiện cho một màn.
+*   `user-detail.tsx` (bản v0 của `/users/[id]`: tab Subscriptions / Tags / Nhật ký, Xoá user,
+    Thêm SĐT) **không còn route nào dùng** — backend không có chức năng nào trong đó. Giữ lại,
+    không xoá, không nối lại.
 
 ### 2.8. Lịch sử gửi — chỉ đọc, không địa chỉ, không route chi tiết
 
 `/notifications` đọc `GET /admin/apps/:appId/notifications` (`implementation_plan.md` §5, ĐX-0002
 Việc 2). Màn này trả lời "thư gửi anh A lúc 9 giờ ra sao"; màn Người nhận trả lời "anh A có bị
-chặn không". Hai màn nối nhau: nút **Xem các lần gửi** ở `<RecipientPreferences>` mở
-`/notifications?externalId=…`.
+chặn không". Hai màn nối nhau: cột **Mã người nhận** là link sang trang chi tiết người đó
+(mục 2.7), và trang chi tiết nhúng chính bảng này với `recipient` cố định.
+`/notifications?externalId=…` vẫn mở được (lọc sẵn khi dán link), nhưng không còn nút nào trỏ tới.
 
 *   **KHÔNG có Huỷ / Dừng / Gửi lại.** MVP không có lệnh nào như vậy. Bản v0 có hai nút đó ở
     `/notifications/[id]` — đừng đấu lại khi backend chưa có.
@@ -352,7 +376,8 @@ chặn không". Hai màn nối nhau: nút **Xem các lần gửi** ở `<Recipie
     BR-3). `error` bắt đầu bằng `outcome_unknown` = không chắc thư đã đi — panel nói rõ hệ thống
     **không tự gửi lại** (at-most-once, ADR-0016 của backend).
 *   Đổi app thì xoá bộ lọc bằng **so `appId` lúc render**, không bằng `useEffect` như `/users`:
-    effect chạy cả lần mount và sẽ xoá `?externalId=` vừa truyền từ màn Người nhận.
+    effect chạy cả lần mount và sẽ xoá `?externalId=` vừa lấy từ link.
+*   Link trong cột mã người nhận phải `stopPropagation` — không thì bấm link cũng mở panel của dòng.
 
 `/subscriptions` (còn mock) **đã gỡ khỏi menu**: nó hiện đúng dữ liệu mà màn Người nhận giờ hiện
 bằng số thật. Cùng lý do với `/admin/approvals` ở mục 2.5. Thư mục route giữ nguyên.
@@ -386,14 +411,17 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<ConfirmDialog title facts confirmLabel onConfirm>` | `components/confirm-dialog.tsx` | ✓ | bọc shadcn `<Dialog>`; `facts` = 3 dòng mono; `confirmLabel` nói rõ hậu quả (`Gửi cho 43 người`); prop `tone="blocking"` / `confirmHref` / `children` / `confirmDisabled` cho modal chặn hoặc có form bên trong |
 | `<QuotaArc used max>` | `components/quota-arc.tsx` | ✓ | vòng quota duy nhất — top bar (size-5) và `/settings/quota` (size-28, có `children` ở giữa); đổi màu solar ≥ 80 %, supernova khi chạm trần |
 | `<RepeatableInput values onChange validate>` | `components/repeatable-input.tsx` | ✓ | ô nhập lặp (domain / CIDR) → chip mono có nút bỏ; dùng ở wizard step 1 |
-| `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `/users/[id]` và Preference center (08) |
+| `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `user-detail` (bản v0, không còn route nào dùng) và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
-| `<RecipientPreferences recipient preferences error loading onClose>` | `components/users/recipient-preferences.tsx` | ✓ | panel cài đặt nhận tin của một người nhận; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); nút sang Lịch sử gửi đã lọc theo người đó |
-| `<NotificationOutcome notification onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel |
+| `<RecipientDetail externalId appSlug>` | `components/users/recipient-detail.tsx` | ✓ | trang chi tiết một người nhận (mục 2.7): đầu trang có địa chỉ + tình trạng, rồi cài đặt nhận tin, rồi các lần gửi; `page.tsx` truyền `key` theo app + mã |
+| `recipientHref(appSlug, externalId)` | `components/users/recipient-href.ts` | ✓ | **nguồn duy nhất** của link sang `/users/[id]` — luôn kèm `?app=` |
+| `<RecipientPreferences recipient preferences error loading>` | `components/users/recipient-preferences.tsx` | ✓ | khối cài đặt nhận tin trong trang chi tiết; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); kèm `SUPPRESSED_LABEL` |
+| `<NotificationsTable initialExternalId? recipient?>` | `components/notifications/notifications-table.tsx` | ✓ | bảng lịch sử gửi (mục 2.8); `recipient` = cố định một người: ẩn ô gõ mã và cột mã |
+| `<NotificationOutcome notification appSlug onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `appSlug = null` khi đã ở trang của người đó (không link về chính nó) |
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |

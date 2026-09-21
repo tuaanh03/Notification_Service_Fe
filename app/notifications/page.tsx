@@ -4,7 +4,8 @@ import { NotificationsTable } from '@/components/notifications/notifications-tab
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 
-// `?externalId=` đến từ màn Người nhận ("Xem các lần gửi cho người này").
+// `?externalId=` — lọc sẵn theo một người khi mở bằng link. Xem trọn một người (kèm cài đặt nhận
+// tin) ở trang chi tiết `/users/[id]`.
 export default async function Page({ searchParams }: { searchParams: Promise<{ externalId?: string | string[] }> }) {
   const { externalId } = await searchParams
   return (

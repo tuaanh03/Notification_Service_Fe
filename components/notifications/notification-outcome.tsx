@@ -7,6 +7,7 @@ import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { recipientHref } from '@/components/users/recipient-href'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
 
@@ -48,8 +49,18 @@ function Step({ label, at }: { label: string; at: string | null }) {
  * Mọi thứ ở đây đã có sẵn trong dòng danh sách — không gọi thêm API. Không hiện địa chỉ email
  * (có ở màn Người nhận) và không hiện nội dung thư (app service đã giữ nội dung đó).
  * Không có nút Huỷ / Dừng / Gửi lại: MVP không có lệnh nào như vậy.
+ *
+ * `appSlug` = null khi panel đã nằm trong chính trang của người nhận — không dẫn về chính nó.
  */
-export function NotificationOutcome({ notification: n, onClose }: { notification: NotificationSummaryDto; onClose: () => void }) {
+export function NotificationOutcome({
+  notification: n,
+  appSlug,
+  onClose,
+}: {
+  notification: NotificationSummaryDto
+  appSlug: string | null
+  onClose: () => void
+}) {
   const unknown = n.recipient?.error?.startsWith(OUTCOME_UNKNOWN) ?? false
 
   return (
@@ -129,13 +140,16 @@ export function NotificationOutcome({ notification: n, onClose }: { notification
         <Step label="Kết thúc" at={n.finishedAt} />
       </div>
 
-      {n.externalId && (
+      {n.externalId && appSlug && (
         <p className="mt-3 text-[11px] text-[var(--text-muted)]">
-          Muốn biết vì sao người này bị chặn: xem cài đặt nhận tin ở{' '}
-          <Link href="/users" className="text-[var(--starlight)] underline-offset-2 hover:underline">
-            Người nhận
-          </Link>{' '}
-          (tìm <span className="font-mono">{n.externalId}</span>). Cài đặt ở đó là hiện tại, không phải lúc gửi.
+          Muốn biết vì sao người này bị chặn: xem{' '}
+          <Link
+            href={recipientHref(appSlug, n.externalId)}
+            className="text-[var(--starlight)] underline-offset-2 hover:underline"
+          >
+            trang của <span className="font-mono">{n.externalId}</span>
+          </Link>
+          . Cài đặt ở đó là hiện tại, không phải lúc gửi.
         </p>
       )}
     </Panel>
