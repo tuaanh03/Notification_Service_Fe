@@ -42,7 +42,7 @@ webservice/ews-astrolink/
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
 │   ├── settings/{credentials,origins,profile,quota,sync}/
-│   │                         # credentials/ có actions.ts (đã đấu API); còn lại vẫn mock
+│   │                         # credentials/, origins/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 │                             # apps/ có actions.ts (approveAndIssueKeyAction — CỬA DUYỆT CHÍNH, mục 2.5)
 │                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
@@ -63,7 +63,7 @@ webservice/ews-astrolink/
 │   │                         # data-tags-panel, event-log-panel) nay KHÔNG ai dùng (mục 2.7);
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
-│   ├── settings/*            # credentials-panel, quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx
 │   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
@@ -246,7 +246,7 @@ mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật
 kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
-Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` (kèm route con),
+Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` · `/settings/origins` (kèm route con),
 `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
@@ -258,7 +258,7 @@ Backend không có lệnh gộp "đăng ký app". `registerAppAction` gọi lầ
 
 ```
 POST /admin/apps                      -> draft
-POST /admin/apps/:id/network-rules    (mỗi origin / CIDR một lời gọi)
+POST /admin/apps/:id/network-rules    (mỗi origin / IP một lời gọi — IP ĐƠN, không dải: mục 2.10)
 POST /admin/apps/:id/topics           (mỗi chủ đề một lời gọi)
 POST /admin/apps/:id/submit           -> pending_approval
 ```
@@ -419,6 +419,21 @@ hiện dữ liệu của app khác mà không báo gì.
 *   Chưa có đăng nhập nên trang chọn app liệt kê mọi app của tổ chức. Lọc theo vai trò làm ở
     `<AppChooser>` khi có RBAC (plan §12.4 của backend) — đừng giả lập bằng ô Role demo.
 
+### 2.10. IP & Origin (`/settings/origins`) — IP đơn, xác nhận khi đổi hẳn hành vi
+
+Đọc / thêm / gỡ qua `GET|POST|DELETE /admin/apps/:appId/network-rules`; nhật ký lọc
+`AppNetworkRuleAdded` / `AppNetworkRuleRemoved`. Luật ở backend là `checkNetworkAccess`
+(`network-access.ts`): mỗi loại tính riêng, chưa khai dòng nào thì loại đó không giới hạn, Origin
+chỉ kiểm khi request có header Origin.
+
+*   **IP ĐƠN, KHÔNG nhận dải** (`validateIp` trong `wizard-types.ts`, dùng chung wizard và màn này).
+    Backend so khớp chính xác và **không kiểm định dạng**: lưu `10.20.0.0/16` là app bị chặn
+    `IP_NOT_ALLOWED` với MỌI IP. Console là chỗ duy nhất đang chặn — đừng nới regex.
+*   **Xác nhận** khi thêm dòng ĐẦU TIÊN của một loại (từ "không giới hạn" thành "chỉ danh sách
+    này") và khi gỡ bất kỳ dòng nào (gỡ dòng cuối = mở cho tất cả). Thêm dòng thứ hai trở đi chỉ nới
+    ra — không hỏi.
+*   App `external` chưa có IP nào -> cảnh báo trên màn (luật của console, backend không ép).
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -447,7 +462,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<CodeBlock language value copyable>` | `components/code-block.tsx` | ✓ | toast "Đã sao chép" |
 | `<ConfirmDialog title facts confirmLabel onConfirm>` | `components/confirm-dialog.tsx` | ✓ | bọc shadcn `<Dialog>`; `facts` = 3 dòng mono; `confirmLabel` nói rõ hậu quả (`Gửi cho 43 người`); prop `tone="blocking"` / `confirmHref` / `children` / `confirmDisabled` cho modal chặn hoặc có form bên trong |
 | `<QuotaArc used max>` | `components/quota-arc.tsx` | ✓ | vòng quota duy nhất — top bar (size-5) và `/settings/quota` (size-28, có `children` ở giữa); đổi màu solar ≥ 80 %, supernova khi chạm trần |
-| `<RepeatableInput values onChange validate>` | `components/repeatable-input.tsx` | ✓ | ô nhập lặp (domain / CIDR) → chip mono có nút bỏ; dùng ở wizard step 1 |
+| `<RepeatableInput values onChange validate>` | `components/repeatable-input.tsx` | ✓ | ô nhập lặp (origin / IP) → chip mono có nút bỏ; dùng ở wizard step 1 |
 | `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `user-detail` (bản v0, không còn route nào dùng) và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
@@ -461,7 +476,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<NotificationsTable initialExternalId? recipient?>` | `components/notifications/notifications-table.tsx` | ✓ | bảng lịch sử gửi (mục 2.8); `recipient` = cố định một người: ẩn ô gõ mã và cột mã |
 | `<NotificationOutcome notification linkRecipient onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `linkRecipient = false` khi đã ở trang của người đó (không link về chính nó) |
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
-| `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
+| `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source; chỉ có một vế (thêm / gỡ, cấp / thu hồi) thì vẫn hiện vế đó |
+| `<NetworkRulesPanel>` | `components/settings/network-rules-panel.tsx` | ✓ | `/settings/origins` — xem / thêm / gỡ IP & Origin của app đang xem (mục 2.10) |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
 | `<LifecycleTimeline notification compact?>` | `components/lifecycle-timeline.tsx` | ✓ | vòng đời 11 trạng thái (SVG orbital), node đã đi qua + stub nhánh không đi + "event horizon" `queued → sending`; đường đi từ `lifecycleOf()` trong mock; reduced-motion để CSS lo (không `useReducedMotion` → tránh #418) |

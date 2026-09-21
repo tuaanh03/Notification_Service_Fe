@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 /**
- * Ô nhập lặp (domain, CIDR…): Input + "Thêm" → chip mono có nút bỏ. Enter cũng thêm.
+ * Ô nhập lặp (origin, IP…): Input + "Thêm" → chip mono có nút bỏ. Enter cũng thêm.
  * `validate` trả chuỗi lỗi → hiện dưới ô, không thêm.
  */
 export function RepeatableInput({

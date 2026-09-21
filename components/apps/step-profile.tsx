@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { RepeatableInput } from '@/components/repeatable-input'
-import { APP_SLUG, APP_SLUG_TEXT, validateCidr, validateOrigin, type ProfileDraft } from './wizard-types'
+import { APP_SLUG, APP_SLUG_TEXT, validateIp, validateOrigin, type ProfileDraft } from './wizard-types'
 
 /** Bước 1 — hồ sơ app: đúng 4 field của `POST /admin/apps` + allowlist đi kèm. */
 export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange: (next: ProfileDraft) => void }) {
@@ -82,7 +82,7 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
         </ToggleGroup>
         <p className="text-xs text-[var(--text-secondary)]">
           <span className="font-mono">internal</span> = dịch vụ chạy trong mạng công ty.{' '}
-          <span className="font-mono">external</span> = gọi từ ngoài, bắt buộc khai dải IP.
+          <span className="font-mono">external</span> = gọi từ ngoài, bắt buộc khai IP của máy gọi.
         </p>
       </div>
 
@@ -105,15 +105,18 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
             id="wz-ip"
             values={draft.ipAllowlist}
             onChange={(ipAllowlist) => onChange({ ...draft, ipAllowlist })}
-            placeholder="10.20.0.0/16"
-            validate={validateCidr}
+            placeholder="10.20.0.15"
+            validate={validateIp}
             invalid={external && draft.ipAllowlist.length === 0}
           />
           {external && draft.ipAllowlist.length === 0 && (
             <p className="text-xs text-[var(--supernova)]">
-              App ngoài mạng bắt buộc ≥ 1 CIDR — nếu không, ai cầm được khoá cũng gọi được.
+              App ngoài mạng bắt buộc ≥ 1 IP — nếu không, ai cầm được khoá cũng gọi được.
             </p>
           )}
+          <p className="text-xs text-[var(--text-muted)]">
+            Từng địa chỉ một, chưa hỗ trợ dải. Sửa sau ở Cài đặt App → IP & Origin.
+          </p>
         </div>
       </div>
 

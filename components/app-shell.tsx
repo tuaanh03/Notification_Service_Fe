@@ -143,7 +143,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/settings/profile', name: 'Hồ sơ', group: 'Cài đặt App' },
     { href: '/settings/credentials', name: 'Credentials', group: 'Cài đặt App' },
     { href: '/settings/quota', name: 'Kênh & Quota', group: 'Cài đặt App' },
-    { href: '/settings/origins', name: 'Allowed origins', group: 'Cài đặt App' },
+    { href: '/settings/origins', name: 'IP & Origin', group: 'Cài đặt App' },
     { href: '/settings/sync', name: 'Sync danh bạ', group: 'Cài đặt App' },
     { href: '/admin/send-approvals', name: 'Duyệt lần gửi', group: 'EWS Tổng' },
     { href: '/admin/apps', name: 'Tất cả app', group: 'EWS Tổng' },
@@ -409,7 +409,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/origins" />} isActive={path === '/settings/origins'}>
-                            <span>Allowed origins</span>
+                            <span>IP & Origin</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>

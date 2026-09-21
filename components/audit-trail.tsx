@@ -13,10 +13,11 @@ export function AuditTrail({ entries }: { entries: AuditEntry[] }) {
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="font-mono text-[var(--text-primary)]">{e.actor}</span>
               <span className="text-[var(--text-secondary)]">{e.action}</span>
-              {e.from && (
+              {/* Thêm / cấp chỉ có `to`, gỡ / thu hồi chỉ có `from` — vẫn phải hiện giá trị đó. */}
+              {(e.from || e.to) && (
                 <span className="font-mono text-[var(--text-muted)]">
                   {e.from}
-                  <ArrowRight className="mx-1 inline size-3" />
+                  {e.from && e.to && <ArrowRight className="mx-1 inline size-3" />}
                   {e.to}
                 </span>
               )}

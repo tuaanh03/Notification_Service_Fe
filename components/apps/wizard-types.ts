@@ -21,9 +21,33 @@ export const TOPIC_KEY = /^[a-z][a-z0-9_.-]{1,127}$/
  * RIÊNG console để người nhập không gõ nhầm — đừng nói là backend ép.
  */
 export const ORIGIN_RE = /^https?:\/\/[a-z0-9.-]+(:\d+)?$/i
-export const CIDR_RE = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
 export const validateOrigin = (v: string) => (ORIGIN_RE.test(v) ? null : 'Phải là origin, ví dụ https://service.enterprise.vn')
-export const validateCidr = (v: string) => (CIDR_RE.test(v) ? null : 'Phải là CIDR IPv4, ví dụ 10.20.0.0/16')
+
+/** IPv4 đơn, mỗi phần 0–255. */
+const IPV4_RE = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/
+
+/** IPv6 đơn — để trình duyệt kiểm: `URL` chỉ nhận host `[…]` khi đó là IPv6 hợp lệ. */
+function isIpv6(v: string): boolean {
+  if (!v.includes(':')) return false
+  try {
+    new URL(`http://[${v}]/`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * MỘT địa chỉ IP, KHÔNG nhận dải. Backend so khớp chính xác từng địa chỉ (`network-access.ts`:
+ * "CIDR để sau") và không kiểm định dạng — lưu `10.20.0.0/16` là app bị chặn `IP_NOT_ALLOWED`
+ * với MỌI IP. Chặn ở đây là chỗ duy nhất đang chặn.
+ */
+export const validateIp = (v: string) =>
+  v.includes('/')
+    ? 'Chưa hỗ trợ dải IP — khai từng địa chỉ, ví dụ 10.20.0.15'
+    : IPV4_RE.test(v) || isIpv6(v)
+      ? null
+      : 'Phải là một địa chỉ IP, ví dụ 10.20.0.15'
 
 /** Bước 1. `origins` / `ipAllowlist` đi thành `POST /apps/:id/network-rules`, không nằm trong body tạo app. */
 export type ProfileDraft = CreateAppInput & {
@@ -59,8 +83,8 @@ export const toGrant = (g: GrantDraft): ApproveAppInput => ({ ...g })
 /**
  * Đủ điều kiện sang bước 2.
  *
- * Luật "app ngoài mạng bắt buộc ≥ 1 CIDR" là của console (UC-001), backend KHÔNG ép — nhưng
- * app `external` không khai dải IP thì ai cầm được khoá cũng gọi được, nên giữ.
+ * Luật "app ngoài mạng bắt buộc ≥ 1 IP" là của console (UC-001), backend KHÔNG ép — nhưng
+ * app `external` không khai IP thì ai cầm được khoá cũng gọi được, nên giữ.
  */
 export const profileValid = (p: ProfileDraft) =>
   APP_SLUG.test(p.slug) &&

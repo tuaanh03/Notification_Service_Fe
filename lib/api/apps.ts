@@ -94,6 +94,14 @@ export async function listNetworkRules(appId: string): Promise<NetworkRuleDto[]>
   return adminFetch<NetworkRuleDto[]>(`/apps/${encodeURIComponent(appId)}/network-rules`)
 }
 
+/** DELETE /admin/apps/:appId/network-rules?kind=&value= — gỡ MỘT dòng; không có -> 404. */
+export async function removeNetworkRule(appId: string, rule: NetworkRuleDto): Promise<void> {
+  await adminFetch<void>(`/apps/${encodeURIComponent(appId)}/network-rules`, {
+    method: 'DELETE',
+    query: { kind: rule.kind, value: rule.value },
+  })
+}
+
 /**
  * Chuyển trạng thái app — `POST /admin/apps/:appId/:action`, MỘT route cho mọi hành động
  * không mang dữ liệu kèm (`admin-apps.routes.ts` hằng `TRANSITIONS`). `approve` có route
