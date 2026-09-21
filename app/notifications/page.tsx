@@ -4,19 +4,21 @@ import { NotificationsTable } from '@/components/notifications/notifications-tab
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 
-export default function Page() {
+// `?externalId=` đến từ màn Người nhận ("Xem các lần gửi cho người này").
+export default async function Page({ searchParams }: { searchParams: Promise<{ externalId?: string | string[] }> }) {
+  const { externalId } = await searchParams
   return (
     <>
       <PageHeader
         title="Lịch sử gửi"
-        subtitle="Một bản ghi = một lần gửi, dù máy bắn (api) hay người soạn (dashboard)"
+        subtitle="Mỗi dòng là một lần app service gọi POST /v1/notifications. Màn này chỉ đọc."
         actions={
           <Button variant="outline" render={<Link href="/notifications/errors" />}>
             <BookOpen /> Mã lỗi API
           </Button>
         }
       />
-      <NotificationsTable />
+      <NotificationsTable initialExternalId={typeof externalId === 'string' ? externalId : ''} />
     </>
   )
 }

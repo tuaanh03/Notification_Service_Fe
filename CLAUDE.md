@@ -28,13 +28,14 @@ webservice/ews-astrolink/
 │   ├── globals.css           # token Cosmic (--void, --starlight, …)
 │   ├── page.tsx              # /            Tổng quan
 │   ├── compose/              # /compose     Composer (UC-008)
-│   ├── notifications/        # /notifications, /notifications/[id], /notifications/errors  Delivery log (UC-005)
+│   ├── notifications/        # /notifications + actions.ts — Lịch sử gửi ĐÃ đấu API (mục 2.8)
+│   │                         # /notifications/[id], /notifications/errors vẫn mock (mục 2.4)
 │   ├── scheduled/            # /scheduled
 │   ├── topics/               # /topics + actions.ts (Server Action gọi /admin/apps/:appId/topics)
 │   │                         # (CHƯA có /topics/[key])
 │   ├── users/                # /users + actions.ts — màn Người nhận ĐÃ đấu API (mục 2.7)
 │   │                         # /users/[id] và /users/import vẫn mock (mục 2.4)
-│   ├── subscriptions/        # /subscriptions
+│   ├── subscriptions/        # /subscriptions — còn mock, ĐÃ GỠ KHỎI MENU (mục 2.8)
 │   ├── templates/            # /templates, /templates/[key] editor (UC-006)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
@@ -52,7 +53,9 @@ webservice/ews-astrolink/
 │   │                         # grant-fields (quyền cấp lúc duyệt, dùng chung), approve-app-dialog,
 │   │                         # app-transition-dialog (Tạm ngưng / Mở lại / Thu hồi — mục 2.6)
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
-│   ├── notifications/*       # notifications-table, notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel), scheduled-cards, error-codes-table, origin-badge
+│   ├── notifications/*       # notifications-table (ĐÃ đấu API) + notification-outcome (panel chi tiết);
+│   │                         # notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel) còn mock cho /notifications/[id];
+│   │                         # scheduled-cards, error-codes-table, origin-badge
 │   ├── users/*               # users-page (ĐÃ đấu API) + recipient-preferences;
 │   │                         # users-table, add-user-dialog nay KHÔNG ai dùng (mục 2.7);
 │   │                         # user-detail (+ profile-panel, subscriptions-panel, receiving-table), re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
@@ -69,7 +72,7 @@ webservice/ews-astrolink/
 ├── lib/{mock-data.ts,theme.ts,utils.ts,preview-routes.ts}   # preview-routes: WIRED_ROUTES + WIRED_EXACT_ROUTES (mục 2.4)
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
 │                             # · result.ts (ActionResult + ActionStop) · apps.ts · topics.ts
-│                             # · users.ts · audit.ts · index.ts
+│                             # · users.ts · notifications.ts · audit.ts · index.ts
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
 ├── next.config.mjs           # output: 'standalone', basePath RỖNG (console có domain riêng)
@@ -227,10 +230,11 @@ Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách rout
 
 `WIRED_EXACT_ROUTES` là danh sách thứ hai: route **đã đấu nhưng chỉ chính nó**, route con vẫn là
 bản xem trước. `/users` nằm ở đây vì `/users/[id]` và `/users/import` chưa đấu (và `/users/import`
-sẽ không bao giờ đấu — backend không có nhập CSV).
+sẽ không bao giờ đấu — backend không có nhập CSV). `/notifications` cũng vậy: `/notifications/[id]`
+và `/notifications/errors` vẫn là bản mẫu.
 
 Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` (kèm route con)
-và `/users` (chỉ chính nó).
+và `/users` · `/notifications` (chỉ chính nó).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
 chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useApp().apps`.
@@ -323,6 +327,33 @@ chính app đang có vấn đề.
 *   Địa chỉ email lấy từ **dòng trong danh sách**, không phải từ route preferences: backend cố ý
     không đưa địa chỉ vào `UserEmailSummary`. Đừng nới DTO của backend chỉ để tiện cho một màn.
 
+### 2.8. Lịch sử gửi — chỉ đọc, không địa chỉ, không route chi tiết
+
+`/notifications` đọc `GET /admin/apps/:appId/notifications` (`implementation_plan.md` §5, ĐX-0002
+Việc 2). Màn này trả lời "thư gửi anh A lúc 9 giờ ra sao"; màn Người nhận trả lời "anh A có bị
+chặn không". Hai màn nối nhau: nút **Xem các lần gửi** ở `<RecipientPreferences>` mở
+`/notifications?externalId=…`.
+
+*   **KHÔNG có Huỷ / Dừng / Gửi lại.** MVP không có lệnh nào như vậy. Bản v0 có hai nút đó ở
+    `/notifications/[id]` — đừng đấu lại khi backend chưa có.
+*   **KHÔNG hiện địa chỉ email, KHÔNG hiện nội dung thư.** Backend cố ý không trả hai thứ đó ở
+    route này. Địa chỉ xem ở màn Người nhận.
+*   **Chi tiết là panel trong cùng màn, không phải `/notifications/[id]`.** Dòng danh sách đã mang
+    đủ mọi trường; panel `<NotificationOutcome>` không gọi thêm API.
+*   **Lọc trạng thái chỉ có 5 giá trị** mà đường gửi trực tiếp thật sự tạo ra (`queued`, `sending`,
+    `sent`, `no_recipient`, `failed`), không phải đủ 11. Sáu trạng thái kia thuộc gửi hàng loạt /
+    hẹn giờ / phê duyệt, chưa có.
+*   **Lọc mã người nhận là khớp ĐÚNG**, khác ô tìm ở màn Người nhận (khớp một phần). Backend đổi
+    `externalId` ra `user_id` rồi mới lọc.
+*   **`sent` = máy chủ thư đã nhận, chưa chắc đã vào hộp thư** — panel luôn nói câu này (UC-005
+    BR-3). `error` bắt đầu bằng `outcome_unknown` = không chắc thư đã đi — panel nói rõ hệ thống
+    **không tự gửi lại** (at-most-once, ADR-0016 của backend).
+*   Đổi app thì xoá bộ lọc bằng **so `appId` lúc render**, không bằng `useEffect` như `/users`:
+    effect chạy cả lần mount và sẽ xoá `?externalId=` vừa truyền từ màn Người nhận.
+
+`/subscriptions` (còn mock) **đã gỡ khỏi menu**: nó hiện đúng dữ liệu mà màn Người nhận giờ hiện
+bằng số thật. Cùng lý do với `/admin/approvals` ở mục 2.5. Thư mục route giữ nguyên.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -358,7 +389,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
-| `<RecipientPreferences recipient preferences error loading onClose>` | `components/users/recipient-preferences.tsx` | ✓ | panel cài đặt nhận tin của một người nhận; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7) |
+| `<RecipientPreferences recipient preferences error loading onClose>` | `components/users/recipient-preferences.tsx` | ✓ | panel cài đặt nhận tin của một người nhận; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); nút sang Lịch sử gửi đã lọc theo người đó |
+| `<NotificationOutcome notification onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel |
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |

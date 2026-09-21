@@ -342,11 +342,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             <span>Users</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<Link href="/subscriptions" />} isActive={path.startsWith('/subscriptions')}>
-                            <span>Subscriptions</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        {/* `/subscriptions` (còn mock) đã gỡ khỏi menu: màn Người nhận hiện đúng dữ liệu đó bằng số
+                            thật. Hai cửa, một cửa giả, là cách chắc chắn để người mới bấm nhầm (mục 2.5). */}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>

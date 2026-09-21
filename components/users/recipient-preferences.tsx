@@ -1,6 +1,7 @@
 'use client'
 
-import { Lock, TriangleAlert, X } from 'lucide-react'
+import Link from 'next/link'
+import { History, Lock, TriangleAlert, X } from 'lucide-react'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -58,7 +59,7 @@ export function RecipientPreferences({
   return (
     <Panel className="p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             <span className="font-mono">{recipient.externalId}</span>
             {recipient.email && <StatusPill status={recipient.email.status} />}
@@ -67,9 +68,19 @@ export function RecipientPreferences({
             {recipient.email?.address ?? 'chưa khai email'}
           </p>
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Đóng" onClick={onClose}>
-          <X />
-        </Button>
+        <span className="flex shrink-0 items-center gap-1">
+          {/* Nửa còn lại của câu hỏi hỗ trợ: có bị chặn không (ở đây) -> thư đã ra sao (Lịch sử gửi). */}
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={`/notifications?externalId=${encodeURIComponent(recipient.externalId)}`} />}
+          >
+            <History /> Xem các lần gửi
+          </Button>
+          <Button variant="ghost" size="icon-sm" aria-label="Đóng" onClick={onClose}>
+            <X />
+          </Button>
+        </span>
       </div>
 
       {blocked && (

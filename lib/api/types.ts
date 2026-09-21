@@ -125,6 +125,48 @@ export type UserPreferencesDto = {
 }
 
 /**
+ * Kết cục ở người nhận của một lần gửi, sao đúng `NotificationSummaryDto.recipient`.
+ * CỐ TÌNH không có địa chỉ email — địa chỉ nằm ở màn Người nhận, không nhân ra thêm.
+ */
+export type NotificationRecipientSummaryDto = {
+  /** pending | sent | failed | skipped */
+  status: string
+  /** Vì sao KHÔNG gửi: no_channel | invalid | suppressed | opted_out_optional | opted_out */
+  exclusionReason: string | null
+  /** Lỗi từ máy chủ thư. Bắt đầu bằng `outcome_unknown` = không chắc thư đã đi hay chưa. */
+  error: string | null
+  sentAt: string | null
+}
+
+/**
+ * Một dòng lịch sử gửi, sao đúng `NotificationSummaryDto` của backend
+ * (`GET /admin/apps/:appId/notifications`). Không có nội dung thư.
+ */
+export type NotificationSummaryDto = {
+  id: string
+  /** Đường gửi trực tiếp của MVP chỉ ra: queued | sending | sent | no_recipient | failed */
+  status: string
+  topic: string
+  /** null = người nhận đã không còn trong sổ. */
+  externalId: string | null
+  idempotencyKey: string | null
+  /** null = worker chưa xử lý tới (còn `queued`). */
+  recipient: NotificationRecipientSummaryDto | null
+  createdAt: string
+  queuedAt: string | null
+  sendingAt: string | null
+  finishedAt: string | null
+}
+
+/** Sao đúng `NotificationPageDto`. */
+export type NotificationPageDto = {
+  rows: NotificationSummaryDto[]
+  total: number
+  limit: number
+  offset: number
+}
+
+/**
  * Sao đúng `NetworkRuleDto` của backend. Đây là allowlist nguồn gọi `/v1/*` của app:
  * `origin` = header Origin của trình duyệt, `ip` = dải CIDR IPv4 của máy gọi.
  */
