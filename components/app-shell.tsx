@@ -26,7 +26,9 @@ import {
   PanelLeftOpen,
   RadioTower,
 } from 'lucide-react'
-import { CURRENT_USER } from '@/lib/mock-data'
+import { LogOut } from 'lucide-react'
+import { signOutAction } from '@/app/login/actions'
+import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
 import { AppLink, useAppRouter } from './app-link'
 import { switchAppPath } from '@/lib/app-routes'
@@ -118,7 +120,18 @@ function CustomSidebarTrigger({
   )
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+/** Chữ cái đầu cho avatar. Bảng `admins` chỉ có email, không có tên hiển thị. */
+function initialsOf(email: string): string {
+  const local = email.split('@')[0] ?? email
+  const parts = local.split(/[._-]+/).filter(Boolean)
+  const picked = parts.length >= 2 ? [parts[0]!, parts[1]!] : [local]
+  return picked
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('')
+    .slice(0, 2)
+}
+
+export function AppShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
   const path = usePathname()
   const { role, setRole } = useRole()
   // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock. `app` đọc từ `?app=`
@@ -500,16 +513,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       >
                         <Avatar className="size-8 rounded-lg border border-[var(--orbit)] shrink-0">
                           <AvatarFallback className="rounded-lg bg-gradient-to-br from-[var(--starlight)]/25 to-[var(--pulsar)]/20 text-[var(--starlight)] font-bold text-xs">
-                            {CURRENT_USER.name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .slice(-2)
-                              .join('')}
+                            {initialsOf(admin.email)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="grid flex-1 text-left text-xs leading-tight min-w-0 group-data-[collapsible=icon]:hidden">
                           <span className="truncate font-semibold text-sidebar-foreground">
-                            {CURRENT_USER.name}
+                            {admin.email}
                           </span>
                           <span className="truncate text-[10px] text-muted-foreground flex items-center gap-1.5">
                             <span className="inline-block size-1.5 rounded-full bg-[var(--aurora)] shadow-[0_0_5px_var(--aurora)]" />
@@ -530,19 +539,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2.5 px-2 py-2 mb-1 rounded-lg bg-[var(--void)]/60 border border-[var(--orbit)]">
                       <Avatar className="size-9 rounded-lg border border-[var(--orbit)] shrink-0">
                         <AvatarFallback className="rounded-lg bg-gradient-to-br from-[var(--starlight)]/20 to-[var(--pulsar)]/20 text-[var(--starlight)] font-bold text-xs">
-                          {CURRENT_USER.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .slice(-2)
-                            .join('')}
+                          {initialsOf(admin.email)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-semibold text-foreground truncate">
-                          {CURRENT_USER.name}
+                          {admin.email}
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground truncate">
-                          {CURRENT_USER.email}
+                          {admin.role}
                         </span>
                       </div>
                     </div>
@@ -582,6 +587,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuGroup>
+
+                    <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+                    <DropdownMenuItem
+                      onClick={() => signOutAction()}
+                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs text-[var(--solar)]"
+                    >
+                      <LogOut className="size-3.5" />
+                      <span>Đăng xuất</span>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </SidebarMenuItem>

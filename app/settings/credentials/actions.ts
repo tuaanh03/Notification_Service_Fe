@@ -8,7 +8,7 @@ import type { AuditEntry } from '@/lib/mock-data'
 
 /**
  * BFF của màn Credentials. Như `/topics`: app đang chọn nằm ở state client nên
- * dùng Server Action, `EWS_ADMIN_TOKEN` không rời phía server (CLAUDE.md mục 2.2).
+ * dùng Server Action, token phiên không rời phía server (CLAUDE.md mục 2.2).
  *
  * `apiKey` plaintext chỉ đi qua đúng một response của `issueSecretAction` rồi thôi —
  * không ghi log, không lưu lại (UC-001 BR-4).

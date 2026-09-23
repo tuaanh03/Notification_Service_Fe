@@ -15,7 +15,7 @@ import type { TopicDto } from '@/lib/api/types'
  *
  * Vì sao không phải Server Component như `/admin/apps`: app đang chọn nằm trong state
  * client của `<AppProvider>` (app switcher), nên lúc server render chưa biết `appId`.
- * Server Action giữ nguyên tính chất quan trọng: `EWS_ADMIN_TOKEN` và địa chỉ backend
+ * Server Action giữ nguyên tính chất quan trọng: token phiên và địa chỉ backend
  * chỉ tồn tại phía server, browser không thấy (CLAUDE.md mục 2.2).
  *
  * Lỗi trả về dưới dạng `ActionResult` (`lib/api/result.ts`), không ném qua ranh giới

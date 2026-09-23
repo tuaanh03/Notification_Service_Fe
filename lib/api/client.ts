@@ -1,41 +1,59 @@
 import 'server-only'
+import { cookies } from 'next/headers'
 import { ApiError, type ProblemDetails } from './problem'
 
 /**
  * Lớp gọi `ews-astrolink-api` từ PHÍA SERVER của Next (BFF).
  *
- * Browser không bao giờ gọi thẳng backend: `EWS_ADMIN_TOKEN` là bootstrap token
- * cấp toàn quyền `/admin/*` (ADR-0015), lộ ra client là mất hệ thống. `server-only`
- * ở trên làm build fail ngay nếu có component client lỡ import file này.
+ * Browser không bao giờ gọi thẳng backend. Token phiên nằm trong cookie `httpOnly`, chỉ máy chủ
+ * Next đọc được và gắn vào header `Authorization` — JavaScript trong trình duyệt không chạm tới.
+ * `server-only` ở trên làm build fail ngay nếu có component client lỡ import file này.
  *
  * Nhờ đó backend cũng không cần CORS — mọi request tới nó đều là server-to-server
  * trong network `ews-net`.
+ *
+ * KHÔNG còn token dùng chung trong biến môi trường: mỗi request mang phiên của đúng người đang
+ * đăng nhập, nên audit ghi được ai làm gì và đăng xuất cắt quyền ngay lập tức.
  */
 
 const TIMEOUT_MS = 10_000
 
-function config(): { baseUrl: string; token: string; orgId: string } {
+/** Tên cookie giữ token phiên. Đặt ở đây vì đây là nơi duy nhất đọc nó khi gọi backend. */
+export const SESSION_COOKIE = 'ews_session'
+
+function config(): { baseUrl: string; orgId: string } {
   const baseUrl = process.env.EWS_API_URL
-  const token = process.env.EWS_ADMIN_TOKEN
   const orgId = process.env.EWS_ORG_ID
-  if (!baseUrl || !token || !orgId) {
-    const missing = [
-      !baseUrl && 'EWS_API_URL',
-      !token && 'EWS_ADMIN_TOKEN',
-      !orgId && 'EWS_ORG_ID',
-    ].filter(Boolean)
+  if (!baseUrl || !orgId) {
+    const missing = [!baseUrl && 'EWS_API_URL', !orgId && 'EWS_ORG_ID'].filter(Boolean)
     throw new ApiError({
       status: 0,
       code: 'API_NOT_CONFIGURED',
       detail: `thiếu biến môi trường: ${missing.join(', ')}`,
     })
   }
-  return { baseUrl: baseUrl.replace(/\/+$/, ''), token, orgId }
+  return { baseUrl: baseUrl.replace(/\/+$/, ''), orgId }
 }
 
 /** Org mà console đang quản trị — `GET /admin/apps` bắt buộc query `orgId`. */
 export function orgId(): string {
   return config().orgId
+}
+
+/** Token phiên của người đang xem, hoặc `null` nếu chưa đăng nhập. */
+export async function sessionToken(): Promise<string | null> {
+  return (await cookies()).get(SESSION_COOKIE)?.value ?? null
+}
+
+/**
+ * Chưa đăng nhập. Mã trùng với `INVALID_ADMIN_SESSION` của backend là CÓ CHỦ ĐÍCH: nơi xử lý chỉ
+ * cần phân biệt "phải đăng nhập lại" với mọi lỗi khác, không cần biết ai phát hiện ra trước.
+ */
+export const SESSION_REQUIRED_CODE = 'INVALID_ADMIN_SESSION'
+
+/** Lỗi này nghĩa là ĐƯA NGƯỜI DÙNG VỀ TRANG ĐĂNG NHẬP, không phải hiện màn báo lỗi. */
+export function isSessionExpired(err: unknown): boolean {
+  return err instanceof ApiError && err.code === SESSION_REQUIRED_CODE
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
@@ -57,16 +75,17 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError({ status: response.status, code: `HTTP_${response.status}`, detail: response.statusText })
 }
 
-/**
- * Gọi một endpoint `/admin/*`. `path` tính từ gốc bề mặt admin, ví dụ `/apps`.
- * Không cache: console quản trị phải đọc trạng thái thật ở mỗi lần xem.
- */
-export async function adminFetch<T>(
-  path: string,
-  init: { method?: string; body?: unknown; query?: Record<string, string | undefined> } = {},
-): Promise<T> {
-  const { baseUrl, token } = config()
-  const url = new URL(`${baseUrl}/admin${path}`)
+interface RequestInit_ {
+  method?: string
+  body?: unknown
+  query?: Record<string, string | undefined>
+  /** `null` = không gửi header Authorization (dùng cho `/auth/login`). */
+  token?: string | null
+}
+
+async function request<T>(path: string, init: RequestInit_): Promise<T> {
+  const { baseUrl } = config()
+  const url = new URL(`${baseUrl}${path}`)
   for (const [key, value] of Object.entries(init.query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, value)
   }
@@ -76,7 +95,7 @@ export async function adminFetch<T>(
     response = await fetch(url, {
       method: init.method ?? 'GET',
       headers: {
-        authorization: `Bearer ${token}`,
+        ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
         ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
       },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
@@ -90,4 +109,30 @@ export async function adminFetch<T>(
   if (!response.ok) throw await toApiError(response)
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
+}
+
+/**
+ * Gọi một endpoint `/admin/*` bằng phiên của người đang xem. `path` tính từ gốc bề mặt admin.
+ * Không cache: console quản trị phải đọc trạng thái thật ở mỗi lần xem.
+ *
+ * Chưa có cookie thì KHÔNG gọi backend — ném luôn cùng mã lỗi mà backend sẽ trả, để mọi nơi xử
+ * lý một cách duy nhất.
+ */
+export async function adminFetch<T>(
+  path: string,
+  init: { method?: string; body?: unknown; query?: Record<string, string | undefined> } = {},
+): Promise<T> {
+  const token = await sessionToken()
+  if (token === null) {
+    throw new ApiError({ status: 401, code: SESSION_REQUIRED_CODE, detail: 'chưa đăng nhập' })
+  }
+  return request<T>(`/admin${path}`, { ...init, token })
+}
+
+/** Gọi bề mặt PUBLIC `/auth/*` — nơi lấy và huỷ phiên, nên tự truyền token (hoặc không có). */
+export async function authFetch<T>(
+  path: string,
+  init: { method?: string; body?: unknown; token?: string | null } = {},
+): Promise<T> {
+  return request<T>(`/auth${path}`, { ...init, token: init.token ?? null })
 }

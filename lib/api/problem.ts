@@ -47,7 +47,13 @@ export class ApiError extends Error {
 const MESSAGES: Readonly<Record<string, string>> = {
   API_UNREACHABLE: 'Không kết nối được tới API. Kiểm tra service `ews-astrolink-api` đã chạy chưa.',
   API_NOT_CONFIGURED: 'Console chưa được cấu hình để gọi API. Kiểm tra biến môi trường EWS_*.',
-  ADMIN_CALLER_REQUIRED: 'Token quản trị không hợp lệ hoặc đã hết hạn.',
+  // Backend cố tình trả CÙNG mã cho email lạ và mật khẩu sai — câu này cũng chỉ nói đúng chừng
+  // đó, không đoán thêm "email không tồn tại", vì đó là xác nhận hộ người dò.
+  INVALID_CREDENTIALS: 'Email hoặc mật khẩu không đúng.',
+  INVALID_ADMIN_SESSION: 'Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.',
+  ADMIN_CALLER_REQUIRED: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
+  PASSWORD_TOO_SHORT: 'Mật khẩu phải có ít nhất 12 ký tự.',
+  PASSWORD_TOO_LONG: 'Mật khẩu quá dài (tối đa 200 ký tự).',
   NOT_FOUND: 'Không tìm thấy dữ liệu.',
   VALIDATION: 'Dữ liệu nhập không hợp lệ.',
   TOPIC_KEY_TAKEN: 'Mã chủ đề này đã có trong app. Chọn mã khác.',

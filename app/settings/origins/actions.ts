@@ -8,7 +8,7 @@ import type { AuditEntry } from '@/lib/mock-data'
 
 /**
  * BFF của màn IP & Origin — allowlist nguồn gọi `/v1/*` của app đang xem. Server Action như
- * `/settings/credentials` (CLAUDE.md mục 2.2): `EWS_ADMIN_TOKEN` không rời phía server.
+ * `/settings/credentials` (CLAUDE.md mục 2.2): token phiên không rời phía server.
  */
 
 export type NetworkRulesView = { rules: NetworkRuleDto[]; audit: AuditEntry[] }

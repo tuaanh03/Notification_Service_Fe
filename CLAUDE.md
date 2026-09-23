@@ -183,16 +183,19 @@ Thêm primitive shadcn: `pnpm dlx shadcn@latest add <name>` rồi sửa `import 
 
 Browser **không bao giờ** gọi thẳng backend. Mọi request quản trị đi qua phía server của Next (BFF):
 server component / route handler / server action gọi `http://ews-astrolink-api:3000/admin/*` qua
-network `ews-net`. Nhờ vậy backend không cần CORS, và `EWS_ADMIN_TOKEN` — token cấp TOÀN QUYỀN
-`/admin/*` (ADR-0015 §4 của backend) — không có đường ra browser.
+network `ews-net`. Nhờ vậy backend không cần CORS.
+
+**Xác thực là PHIÊN ĐĂNG NHẬP, không còn token dùng chung** (ADR-0019 của backend). Token phiên nằm
+trong cookie `httpOnly` `ews_session`: JavaScript trong browser không đọc được, `lib/api/client.ts`
+đọc nó ở phía server rồi gắn vào `Authorization`. Đăng xuất gọi `/auth/logout` để backend XOÁ phiên
+— không chỉ xoá cookie, vì xoá cookie mà phiên còn sống thì ai đã sao được token vẫn dùng tiếp.
 
 | Biến (`.env`) | Nghĩa |
 |---|---|
 | `EWS_API_URL` | `http://ews-astrolink-api:3000` trong docker; `http://127.0.0.1:4002` khi `pnpm dev` |
-| `EWS_ADMIN_TOKEN` | trùng `ADMIN_TOKEN` của backend |
 | `EWS_ORG_ID` | org console đang quản trị — `GET /admin/apps` bắt buộc query `orgId` |
 
-*   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho ba biến trên. `lib/api/client.ts` mở đầu bằng
+*   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho hai biến trên. `lib/api/client.ts` mở đầu bằng
     `import 'server-only'` nên build sẽ đỏ ngay nếu có component client lỡ import.
 *   **Kiểu dữ liệu sao đúng DTO của backend**, để ở `lib/api/types.ts` (không `server-only` — component
     client cần import type). Đổi tên field là đổi hợp đồng, phải sửa cả hai bên.

@@ -9,6 +9,7 @@ import { AppShell } from './app-shell'
 import { useAppRouter } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { NoAppsScreen } from './no-apps-screen'
+import type { AdminDto } from '@/lib/api/auth'
 
 /**
  * Cổng chặn giữa đường dẫn và màn hình (`lib/app-routes.ts`) — NƠI DUY NHẤT quyết định
@@ -26,7 +27,16 @@ import { NoAppsScreen } from './no-apps-screen'
  * được đường dẫn, nên nếu nó tự quyết thì mọi đường dẫn phải chịu chung một câu trả lời — chính
  * chỗ đó từng nuốt luôn `/apps/new` và làm org mới không tạo được app nào.
  */
-export function AppGate({ children, error }: { children: React.ReactNode; error: string | null }) {
+export function AppGate({
+  children,
+  error,
+  admin,
+}: {
+  children: React.ReactNode
+  error: string | null
+  /** Admin đang đăng nhập — `<AppShell>` hiện ở chân sidebar. Layout đã chặn trường hợp null. */
+  admin: AdminDto
+}) {
   const pathname = usePathname()
   const search = useSearchParams().toString()
   const router = useAppRouter()
@@ -61,7 +71,7 @@ export function AppGate({ children, error }: { children: React.ReactNode; error:
   // Rỗng vì API hỏng KHÁC rỗng vì chưa có gì — `<NoAppsScreen>` phân biệt bằng `error`.
   if (apps.length === 0) return <NoAppsScreen error={error} />
 
-  if (open) return <AppShell>{children}</AppShell>
+  if (open) return <AppShell admin={admin}>{children}</AppShell>
   if (only) return null
   return <AppChooser apps={apps} requested={requested} here={here} />
 }
