@@ -9,7 +9,9 @@ import type { App } from '@/lib/mock-data'
  * Ô chọn app trên AppShell chỉ hiển thị và đổi tham số đó.
  *
  * Danh sách app do `app/layout.tsx` (server component) nạp từ `/admin/apps` rồi truyền
- * xuống. Layout chỉ render provider khi danh sách có ít nhất một app.
+ * xuống. Provider LUÔN được dựng, kể cả khi danh sách rỗng: màn "chưa có app nào" cũng cần link
+ * nội bộ (`<AppLink>`), mà link nội bộ đọc app đang chọn từ đây. Rỗng thì `app` là `null` —
+ * `<AppGate>` lo việc màn nào được dựng trong trạng thái đó.
  */
 type AppSelection = {
   /** `null` = đường dẫn chưa có `?app=` hợp lệ. Màn của một app không bao giờ thấy null (`<AppGate>`). */

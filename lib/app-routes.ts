@@ -22,6 +22,21 @@ export function isOrgRoute(pathname: string): boolean {
 }
 
 /**
+ * Màn vào được khi tổ chức CHƯA có app nào — chỉ đúng một màn: đăng ký app đầu tiên.
+ *
+ * Danh sách này gỡ thế bí con gà/quả trứng: mọi lối vào wizard (`/admin/apps`, `/settings`, ô
+ * chọn app) đều nằm trong `<AppShell>`, mà shell chỉ dựng khi đã có ít nhất một app. Không có
+ * ngoại lệ này thì org mới tạo không có đường nào tạo app đầu tiên qua giao diện.
+ *
+ * Cố ý KHÔNG mở cả `/admin`: các màn đó đọc dữ liệu theo app, chưa có app thì không có gì để xem.
+ */
+export const BOOTSTRAP_ROUTES = ['/apps/new'] as const
+
+export function isBootstrapRoute(pathname: string): boolean {
+  return BOOTSTRAP_ROUTES.some((route) => pathname === route)
+}
+
+/**
  * Trang chi tiết `[id]` ngay dưới một màn danh sách. Đổi app khi đang ở đây thì về danh sách:
  * cùng mã ở app khác là thứ khác. `static` = route tĩnh cùng cấp, KHÔNG phải trang chi tiết.
  */

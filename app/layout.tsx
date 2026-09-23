@@ -1,11 +1,9 @@
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { AppShell } from '@/components/app-shell'
 import { RoleProvider } from '@/components/role-context'
 import { AppProvider } from '@/components/app-context'
 import { AppGate } from '@/components/app-gate'
-import { NoAppsScreen } from '@/components/no-apps-screen'
 import { Toaster } from '@/components/ui/sonner'
 import { listApps, toApp } from '@/lib/api/apps'
 import { ApiError, messageOf } from '@/lib/api/problem'
@@ -47,16 +45,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="vi" className="light bg-background">
       <body className={`${inter.variable} ${space.variable} ${mono.variable} antialiased`}>
         <RoleProvider>
-          {apps.length === 0 ? (
-            <NoAppsScreen error={error} />
-          ) : (
-            <AppProvider apps={apps}>
-              {/* App nằm trên đường dẫn (`?app=`); thiếu thì AppGate bắt chọn (lib/app-routes.ts). */}
-              <AppGate>
-                <AppShell>{children}</AppShell>
-              </AppGate>
-            </AppProvider>
-          )}
+          <AppProvider apps={apps}>
+            {/*
+              Layout KHÔNG tự chọn màn hình: nó là server component, không đọc được đường dẫn nên
+              chỉ trả lời được một câu cho mọi trang. `<AppGate>` (client) mới biết đang ở đâu và
+              dựng khung tương ứng — shell, trang chọn app, màn chưa có app, hay màn báo lỗi.
+            */}
+            <AppGate error={error}>{children}</AppGate>
+          </AppProvider>
         </RoleProvider>
         <Toaster theme="light" position="bottom-right" richColors />
       </body>
