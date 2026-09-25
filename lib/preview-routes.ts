@@ -18,10 +18,12 @@ export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/settings/c
  * `/notifications` cũng vậy: `/notifications/[id]` (chi tiết đã nằm trong panel của chính màn
  * danh sách) vẫn là bản mẫu.
  *
+ * `/` (Tổng quan) chỉ khớp đúng chính nó — để trong `WIRED_ROUTES` thì mọi route đều là "route con" của `/`.
+ *
  * `/notifications/errors` không gọi API nhưng vẫn là số thật: bảng mã lỗi là hợp đồng tĩnh, sao
  * đúng backend (`lib/api/v1-errors.ts`).
  */
-export const WIRED_EXACT_ROUTES = ['/users', '/notifications', '/notifications/errors'] as const
+export const WIRED_EXACT_ROUTES = ['/', '/users', '/notifications', '/notifications/errors'] as const
 
 /**
  * Đã đấu trang chi tiết `[id]` NGAY DƯỚI route này — đúng một đoạn đường dẫn, không sâu hơn.

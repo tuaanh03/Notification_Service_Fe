@@ -33,6 +33,13 @@ export const NETWORK_RULE_AUDIT_ACTIONS = ['AppNetworkRuleAdded', 'AppNetworkRul
 
 /** Tên event của backend -> câu người trực đọc được. Chưa có bản dịch thì giữ nguyên tên event. */
 const ACTION_LABELS: Readonly<Record<string, string>> = {
+  AppCreated: 'tạo app',
+  AppSubmittedForReview: 'gửi app đi duyệt',
+  AppApproved: 'duyệt app',
+  AppRejected: 'từ chối app',
+  AppSuspended: 'tạm ngưng app',
+  AppResumed: 'mở lại app',
+  AppRevoked: 'thu hồi app',
   AppSecretIssued: 'cấp khoá API',
   AppSecretRevoked: 'thu hồi khoá API',
   AppNetworkRuleAdded: 'thêm nguồn gọi',

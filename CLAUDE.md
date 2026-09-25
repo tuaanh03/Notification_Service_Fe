@@ -26,7 +26,7 @@ webservice/ews-astrolink/
 │   │                         # server component — nơi DUY NHẤT nạp danh sách app (/admin/apps)
 │   ├── api/ai/generate-html/ # route handler gọi API AI (Template editor)
 │   ├── globals.css           # token Cosmic (--void, --starlight, …)
-│   ├── page.tsx              # /            Tổng quan
+│   ├── page.tsx              # /            Tổng quan + actions.ts — ĐÃ đấu API (mục 2.11)
 │   ├── compose/              # /compose     Composer (UC-008)
 │   ├── notifications/        # /notifications + actions.ts — Lịch sử gửi ĐÃ đấu API (mục 2.8)
 │   │                         # /notifications/errors = bảng mã lỗi /v1 THẬT (tĩnh, lib/api/v1-errors.ts);
@@ -250,7 +250,7 @@ kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đ�
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
 Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` · `/settings/origins` (kèm route con),
-`/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
+`/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
 chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useAppSelection().apps`.
@@ -436,6 +436,22 @@ chỉ kiểm khi request có header Origin.
     này") và khi gỡ bất kỳ dòng nào (gỡ dòng cuối = mở cho tất cả). Thêm dòng thứ hai trở đi chỉ nới
     ra — không hỏi.
 *   App `external` chưa có IP nào -> cảnh báo trên màn (luật của console, backend không ép).
+
+### 2.11. Tổng quan (`/`) — chỉ số thật, bỏ ô không có nguồn
+
+`/` đọc `GET /admin/apps/:appId/overview` (một lời gọi cho mọi con số: 24 giờ gần nhất + hàng chờ),
+cộng 5 dòng `GET /admin/apps/:appId/notifications` và nhật ký `GET /admin/audit?targetType=App`.
+Ba lời gọi gộp trong `loadOverviewAction` (`app/actions.ts`); một cái hỏng là cả màn hiện `<EmptyState>` kèm mã.
+
+*   **Không có tỉ lệ bounce.** Thư trả về chưa được backend xử lý (ADR-0018) — ô đó từng là số bịa.
+    Thay bằng "Gửi lỗi 24h". "Topic đang rỗng" (khái niệm của segment, chưa có) thay bằng "Đang chờ gửi".
+*   **Không có "theo origin".** MVP chỉ gửi qua API; biểu đồ chia theo kết cục: đã gửi / lỗi / bị chặn.
+*   **Donut chỉ 5 trạng thái** của đường gửi trực tiếp, như bộ lọc ở mục 2.8.
+*   **Backend trả giờ UTC**; màn đổi sang giờ của trình duyệt khi vẽ trục giờ.
+*   **"Cần chú ý" tính từ chính số liệu của màn** (`alertsOf` trong `app/page.tsx`): chưa có chủ đề
+    active, có thư lỗi, thư chờ quá 10 phút, thư bị chặn vì chưa có email, người nhận không có email dùng được.
+    Không thêm cảnh báo nào không suy ra được từ `AppOverviewDto`.
+*   Tải khi mở / đổi app / bấm Làm mới — không tự cập nhật, nên không có nhãn "LIVE".
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 

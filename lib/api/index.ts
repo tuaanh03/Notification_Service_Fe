@@ -9,4 +9,5 @@ export {
   type TopicAction,
 } from './topics'
 export { listAudit } from './audit'
-export type { AppDto, AppSecretDto, IssuedAppSecretDto, AuditEntryDto, TopicDto } from './types'
+export { getOverview } from './overview'
+export type { AppDto, AppOverviewDto, AppSecretDto, IssuedAppSecretDto, AuditEntryDto, TopicDto } from './types'

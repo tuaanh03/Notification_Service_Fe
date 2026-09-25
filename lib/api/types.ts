@@ -191,3 +191,28 @@ export type AuditEntryDto = {
   source: string
   at: string
 }
+
+/**
+ * Sao đúng `AppOverviewDto` của backend (`GET /admin/apps/:appId/overview`) — số liệu màn Tổng quan.
+ * Mọi mốc giờ là UTC, màn hình tự đổi sang giờ địa phương.
+ */
+export type AppOverviewDto = {
+  generatedAt: string
+  /** 24 giờ gần nhất, trượt theo lúc gọi. */
+  window: { from: string; to: string }
+  /** Số lần gửi trong cửa sổ, và trong 24 giờ liền trước đó. */
+  sends: { total: number; previousTotal: number }
+  /** Theo trạng thái hiện tại — đủ 11 khoá, không có thì 0. */
+  byStatus: Record<string, number>
+  /** Vì sao bị chặn (`exclusion_reason`) — đủ mọi khoá, không có thì 0. */
+  blocked: Record<string, number>
+  /**
+   * Đúng 24 cột, cũ trước; cột cuối là giờ hiện tại (chưa trọn).
+   * sent = sent · failed = failed · blocked = no_recipient · pending = queued + sending
+   */
+  hourly: { hour: string; sent: number; failed: number; blocked: number; pending: number }[]
+  /** Hàng chờ ngay lúc này. */
+  queue: { waiting: number; oldestCreatedAt: string | null }
+  recipients: { total: number; emailActive: number; emailUnsubscribed: number; emailInvalid: number }
+  topics: { total: number; active: number }
+}
