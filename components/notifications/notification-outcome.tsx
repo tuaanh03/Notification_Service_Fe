@@ -1,11 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import { Info, TriangleAlert, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { AppLink } from '@/components/app-link'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
@@ -43,114 +52,143 @@ function Step({ label, at }: { label: string; at: string | null }) {
 }
 
 /**
- * Chi tiết một lần gửi, mở từ dòng trong Lịch sử gửi.
+ * Chi tiết một lần gửi, mở từ dòng trong Lịch sử gửi — ngăn trượt từ bên phải.
  *
  * Mọi thứ ở đây đã có sẵn trong dòng danh sách — không gọi thêm API. Không hiện địa chỉ email
  * (có ở màn Người nhận) và không hiện nội dung thư (app service đã giữ nội dung đó).
  * Không có nút Huỷ / Dừng / Gửi lại: MVP không có lệnh nào như vậy.
  *
- * `linkRecipient = false` khi panel đã nằm trong chính trang của người nhận — không dẫn về chính nó.
+ * Không làm tối trang (`modal={false}`): bảng vẫn bấm được, bấm dòng khác là ngăn đổi nội dung luôn.
+ * `notification = null` là đóng; lần gửi vừa xem được giữ lại để ngăn trượt ra không bị trống.
+ *
+ * `linkRecipient = false` khi bảng đã nằm trong chính trang của người nhận — không dẫn về chính nó.
  */
 export function NotificationOutcome({
-  notification: n,
+  notification,
   linkRecipient,
   onClose,
 }: {
-  notification: NotificationSummaryDto
+  notification: NotificationSummaryDto | null
   linkRecipient: boolean
   onClose: () => void
 }) {
+  const [shown, setShown] = useState(notification)
+  if (notification && notification !== shown) setShown(notification)
+
+  return (
+    <Drawer
+      open={notification !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+      swipeDirection="right"
+      modal={false}
+    >
+      <DrawerContent className="data-[swipe-axis=x]:sm:[--drawer-content-width:28rem]">
+        {shown && <OutcomeDetail n={shown} linkRecipient={linkRecipient} />}
+      </DrawerContent>
+    </Drawer>
+  )
+}
+
+function OutcomeDetail({ n, linkRecipient }: { n: NotificationSummaryDto; linkRecipient: boolean }) {
   const unknown = n.recipient?.error?.startsWith(OUTCOME_UNKNOWN) ?? false
 
   return (
-    <Panel className="p-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <>
+      <DrawerHeader className="flex-row items-start justify-between gap-4 pb-4">
         <div className="min-w-0">
-          <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+          <DrawerTitle className="flex flex-wrap items-center gap-2 text-sm font-semibold">
             <span className="font-mono">{n.topic || '—'}</span>
             <StatusPill status={n.status} />
-          </h2>
-          <Button
-            variant="link"
-            size="xs"
-            className="h-auto max-w-full truncate px-0 font-mono text-[var(--text-secondary)]"
-            onClick={() => {
-              navigator.clipboard?.writeText(n.id)
-              toast.success('Đã sao chép', { description: n.id })
-            }}
-          >
-            {n.id}
-          </Button>
+          </DrawerTitle>
+          <DrawerDescription>
+            <Button
+              variant="link"
+              size="xs"
+              className="h-auto max-w-full truncate px-0 font-mono text-[var(--text-secondary)]"
+              onClick={() => {
+                navigator.clipboard?.writeText(n.id)
+                toast.success('Đã sao chép', { description: n.id })
+              }}
+            >
+              {n.id}
+            </Button>
+          </DrawerDescription>
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Đóng" onClick={onClose}>
+        <DrawerClose render={<Button variant="ghost" size="icon-sm" aria-label="Đóng" />}>
           <X />
-        </Button>
-      </div>
+        </DrawerClose>
+      </DrawerHeader>
 
-      <p className="mb-4 text-sm">
-        <span className="text-[var(--text-secondary)]">Kết cục: </span>
-        {outcomeOf(n)}
-      </p>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+        <p className="mb-4 text-sm">
+          <span className="text-[var(--text-secondary)]">Kết cục: </span>
+          {outcomeOf(n)}
+        </p>
 
-      {/* UC-005 BR-3: "đã gửi" là máy chủ thư đã nhận, không phải đã tới hộp thư. */}
-      {n.status === 'sent' && (
-        <Alert className="mb-4">
-          <Info />
-          <AlertDescription>
-            <span className="font-mono">sent</span> nghĩa là máy chủ thư đã nhận thư, chưa chắc đã vào hộp thư
-            người nhận. Thư vào mục rác hay bị chặn ở phía nhận thì hệ thống không thấy được.
-          </AlertDescription>
-        </Alert>
-      )}
-      {unknown && (
-        <Alert className="mb-4 bg-[var(--solar)]/10">
-          <TriangleAlert className="text-[var(--solar)]" />
-          <AlertDescription>
-            Không chắc thư đã đi hay chưa — máy chủ thư không trả lời kịp. Hệ thống <strong>không tự gửi lại</strong>,
-            để người nhận không bị nhận hai lần. Muốn gửi lại thì app service gửi một lần mới.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <dl className="mb-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-xs">
-        <dt className="text-[var(--text-secondary)]">Mã người nhận</dt>
-        <dd className="font-mono">
-          {n.externalId ? (
-            n.externalId
-          ) : (
-            <span className="text-[var(--text-muted)]">không còn trong sổ người nhận</span>
-          )}
-        </dd>
-        <dt className="text-[var(--text-secondary)]">idempotencyKey</dt>
-        <dd className="truncate font-mono">{n.idempotencyKey ?? '—'}</dd>
-        {n.recipient?.error && (
-          <>
-            <dt className="text-[var(--text-secondary)]">Lỗi</dt>
-            <dd className="font-mono break-words">{n.recipient.error}</dd>
-          </>
+        {/* UC-005 BR-3: "đã gửi" là máy chủ thư đã nhận, không phải đã tới hộp thư. */}
+        {n.status === 'sent' && (
+          <Alert className="mb-4">
+            <Info />
+            <AlertDescription>
+              <span className="font-mono">sent</span> nghĩa là máy chủ thư đã nhận thư, chưa chắc đã vào hộp thư
+              người nhận. Thư vào mục rác hay bị chặn ở phía nhận thì hệ thống không thấy được.
+            </AlertDescription>
+          </Alert>
         )}
-      </dl>
+        {unknown && (
+          <Alert className="mb-4 bg-[var(--solar)]/10">
+            <TriangleAlert className="text-[var(--solar)]" />
+            <AlertDescription>
+              Không chắc thư đã đi hay chưa — máy chủ thư không trả lời kịp. Hệ thống <strong>không tự gửi lại</strong>,
+              để người nhận không bị nhận hai lần. Muốn gửi lại thì app service gửi một lần mới.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <div className="rounded-lg border px-3 py-1">
-        <Step label="App gọi API" at={n.createdAt} />
-        <Step label="Vào hàng đợi" at={n.queuedAt} />
-        <Step label="Bắt đầu gửi" at={n.sendingAt} />
-        <Step label="Máy chủ thư nhận" at={n.recipient?.sentAt ?? null} />
-        <Step label="Kết thúc" at={n.finishedAt} />
+        <dl className="mb-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-xs">
+          <dt className="text-[var(--text-secondary)]">Mã người nhận</dt>
+          <dd className="font-mono">
+            {n.externalId ? (
+              n.externalId
+            ) : (
+              <span className="text-[var(--text-muted)]">không còn trong sổ người nhận</span>
+            )}
+          </dd>
+          <dt className="text-[var(--text-secondary)]">idempotencyKey</dt>
+          <dd className="truncate font-mono">{n.idempotencyKey ?? '—'}</dd>
+          {n.recipient?.error && (
+            <>
+              <dt className="text-[var(--text-secondary)]">Lỗi</dt>
+              <dd className="font-mono break-words">{n.recipient.error}</dd>
+            </>
+          )}
+        </dl>
+
+        <div className="rounded-lg border px-3 py-1">
+          <Step label="App gọi API" at={n.createdAt} />
+          <Step label="Vào hàng đợi" at={n.queuedAt} />
+          <Step label="Bắt đầu gửi" at={n.sendingAt} />
+          <Step label="Máy chủ thư nhận" at={n.recipient?.sentAt ?? null} />
+          <Step label="Kết thúc" at={n.finishedAt} />
+        </div>
       </div>
 
       {n.externalId && linkRecipient && (
-        <p className="mt-3 text-[11px] text-[var(--text-muted)]">
-          Muốn biết vì sao người này bị chặn: xem{' '}
-          <AppLink
-            href={`/users/${encodeURIComponent(n.externalId)}`}
-            className="text-[var(--starlight)] underline-offset-2 hover:underline"
-          >
-            trang của <span className="font-mono">{n.externalId}</span>
-          </AppLink>
-          . Cài đặt ở đó là hiện tại, không phải lúc gửi.
-        </p>
+        <DrawerFooter className="border-t pt-3">
+          <p className="text-[11px] text-[var(--text-muted)]">
+            Muốn biết vì sao người này bị chặn: xem{' '}
+            <AppLink
+              href={`/users/${encodeURIComponent(n.externalId)}`}
+              className="text-[var(--starlight)] underline-offset-2 hover:underline"
+            >
+              trang của <span className="font-mono">{n.externalId}</span>
+            </AppLink>
+            . Cài đặt ở đó là hiện tại, không phải lúc gửi.
+          </p>
+        </DrawerFooter>
       )}
-    </Panel>
+    </>
   )
 }

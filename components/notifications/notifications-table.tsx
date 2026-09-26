@@ -30,7 +30,7 @@ const PAGE_SIZE = 25
  */
 const MVP_STATUSES = ['queued', 'sending', 'sent', 'no_recipient', 'failed'] as const
 
-/** Mã người nhận dẫn sang trang chi tiết người đó — không mở panel của dòng (`stopPropagation`). */
+/** Mã người nhận dẫn sang trang chi tiết người đó — không mở ngăn chi tiết của dòng (`stopPropagation`). */
 const recipientColumn: Column<Row> = {
   key: 'externalId',
   label: 'Mã người nhận',
@@ -297,14 +297,7 @@ export function NotificationsTable({
         </div>
       )}
 
-      {selected && (
-        <NotificationOutcome
-          key={selected.id}
-          notification={selected}
-          linkRecipient={!recipient}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      <NotificationOutcome notification={selected} linkRecipient={!recipient} onClose={() => setSelected(null)} />
     </div>
   )
 }
