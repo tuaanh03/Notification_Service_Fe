@@ -29,7 +29,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { CreateTopicInput, TopicAction } from '@/lib/api/topics'
 import type { TopicDto } from '@/lib/api/types'
-import { fmtIso } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 
 type Row = TopicDto & Record<string, unknown>
 
@@ -144,7 +144,7 @@ export function TopicsPage() {
           <span className="text-[var(--text-muted)]">—</span>
         ),
     },
-    { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (r) => fmtIso(r.updatedAt) },
+    { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (r) => fmtDateTime(r.updatedAt) },
     {
       key: 'id',
       label: 'Thao tác',

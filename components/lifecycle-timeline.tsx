@@ -6,11 +6,11 @@ import {
   BRANCHES_NOT_TAKEN,
   TERMINAL_CAPTIONS,
   TERMINAL_STATUSES,
-  fmtIso,
   lifecycleOf,
   mailLeft,
   type Notification,
 } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { statusColors, type NotificationStatus } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
@@ -114,7 +114,7 @@ export function LifecycleTimeline({ notification, compact = false }: { notificat
                 </text>
                 {!compact && (
                   <text x={xs[i]} y={y + 28} textAnchor="middle" fontSize="10" fill="var(--text-muted)" className="font-mono tabular-nums">
-                    {fmtIso(s.at)}
+                    {fmtDateTime(s.at)}
                   </text>
                 )}
               </g>

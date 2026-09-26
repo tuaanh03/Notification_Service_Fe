@@ -8,7 +8,8 @@ import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { MOCK_NOW, fmtIso, scheduledSends, type ScheduledSend } from '@/lib/mock-data'
+import { MOCK_NOW, scheduledSends, type ScheduledSend } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
 /** Đếm ngược từ MOCK_NOW (không Date.now lúc render) — `2h 15m` / `đã quá giờ` */
@@ -48,7 +49,7 @@ export function ScheduledCards() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className={cn('font-mono text-2xl tabular-nums', failed ? 'text-[var(--supernova)]' : 'text-[var(--pulsar)]')}>{countdown(s.run_at)}</span>
-                <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{fmtIso(s.run_at)}</span>
+                <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{fmtDateTime(s.run_at)}</span>
               </div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
                 <dt className="text-[var(--text-muted)]">template</dt>

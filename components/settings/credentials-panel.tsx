@@ -21,7 +21,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApp } from '@/components/app-context'
 import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
-import { MAX_ACTIVE_SECRETS, fmtIso } from '@/lib/mock-data'
+import { MAX_ACTIVE_SECRETS } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 
 const HEADERS = ['Hint', 'Trạng thái', 'Tạo lúc', 'Thu hồi lúc', '']
 
@@ -183,9 +184,9 @@ export function CredentialsPanel() {
                   <TableCell className="px-3">
                     <StatusPill status={s.status} />
                   </TableCell>
-                  <TableCell className="px-3 font-mono text-xs">{fmtIso(s.createdAt)}</TableCell>
+                  <TableCell className="px-3 font-mono text-xs">{fmtDateTime(s.createdAt)}</TableCell>
                   <TableCell className="px-3 font-mono text-xs">
-                    {s.revokedAt ? fmtIso(s.revokedAt) : '—'}
+                    {s.revokedAt ? fmtDateTime(s.revokedAt) : '—'}
                   </TableCell>
                   <TableCell className="px-3 text-right">
                     {s.status === 'active' && (
@@ -250,7 +251,7 @@ export function CredentialsPanel() {
           revoking
             ? [
                 ['khoá', revoking.hint],
-                ['tạo lúc', fmtIso(revoking.createdAt)],
+                ['tạo lúc', fmtDateTime(revoking.createdAt)],
                 ['active còn lại', `${activeCount - 1}/${MAX_ACTIVE_SECRETS}`],
               ]
             : undefined

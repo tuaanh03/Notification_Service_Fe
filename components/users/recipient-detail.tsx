@@ -12,7 +12,7 @@ import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
 import type { RecipientDto, UserPreferencesDto } from '@/lib/api/types'
-import { fmtIso } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { RecipientPreferences, SUPPRESSED_LABEL } from './recipient-preferences'
 
 type Failure = { message: string; code: string }
@@ -98,7 +98,7 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
     <div className="space-y-5">
       <PageHeader
         title={recipient.externalId}
-        subtitle={`Người nhận của ${app.name}, khai báo lúc ${fmtIso(recipient.createdAt)}. Màn này chỉ đọc.`}
+        subtitle={`Người nhận của ${app.name}, khai báo lúc ${fmtDateTime(recipient.createdAt)}. Màn này chỉ đọc.`}
         breadcrumb={breadcrumb}
         actions={
           email ? (

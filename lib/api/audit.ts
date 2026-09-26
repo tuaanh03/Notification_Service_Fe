@@ -1,5 +1,6 @@
 import 'server-only'
-import { fmtIso, type AuditEntry } from '@/lib/mock-data'
+import { type AuditEntry } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { adminFetch } from './client'
 import type { AuditEntryDto } from './types'
 
@@ -61,7 +62,7 @@ export function toAuditEntry(dto: AuditEntryDto): AuditEntry {
     action: ACTION_LABELS[dto.action] ?? dto.action,
     ...(summarize(dto.before) === undefined ? {} : { from: summarize(dto.before) }),
     ...(summarize(dto.after) === undefined ? {} : { to: summarize(dto.after) }),
-    timestamp: fmtIso(dto.at),
+    timestamp: fmtDateTime(dto.at),
     source: dto.source,
   }
 }

@@ -1,5 +1,6 @@
 import 'server-only'
-import { fmtIso, type App, type Channel } from '@/lib/mock-data'
+import { type App, type Channel } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { adminFetch, orgId } from './client'
 import type { AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto } from './types'
 
@@ -37,7 +38,7 @@ export function toApp(dto: AppDto): App {
     granted_channels: dto.grantedChannels.filter((c): c is Channel => UI_CHANNELS.includes(c)),
     quota: dto.rateLimitPerMinute,
     max_recipients_per_event: dto.maxRecipientsPerEvent,
-    updated_at: fmtIso(dto.updatedAt),
+    updated_at: fmtDateTime(dto.updatedAt),
   }
 }
 

@@ -1,4 +1,5 @@
 import type { NotificationStatus } from '@/lib/theme'
+import { fmtDateTime } from '@/lib/time'
 export type AppStatus = 'draft' | 'pending_approval' | 'active' | 'suspended' | 'revoked'
 export type Channel = 'in_app' | 'email'
 export type App = {
@@ -1014,8 +1015,6 @@ export const composableTopics = (namespace: string) =>
 /** "Bây giờ" cố định cho countdown / tuổi bản ghi — không Date.now() lúc render (SSR-safe). */
 export const MOCK_NOW = '2026-09-12T09:00:00Z'
 export const addMinutes = (iso: string, m: number) => new Date(new Date(iso).getTime() + m * 60_000).toISOString()
-/** `2026-09-10T08:20:00Z` → `2026-09-10 08:20Z` — format cố định, không toLocale */
-export const fmtIso = (iso: string) => `${iso.replace('T', ' ').slice(0, 16)}Z`
 
 export type NotificationCounters = {
   /** giải ra (gross) */
@@ -1166,7 +1165,7 @@ export const recipientSnapshot = (n: Notification) => {
     reasons: reasonsFor(i),
     template: n.template,
     result: '250 accepted',
-    at: fmtIso(addMinutes(n.created_at, 7 + i)),
+    at: fmtDateTime(addMinutes(n.created_at, 7 + i)),
   }))
   const deductedReasons = ['opted_out (12/08)', 'excluded bởi admin', 'không có kênh active', 'invalid — hard bounce 03/09']
   const deducted: SnapshotRow[] = pick(10, Math.min(4, c.optedOut + c.noChannel)).map((u, i) => ({
@@ -1175,7 +1174,7 @@ export const recipientSnapshot = (n: Notification) => {
     address: maskEmail(u.email),
     reasons: [included[0] ?? 'user:self'],
     result: deductedReasons[i % deductedReasons.length],
-    at: fmtIso(addMinutes(n.created_at, 6)),
+    at: fmtDateTime(addMinutes(n.created_at, 6)),
   }))
   const failed: SnapshotRow[] = pick(20, Math.min(3, c.failed + c.bounce)).map((u, i) => ({
     person: u.id,
@@ -1184,7 +1183,7 @@ export const recipientSnapshot = (n: Notification) => {
     reasons: [included[0] ?? 'user:self'],
     template: n.template,
     result: i < c.bounce ? '550 mailbox unavailable' : '451 Exchange busy',
-    at: fmtIso(addMinutes(n.created_at, 9 + i)),
+    at: fmtDateTime(addMinutes(n.created_at, 9 + i)),
   }))
   return { received, deducted, failed }
 }
@@ -1223,7 +1222,7 @@ export const notificationAudit = (n: Notification): AuditEntry[] => {
     action: i === 0 ? 'tạo lần gửi' : 'chuyển trạng thái',
     from: i === 0 ? undefined : steps[i - 1].status,
     to: i === 0 ? undefined : step.status,
-    timestamp: fmtIso(step.at),
+    timestamp: fmtDateTime(step.at),
     source: n.origin,
   }))
 }

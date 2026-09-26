@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/empty-state'
 import { EXCLUSION_LABEL, outcomeOf } from '@/components/notifications/notification-outcome'
 import { useApp } from '@/components/app-context'
 import type { AppOverviewDto } from '@/lib/api/types'
-import { fmtIso } from '@/lib/mock-data'
+import { fmtDateTime, fmtHour } from '@/lib/time'
 import { cosmicTokens, statusColors } from '@/lib/theme'
 
 /** Năm trạng thái đường gửi trực tiếp của MVP thật sự tạo ra — sáu trạng thái kia chưa có (CLAUDE.md mục 2.8). */
@@ -32,8 +32,6 @@ const SERIES = [
 ] as const
 
 const num = (n: number) => n.toLocaleString('vi-VN')
-/** Giờ địa phương của trình duyệt — backend trả UTC. */
-const localHour = (iso: string) => new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 
 /** % so với 24 giờ trước. Hôm trước không gửi gì thì không có mốc để so. */
 function deltaOf({ total, previousTotal }: AppOverviewDto['sends']): string | undefined {
@@ -54,7 +52,7 @@ function alertsOf(o: AppOverviewDto, now: number): Alert[] {
   const oldest = o.queue.oldestCreatedAt
   if (oldest !== null && now - Date.parse(oldest) > QUEUE_WARN_MS) {
     alerts.push({
-      text: `Hàng chờ đang dài: ${num(o.queue.waiting)} thư, thư cũ nhất chờ từ ${fmtIso(oldest)}. Tốc độ gửi là giới hạn chung của hộp thư gửi, chia cho mọi app.`,
+      text: `Hàng chờ đang dài: ${num(o.queue.waiting)} thư, thư cũ nhất chờ từ ${fmtDateTime(oldest)}. Tốc độ gửi là giới hạn chung của hộp thư gửi, chia cho mọi app.`,
     })
   }
   const noChannel = o.blocked.no_channel ?? 0
@@ -148,7 +146,7 @@ function Overview({ view }: { view: OverviewView }) {
   const { overview: o, recent, activity } = view
   const distribution = MVP_STATUSES.map((status) => ({ name: status, value: o.byStatus[status] ?? 0 }))
   const windowTotal = distribution.reduce((n, d) => n + d.value, 0)
-  const chart = o.hourly.map((h) => ({ ...h, label: localHour(h.hour) }))
+  const chart = o.hourly.map((h) => ({ ...h, label: fmtHour(h.hour) }))
   const alerts = alertsOf(o, Date.parse(o.generatedAt))
   const blockedReasons = Object.entries(o.blocked).filter(([, n]) => n > 0)
 
@@ -336,7 +334,7 @@ function Overview({ view }: { view: OverviewView }) {
             {recent.map((n) => (
               <div key={n.id} className="flex items-center justify-between gap-4 px-5 py-3 text-xs">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="hidden shrink-0 font-mono text-[var(--text-muted)] sm:inline">{fmtIso(n.createdAt)}</span>
+                  <span className="hidden shrink-0 font-mono text-[var(--text-muted)] sm:inline">{fmtDateTime(n.createdAt)}</span>
                   <span className="truncate font-mono text-[var(--text-secondary)]">{n.topic || '—'}</span>
                   <span className="truncate font-mono text-[var(--text-muted)]">{n.externalId ?? '—'}</span>
                 </div>

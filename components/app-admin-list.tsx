@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { Ban, Check, Copy, Database, MoreHorizontal, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AppDto } from '@/lib/api/types'
-import { fmtIso } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -75,7 +75,7 @@ const columns: Column<AppDto>[] = [
     numeric: true,
     render: (app) => <>{app.maxRecipientsPerEvent.toLocaleString('vi-VN')}</>,
   },
-  { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (app) => <>{fmtIso(app.updatedAt)}</> },
+  { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (app) => <>{fmtDateTime(app.updatedAt)}</> },
 ]
 
 /**

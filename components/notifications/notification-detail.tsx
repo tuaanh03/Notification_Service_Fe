@@ -10,7 +10,8 @@ import { LifecycleTimeline } from '@/components/lifecycle-timeline'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { Button } from '@/components/ui/button'
-import { flagsOf, fmtIso, mailLeft, notificationAudit, notificationById, notificationCounters } from '@/lib/mock-data'
+import { flagsOf, mailLeft, notificationAudit, notificationById, notificationCounters } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 import { ContentPanel } from './content-panel'
 import { CountersRow } from './counters-row'
 import { FlagBadge, OriginBadge } from './origin-badge'
@@ -34,7 +35,7 @@ export function NotificationDetail({ id }: { id: string }) {
     <>
       <PageHeader
         title={n.id}
-        subtitle={`${n.topic_key} · ${fmtIso(n.created_at)}`}
+        subtitle={`${n.topic_key} · ${fmtDateTime(n.created_at)}`}
         actions={
           <>
             <OriginBadge origin={n.origin} />

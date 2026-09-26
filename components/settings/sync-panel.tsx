@@ -4,7 +4,8 @@ import { Panel } from '@/components/panel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { SYNC_PAYLOAD, fmtIso, syncStatuses } from '@/lib/mock-data'
+import { SYNC_PAYLOAD, syncStatuses } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 
 /** UC-002 §E — sync danh bạ từ App Service, read-only. */
 export function SyncPanel() {
@@ -32,7 +33,7 @@ export function SyncPanel() {
                       {s.mode}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-3 font-mono text-xs tabular-nums">{fmtIso(s.synced_at)}</TableCell>
+                  <TableCell className="px-3 font-mono text-xs tabular-nums">{fmtDateTime(s.synced_at)}</TableCell>
                   <TableCell className="px-3 text-right font-mono text-xs tabular-nums">{s.users}</TableCell>
                   <TableCell className="px-3 text-right font-mono text-xs tabular-nums">{s.groups}</TableCell>
                 </TableRow>

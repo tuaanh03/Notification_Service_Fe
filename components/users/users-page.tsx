@@ -14,7 +14,6 @@ import { SUPPRESSED_LABEL } from '@/components/users/recipient-preferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { RecipientDto } from '@/lib/api/types'
-import { fmtIso } from '@/lib/mock-data'
 
 type Row = RecipientDto & Record<string, unknown>
 

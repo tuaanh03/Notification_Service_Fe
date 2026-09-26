@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/drawer'
 import { AppLink } from '@/components/app-link'
 import type { NotificationSummaryDto } from '@/lib/api/types'
-import { fmtIso } from '@/lib/mock-data'
+import { fmtDateTime } from '@/lib/time'
 
 /** Vì sao thư KHÔNG được gửi — chữ cho người trực, khớp `exclusion_reason` của backend. */
 export const EXCLUSION_LABEL: Readonly<Record<string, string>> = {
@@ -46,7 +46,7 @@ function Step({ label, at }: { label: string; at: string | null }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-dashed py-1.5 last:border-b-0">
       <span className="text-xs text-[var(--text-secondary)]">{label}</span>
-      <span className="font-mono text-xs tabular-nums">{at ? fmtIso(at) : '—'}</span>
+      <span className="font-mono text-xs tabular-nums">{at ? fmtDateTime(at) : '—'}</span>
     </div>
   )
 }
@@ -166,6 +166,8 @@ function OutcomeDetail({ n, linkRecipient }: { n: NotificationSummaryDto; linkRe
           )}
         </dl>
 
+        {/* Đối chiếu với log máy chủ (UTC) hay nhất ở đây — nói rõ giờ đang xem là giờ nào. */}
+        <p className="mb-1.5 text-[11px] text-[var(--text-muted)]">Giờ Việt Nam (UTC+7)</p>
         <div className="rounded-lg border px-3 py-1">
           <Step label="App gọi API" at={n.createdAt} />
           <Step label="Vào hàng đợi" at={n.queuedAt} />
