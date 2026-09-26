@@ -1,7 +1,8 @@
 'use client'
 import { AppLink, useAppRouter } from '@/components/app-link'
 import { useState, useTransition } from 'react'
-import { Database, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
+import { Ban, Check, Copy, Database, MoreHorizontal, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
+import { toast } from 'sonner'
 import type { AppDto } from '@/lib/api/types'
 import { fmtIso } from '@/lib/mock-data'
 import { DataTable, type Column } from '@/components/data-table'
@@ -11,6 +12,13 @@ import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ApproveAppDialog } from '@/components/apps/approve-app-dialog'
 import { AppTransitionDialog, type AppAction } from '@/components/apps/app-transition-dialog'
@@ -80,48 +88,87 @@ const ACTIONS_BY_STATUS: Record<string, readonly AppAction[]> = {
   suspended: ['resume', 'revoke'],
 }
 
-const ACTION_LABEL: Record<AppAction, string> = {
-  suspend: 'Tạm ngưng',
-  resume: 'Mở lại',
-  revoke: 'Thu hồi',
+const ACTION_ITEM: Record<AppAction, { label: string; icon: typeof Pause }> = {
+  suspend: { label: 'Tạm ngưng…', icon: Pause },
+  resume: { label: 'Mở lại…', icon: Play },
+  revoke: { label: 'Thu hồi…', icon: Ban },
 }
 
 /**
- * Cột hành động. `Column.key` là `keyof AppDto` nên mượn `id` — field này không hiện ở cột nào
- * khác, và `render` bỏ qua giá trị.
+ * Cột thao tác (nút ⋯). `Column.key` là `keyof AppDto` nên mượn `id` — field này không hiện ở cột
+ * nào khác, và `render` bỏ qua giá trị.
  *
- * Trạng thái nào không có đường đi hợp lệ thì để trống, không dựng nút rồi để backend trả 409.
+ * Trạng thái nào không có đường đi hợp lệ thì không có mục đổi trạng thái, không dựng mục rồi để
+ * backend trả 409. Mọi mục đều mở dialog (dấu "…"), không làm ngay. Thu hồi là trạng thái KẾT
+ * THÚC nên tách riêng và tô đỏ.
  */
 const actionColumn = (
   onApprove: (app: AppDto) => void,
   onTransition: (app: AppDto, action: AppAction) => void,
 ): Column<AppDto> => ({
   key: 'id',
-  label: 'Hành động',
+  label: 'Thao tác',
+  align: 'right',
   render: (app) => {
-    if (app.status === 'pending_approval') {
-      return (
-        <Button size="sm" variant="outline" onClick={() => onApprove(app)}>
-          Duyệt
-        </Button>
-      )
-    }
     const actions = ACTIONS_BY_STATUS[app.status] ?? []
-    if (actions.length === 0) return <span className="text-[var(--text-muted)]">—</span>
+    const reversible = actions.filter((action) => action !== 'revoke')
     return (
-      <span className="flex gap-2">
-        {actions.map((action) => (
-          <Button
-            key={action}
-            size="sm"
-            variant={action === 'revoke' ? 'ghost' : 'outline'}
-            className={action === 'revoke' ? 'text-[var(--supernova)]' : undefined}
-            onClick={() => onTransition(app, action)}
-          >
-            {ACTION_LABEL[action]}
-          </Button>
-        ))}
-      </span>
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Thao tác cho ${app.name}`}
+                className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 bg-popover border border-border shadow-md">
+            {app.status === 'pending_approval' && (
+              <>
+                <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => onApprove(app)}>
+                  <Check className="size-3.5 mr-1.5" /> Duyệt app…
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {reversible.map((action) => {
+              const { label, icon: Icon } = ACTION_ITEM[action]
+              return (
+                <DropdownMenuItem key={action} className="text-xs cursor-pointer" onClick={() => onTransition(app, action)}>
+                  <Icon className="size-3.5 mr-1.5" /> {label}
+                </DropdownMenuItem>
+              )
+            })}
+            {reversible.length > 0 && <DropdownMenuSeparator />}
+            {actions.includes('revoke') && (
+              <>
+                <DropdownMenuItem
+                  variant="destructive"
+                  className="text-xs cursor-pointer"
+                  onClick={() => onTransition(app, 'revoke')}
+                >
+                  <Ban className="size-3.5 mr-1.5" /> {ACTION_ITEM.revoke.label}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuItem
+              className="text-xs cursor-pointer"
+              onClick={() => {
+                void navigator.clipboard.writeText(app.id)
+                toast.success('Đã sao chép app ID')
+              }}
+            >
+              <Copy className="size-3.5 mr-1.5" /> Sao chép app ID
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     )
   },
 })

@@ -148,6 +148,7 @@ export function TopicsPage() {
     {
       key: 'id',
       label: 'Thao tác',
+      align: 'right',
       render: (r) => {
         const next = NEXT_ACTION[r.status]
         const Icon = next?.icon

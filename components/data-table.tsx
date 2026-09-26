@@ -14,6 +14,8 @@ export type Column<T> = {
   mono?: boolean
   /** numeric column → font-mono + tabular-nums, right-aligned */
   numeric?: boolean
+  /** cột thao tác (nút ⋯) → tiêu đề và ô cùng căn phải, cột co vừa nội dung */
+  align?: 'right'
   /** custom cell (e.g. <StatusPill>); default renders String(value) */
   render?: (row: T, index: number) => React.ReactNode
 }
@@ -102,7 +104,7 @@ export function DataTable<T extends Record<string, unknown>>({
           <TableHeader className="sticky top-0 bg-[var(--deep)] text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
             <TableRow className="hover:bg-transparent">
               {columns.map((c) => (
-                <TableHead key={String(c.key)} className={cn('h-10 px-4 font-medium', c.numeric && 'text-right')}>
+                <TableHead key={String(c.key)} className={cn('h-10 px-4 font-medium', c.numeric && 'text-right', c.align === 'right' && 'w-px whitespace-nowrap text-right')}>
                   {c.label}
                 </TableHead>
               ))}
@@ -126,6 +128,7 @@ export function DataTable<T extends Record<string, unknown>>({
                       'px-4',
                       c.mono && 'font-mono text-xs',
                       c.numeric && 'text-right font-mono tabular-nums',
+                      c.align === 'right' && 'w-px whitespace-nowrap text-right',
                     )}
                   >
                     {c.render ? c.render(r, i) : String(r[c.key] ?? '—')}
