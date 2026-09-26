@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { AlertTriangle, Lock, Pause, Play, Plus, PlugZap, RadioTower } from 'lucide-react'
+import { AlertTriangle, Copy, Lock, MoreHorizontal, Pause, Play, Plus, PlugZap, RadioTower } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   createTopicAction,
@@ -19,6 +19,13 @@ import { CreateTopicDialog } from '@/components/topics/create-topic-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { CreateTopicInput, TopicAction } from '@/lib/api/topics'
 import type { TopicDto } from '@/lib/api/types'
@@ -143,24 +150,52 @@ export function TopicsPage() {
       label: 'Thao tác',
       render: (r) => {
         const next = NEXT_ACTION[r.status]
-        if (!next) return <span className="text-[var(--text-muted)]">—</span>
-        const Icon = next.icon
+        const Icon = next?.icon
         return (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            className="h-7 gap-1.5 text-xs"
-            onClick={() =>
-              // Tạm dừng là chặn đường gửi của app đang chạy -> hỏi lại.
-              // Kích hoạt chỉ mở thêm đường, không phá gì -> làm luôn.
-              next.action === 'suspend' ? setSuspending(r) : handleTransition(r, 'activate')
-            }
-          >
-            <Icon className="size-3.5" />
-            {next.label}
-          </Button>
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`Thao tác cho ${r.key}`}
+                    className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 bg-popover border border-border shadow-md">
+                {next && Icon && (
+                  <>
+                    <DropdownMenuItem
+                      variant={next.action === 'suspend' ? 'destructive' : 'default'}
+                      disabled={pending}
+                      className="text-xs cursor-pointer"
+                      onClick={() =>
+                        // Tạm dừng là chặn đường gửi của app đang chạy -> hỏi lại.
+                        // Kích hoạt chỉ mở thêm đường, không phá gì -> làm luôn.
+                        next.action === 'suspend' ? setSuspending(r) : handleTransition(r, 'activate')
+                      }
+                    >
+                      <Icon className="size-3.5 mr-1.5" /> {next.label}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem
+                  className="text-xs cursor-pointer"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(r.key)
+                    toast.success(`Đã sao chép mã chủ đề "${r.key}"`)
+                  }}
+                >
+                  <Copy className="size-3.5 mr-1.5" /> Sao chép mã chủ đề
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )
       },
     },
