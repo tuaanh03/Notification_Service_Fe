@@ -16,9 +16,9 @@ const columns: Column<Row>[] = [
 /**
  * 07 §D — bảng mã lỗi `/v1` cho đội app tích hợp. Nguồn: `lib/api/v1-errors.ts` (sao đúng backend).
  *
- * Bản v0 từng dạy mã không tồn tại (`token_expired`, `missing_variable`, `rate_limited`…) và header
- * `Idempotency-Key` — backend không có bước đổi token, chưa có template, chưa trả 429, và khoá chống
- * trùng là trường `idempotencyKey` trong body.
+ * Bản v0 từng dạy mã không tồn tại (`token_expired`, `rate_limited`…) và header `Idempotency-Key` —
+ * backend không có bước đổi token, chưa trả 429, và khoá chống trùng là trường `idempotencyKey` trong
+ * body. Lỗi thiếu biến của template nay có thật, tên là `MISSING_VARIABLE` (ADR-0020).
  */
 export function ErrorCodesTable() {
   return (
