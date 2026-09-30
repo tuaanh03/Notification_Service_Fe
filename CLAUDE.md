@@ -24,7 +24,6 @@ webservice/ews-astrolink/
 ├── app/                      # Next.js App Router
 │   ├── layout.tsx            # RootLayout: fonts + <AppProvider> > <AppGate> > <AppShell> (bọc đúng 1 lần);
 │   │                         # server component — nơi DUY NHẤT nạp danh sách app (/admin/apps)
-│   ├── api/ai/generate-html/ # route handler gọi API AI (Template editor)
 │   ├── globals.css           # token Cosmic (--void, --starlight, …)
 │   ├── page.tsx              # /            Tổng quan + actions.ts — ĐÃ đấu API (mục 2.11)
 │   ├── compose/              # /compose     Composer (UC-008)
@@ -65,7 +64,7 @@ webservice/ews-astrolink/
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
 │   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
-│   │                         # ai-compose-dialog = mock, KHÔNG còn ai dùng
+│   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend)
 │   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx
 │   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
@@ -478,9 +477,11 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
 *   **Biến bắt buộc mới so với bản đang xuất bản → hộp chặn trước khi xuất bản**: app chưa gửi biến đó
     thì mọi lần gửi bị `MISSING_VARIABLE`.
 *   **Lưu trữ không có đường quay lại** — `tone="blocking"`, nêu `TEMPLATE_ARCHIVED`.
-*   **KHÔNG có "Gửi thử", "Import từ API", binding template ↔ topic.** Backend không có đường nào cho
-    chúng; nhãn "Nhờ AI" ở danh sách (mock) đã bỏ — AI thật nằm trong khung soạn HTML
-    (`/api/ai/generate-html`, prompt kèm luật biến của backend), kết quả luôn là nháp.
+*   **KHÔNG có "Gửi thử", "Import từ API", binding template ↔ topic.** Backend không có đường nào cho chúng.
+*   **"Nhờ AI soạn" gọi BACKEND** (`POST …/templates/:id/ai-compose`, ADR-0020 §7) — console không giữ khoá
+    AI, không có route `/api/ai/*`. `<AiComposeDialog>` gửi mô tả + biến đã khai (+ nội dung đang soạn khi
+    "Sửa"), KHÔNG gửi giá trị mẫu; hiện đề xuất + `issues`; "Dùng bản này" chỉ điền vào ô soạn, không lưu.
+    Lời gọi này chờ 70 giây (`timeoutMs` của `adminFetch`), mọi lời gọi khác vẫn 10 giây.
 *   Lịch sử gửi có cột **Template** ("tên · vN", "—" = nội dung viết thẳng) — `templateLabelOf()` trong
     `notification-outcome.tsx`, dùng chung bảng và panel.
 *   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).

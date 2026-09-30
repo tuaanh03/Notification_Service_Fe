@@ -16,6 +16,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Textarea } from '@/components/ui/textarea'
 import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
 import { TEMPLATE_ISSUE_MESSAGES } from '@/lib/api/problem'
+import { AiComposeDialog } from './ai-compose-dialog'
 import { ContractPanel } from './contract-panel'
 import { EditorPane, Highlight } from './editor-pane'
 import { PreviewPane } from './preview-pane'
@@ -34,6 +35,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [name, setName] = useState('')
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
+  /** Mỗi lần mở hộp thoại AI là dựng lại từ đầu — không mang mô tả / đề xuất của lần trước. */
+  const [aiRound, setAiRound] = useState(0)
 
   const savedName = ed.detail?.name ?? ''
   useEffect(() => setName(savedName), [savedName])
@@ -109,7 +113,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         {ed.aiBanner && (
           <Alert className="bg-[var(--pulsar)]/10" data-testid="ai-banner">
             <Sparkles className="text-[var(--pulsar)]" />
-            <AlertDescription>Nội dung HTML do AI sinh. Người thật phải xem thử và bấm Xuất bản — AI không bao giờ tự xuất bản.</AlertDescription>
+            <AlertDescription>Nội dung do AI soạn, CHƯA lưu. Đọc lại, xem thử rồi tự Lưu nháp / Xuất bản — AI không bao giờ tự làm hai việc đó.</AlertDescription>
           </Alert>
         )}
         {ed.archived && (
@@ -202,7 +206,14 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         >
           <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden">
             <div className="flex h-full min-w-0 flex-col overflow-hidden p-5">
-              <EditorPane ed={ed} locked={ed.locked} />
+              <EditorPane
+                ed={ed}
+                locked={ed.locked}
+                onAi={() => {
+                  setAiRound((n) => n + 1)
+                  setAiOpen(true)
+                }}
+              />
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
@@ -228,6 +239,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         </div>
       </div>
 
+      <AiComposeDialog key={aiRound} open={aiOpen} ed={ed} onClose={() => setAiOpen(false)} />
       {/* Biến bắt buộc mới: từ lúc xuất bản, app chưa gửi biến đó thì mọi lần gửi bị từ chối. */}
       <ConfirmDialog
         open={publishWarn}

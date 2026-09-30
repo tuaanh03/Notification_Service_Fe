@@ -1,6 +1,7 @@
 'use server'
 
 import {
+  aiComposeTemplate,
   archiveTemplate,
   createTemplate,
   draftFromVersion,
@@ -9,10 +10,11 @@ import {
   publishTemplate,
   renameTemplate,
   saveDraft,
+  type AiComposeInput,
   type TemplateContentInput,
 } from '@/lib/api/templates'
 import { toResult, type ActionResult } from '@/lib/api/result'
-import type { TemplateDetailDto, TemplateSummaryDto } from '@/lib/api/types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto } from '@/lib/api/types'
 
 /**
  * Lớp BFF của màn Templates. Server Action vì dữ liệu thuộc app đang chọn (`?app=`, CLAUDE.md mục 2.2).
@@ -69,4 +71,13 @@ export async function draftFromVersionAction(
 
 export async function archiveTemplateAction(appId: string, id: string): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => archiveTemplate(appId, id))
+}
+
+/** "Nhờ AI soạn" — chỉ lấy đề xuất, không lưu. Khoá AI nằm ở backend, console không biết nhà cung cấp là ai. */
+export async function aiComposeAction(
+  appId: string,
+  id: string,
+  input: AiComposeInput,
+): Promise<ActionResult<AiComposeResultDto>> {
+  return toResult(() => aiComposeTemplate(appId, id, input))
 }

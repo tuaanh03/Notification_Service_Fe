@@ -68,6 +68,9 @@ const MESSAGES: Readonly<Record<string, string>> = {
   DRAFT_EXISTS: 'Template đang có bản nháp. Sửa bản nháp đó, hoặc xuất bản nó trước.',
   NO_DRAFT: 'Không có bản nháp để xuất bản — có thể người khác vừa xuất bản. Tải lại trang.',
   VERSION_NOT_DRAFT: 'Bản này đã xuất bản, không sửa tại chỗ được. Bấm Sửa để tạo bản nháp mới.',
+  AI_NOT_CONFIGURED: 'Chưa bật AI: người quản trị máy chủ cần điền AI_API_URL, AI_API_KEY, AI_MODEL cho api.',
+  AI_RATE_LIMITED: 'Đã gọi AI quá 10 lần trong một phút. Chờ một chút rồi thử lại.',
+  AI_PROVIDER_ERROR: 'Nhà cung cấp AI không trả lời được (lỗi, quá giờ hoặc trả sai định dạng). Thử lại sau.',
 }
 
 /**

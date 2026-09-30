@@ -81,6 +81,8 @@ interface RequestInit_ {
   query?: Record<string, string | undefined>
   /** `null` = không gửi header Authorization (dùng cho `/auth/login`). */
   token?: string | null
+  /** Mặc định 10 giây. Chỉ lời gọi chờ dịch vụ ngoài (AI soạn template) mới cần dài hơn. */
+  timeoutMs?: number
 }
 
 async function request<T>(path: string, init: RequestInit_): Promise<T> {
@@ -100,7 +102,7 @@ async function request<T>(path: string, init: RequestInit_): Promise<T> {
       },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       cache: 'no-store',
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(init.timeoutMs ?? TIMEOUT_MS),
     })
   } catch (cause) {
     throw ApiError.unreachable(cause)
@@ -120,7 +122,7 @@ async function request<T>(path: string, init: RequestInit_): Promise<T> {
  */
 export async function adminFetch<T>(
   path: string,
-  init: { method?: string; body?: unknown; query?: Record<string, string | undefined> } = {},
+  init: { method?: string; body?: unknown; query?: Record<string, string | undefined>; timeoutMs?: number } = {},
 ): Promise<T> {
   const token = await sessionToken()
   if (token === null) {

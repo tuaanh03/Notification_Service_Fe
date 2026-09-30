@@ -268,3 +268,11 @@ export type TemplateSummaryDto = {
 
 /** Sao đúng `TemplateDetailDto`: tóm tắt + mọi version, mới nhất trước. */
 export type TemplateDetailDto = TemplateSummaryDto & { versions: TemplateVersionDto[] }
+
+/** Đề xuất của "Nhờ AI soạn" (`POST …/templates/:id/ai-compose`) — CHƯA lưu gì; `issues` = kiểm như lúc xuất bản. */
+export type AiComposeResultDto = {
+  subject: string
+  html: string
+  text: string
+  issues: { code: string; message?: string; path?: string }[]
+}

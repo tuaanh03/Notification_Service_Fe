@@ -1,6 +1,6 @@
 import 'server-only'
 import { adminFetch } from './client'
-import type { TemplateDetailDto, TemplateSummaryDto, TemplateVariableDto } from './types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto, TemplateVariableDto } from './types'
 
 export type { TemplateDetailDto, TemplateSummaryDto }
 
@@ -61,4 +61,24 @@ export async function publishTemplate(appId: string, id: string): Promise<Templa
 /** POST .../archive — không sửa / xuất bản / gửi được nữa. Không có đường bỏ lưu trữ. */
 export async function archiveTemplate(appId: string, id: string): Promise<TemplateDetailDto> {
   return adminFetch<TemplateDetailDto>(`${one(appId, id)}/archive`, { method: 'POST' })
+}
+
+/** Body "Nhờ AI soạn": trạng thái ĐANG SOẠN (có thể chưa lưu). Biến chỉ có tên / bắt buộc / mô tả — không giá trị mẫu. */
+export type AiComposeInput = {
+  instruction: string
+  mode: 'new' | 'revise'
+  variables: { name: string; required: boolean; description?: string }[]
+  current?: { subject: string; html: string; text: string }
+}
+
+/** Backend chờ nhà cung cấp AI tối đa 60 giây — console chờ lâu hơn một chút để nhận được lỗi thật của backend. */
+const AI_COMPOSE_TIMEOUT_MS = 70_000
+
+/** POST .../ai-compose — trả ĐỀ XUẤT, không ghi gì (ADR-0020 §7 của backend). */
+export async function aiComposeTemplate(appId: string, id: string, input: AiComposeInput): Promise<AiComposeResultDto> {
+  return adminFetch<AiComposeResultDto>(`${one(appId, id)}/ai-compose`, {
+    method: 'POST',
+    body: input,
+    timeoutMs: AI_COMPOSE_TIMEOUT_MS,
+  })
 }

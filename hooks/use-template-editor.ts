@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import {
+  aiComposeAction,
   archiveTemplateAction,
   draftFromVersionAction,
   loadTemplateAction,
@@ -10,7 +11,7 @@ import {
 } from '@/app/templates/actions'
 import type { Issue } from '@/lib/api/problem'
 import type { ActionResult } from '@/lib/api/result'
-import type { TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
 import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
 
 /** Lỗi của thao tác GHI gần nhất — kèm `issues` khi xuất bản bị 422. */
@@ -161,6 +162,29 @@ export function useTemplateEditor(appId: string, templateId: string) {
     draftFrom: (version: number) => run(() => draftFromVersionAction(appId, templateId, version)),
     rename: (name: string) => run(() => renameTemplateAction(appId, templateId, name)),
     archive: () => run(() => archiveTemplateAction(appId, templateId)),
+    /**
+     * Hỏi AI một đề xuất — KHÔNG đụng ô soạn. Gửi biến đã khai (tên / bắt buộc / mô tả), không gửi giá
+     * trị mẫu; `revise` gửi kèm nội dung đang soạn (có thể chưa lưu).
+     */
+    aiCompose: (instruction: string, mode: 'new' | 'revise'): Promise<ActionResult<AiComposeResultDto>> =>
+      aiComposeAction(appId, templateId, {
+        instruction,
+        mode,
+        variables: variables.map((v) => ({
+          name: v.name,
+          required: v.required,
+          ...(v.description ? { description: v.description } : {}),
+        })),
+        ...(mode === 'revise' ? { current: { subject, html, text } } : {}),
+      }),
+    /** "Dùng bản này": điền đề xuất vào ô soạn — chưa lưu, người soạn tự Lưu nháp / Xuất bản. */
+    applyAi: (content: { subject: string; html: string; text: string }) => {
+      setSubject(content.subject)
+      setHtml(content.html)
+      setText(content.text)
+      setDirty(true)
+      setAiBanner(true)
+    },
   }
 }
 
