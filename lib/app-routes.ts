@@ -42,7 +42,7 @@ export function isBootstrapRoute(pathname: string): boolean {
  */
 export const APP_DETAIL_ROUTES: ReadonlyArray<{ base: string; static: readonly string[] }> = [
   { base: '/users', static: ['/users/import'] },
-  { base: '/templates', static: [] },
+  { base: '/templates', static: ['/templates/new'] },
   { base: '/notifications', static: ['/notifications/errors'] },
 ]
 

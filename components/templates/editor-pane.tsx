@@ -7,17 +7,20 @@ import { Loader2, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
+import { parseVariable } from '@/lib/template-syntax'
 import { cn } from '@/lib/utils'
 
-const TOKEN_RE = /(\{\{\s*[a-zA-Z0-9_]+\s*\}\})/g
-const nameOf = (tok: string) => tok.replace(/[{}\s]/g, '')
+/** Tách `{{ ... }}` ra khỏi dòng (nhóm bắt để `split` giữ lại token). */
+const TOKEN_RE = /(\{\{[^}]+\}\})/g
+const isToken = (part: string) => part.startsWith('{{') && part.endsWith('}}')
+const nameOf = (tok: string) => parseVariable(tok.slice(2, -2)).path
 
-/** Tô sáng `{{ }}` trong một dòng: cyan nếu đã khai schema, rose nếu chưa. */
+/** Tô sáng `{{ }}` trong một dòng: cyan nếu đã khai trong bảng biến, rose nếu chưa. */
 export function Highlight({ text, declared }: { text: string; declared: string[] }) {
   return (
     <>
       {text.split(TOKEN_RE).map((part, i) =>
-        TOKEN_RE.test(part) ? (
+        isToken(part) ? (
           <span
             key={i}
             className={cn(
@@ -72,6 +75,8 @@ export function EditorPane({ ed, locked }: { ed: TemplateEditorState; locked: bo
         body: JSON.stringify({
           prompt:
             'Tạo layout HTML email thông báo responsive hiện đại, phong cách clean và trang nhã, bao gồm logo header, nội dung chính, bảng thông tin nổi bật, nút hành động CTA, và footer bản quyền.',
+          // Biến đang khai — AI dùng đúng tên này thay vì bịa tên mới.
+          variables: ed.variables.map((v) => v.name),
         }),
       })
 
@@ -108,7 +113,8 @@ export function EditorPane({ ed, locked }: { ed: TemplateEditorState; locked: bo
     if (!view) return
     const doc = view.state.doc
     const text = doc.toString()
-    const regex = new RegExp(`\\{\\{\\s*${tok}\\s*\\}\\}`, 'i')
+    const escaped = tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`\\{\\{\\s*${escaped}\\s*(\\|[^}]*)?\\}\\}`)
     const match = regex.exec(text)
     if (match) {
       view.dispatch({
@@ -214,9 +220,9 @@ export function EditorPane({ ed, locked }: { ed: TemplateEditorState; locked: bo
               size="xs"
               className="h-5 border-[var(--supernova)]/40 px-1.5 font-mono text-[11px] text-[var(--supernova)] hover:bg-[var(--supernova)]/10"
               onClick={() => jumpToToken(tok)}
-              title={`Nhảy tới biến {{${tok}}} trong editor`}
+              title={`Nhảy tới biến {{ ${tok} }} trong editor`}
             >
-              &#123;&#123;{tok}&#125;&#125; →
+              &#123;&#123; {tok} &#125;&#125; →
             </Button>
           ))}
         </div>

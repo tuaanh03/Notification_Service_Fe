@@ -38,7 +38,8 @@ webservice/ews-astrolink/
 │   │                         # /users/[id]?app= = trang chi tiết một người, ĐÃ đấu (mục 2.7);
 │   │                         # /users/import vẫn mock (mục 2.4)
 │   ├── subscriptions/        # /subscriptions — còn mock, ĐÃ GỠ KHỎI MENU (mục 2.8)
-│   ├── templates/            # /templates, /templates/[key] editor (UC-006)
+│   ├── templates/            # /templates + actions.ts — ĐÃ đấu API (mục 2.12); /templates/new tạo,
+│   │                         # /templates/[id] màn soạn (id = templateId, UUID)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
 │   ├── settings/{credentials,origins,profile,quota,sync}/
@@ -62,7 +63,9 @@ webservice/ews-astrolink/
 │   │                         # users-table, add-user-dialog, user-detail (+ profile-panel, subscriptions-panel,
 │   │                         # data-tags-panel, event-log-panel) nay KHÔNG ai dùng (mục 2.7);
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
-│   ├── templates/*           # templates-page/-table, template-editor (+ editor-pane, preview-pane, schema-pane, versions-panel, contract-panel), ai-compose-dialog
+│   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
+│   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
+│   │                         # ai-compose-dialog = mock, KHÔNG còn ai dùng
 │   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx
 │   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
@@ -79,7 +82,7 @@ webservice/ews-astrolink/
 │                             # app-routes: ?app= trên đường dẫn — ORG_ROUTES, APP_DETAIL_ROUTES (mục 2.9)
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
 │                             # · result.ts (ActionResult + ActionStop) · apps.ts · topics.ts
-│                             # · users.ts · notifications.ts · audit.ts · index.ts
+│                             # · users.ts · notifications.ts · audit.ts · templates.ts · index.ts
 │                             # · v1-errors.ts (bảng mã lỗi /v1 — hợp đồng tĩnh, không server-only)
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
@@ -90,7 +93,7 @@ webservice/ews-astrolink/
 Stack thật: **Next 16.3 · React 19 · Tailwind v4** (`@tailwindcss/postcss`, không có `tailwind.config`) ·
 **shadcn v4 trên `@base-ui/react`** (không phải Radix) · `sonner` (toast) · `framer-motion` 13 · `recharts` 3 ·
 `lucide-react` · **pnpm** (trong WSL chạy qua `corepack pnpm`; shim `~/.local/bin/pnpm`).
-`hooks/use-send-simulation.ts` giữ state machine gửi của Composer; `hooks/use-template-editor.ts` giữ state/derived của Template editor (parse `{{ }}`, sanitize, schema issues, version).
+`hooks/use-send-simulation.ts` giữ state machine gửi của Composer; `hooks/use-template-editor.ts` giữ state của màn soạn template (nạp / lưu nháp / xuất bản qua Server Action, biến chưa khai, xem thử); `lib/template-syntax.ts` là bản sao PHÍA TRÌNH DUYỆT của luật biến backend, chỉ để tô màu và xem thử.
 
 Mọi route nav đang link tới đều có folder thật.
 
@@ -249,7 +252,7 @@ mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật
 kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
-Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/settings/credentials` · `/settings/origins` (kèm route con),
+Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` · `/settings/credentials` · `/settings/origins` (kèm route con),
 `/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
@@ -453,6 +456,35 @@ Ba lời gọi gộp trong `loadOverviewAction` (`app/actions.ts`); một cái h
     Không thêm cảnh báo nào không suy ra được từ `AppOverviewDto`.
 *   Tải khi mở / đổi app / bấm Làm mới — không tự cập nhật, nên không có nhãn "LIVE".
 
+### 2.12. Templates — admin soạn và xuất bản, app gửi bằng `templateId`
+
+Đọc / ghi `/admin/apps/:appId/templates…` (ADR-0020 của backend). App service KHÔNG tạo / sửa template;
+nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ biến vào bản đang xuất bản.
+
+*   **Định danh là `templateId` (UUID), không có `key`.** Màn soạn hiện mã kèm nút sao chép để đưa cho
+    đội app. Tên chỉ cho người đọc, không trùng trong app — so KHÔNG phân biệt hoa thường và dấu
+    (`TEMPLATE_NAME_TAKEN`).
+*   **Cú pháp biến là `{{ payload.x }}` / `{{ user.external_id }}`.** `{{ x }}` (thiếu nguồn) bị tô đỏ và
+    backend từ chối. Mặc định viết trong nội dung: `{{ payload.x | default: "…" }}` — bảng biến KHÔNG có
+    cột "Kiểu" / "Mặc định" (backend không có chỗ chứa, mục 6 "form có ô backend không lưu").
+*   **Một nháp + một bản đang xuất bản.** Không có nháp thì khung soạn chỉ đọc, nút "Sửa" tạo nháp từ
+    bản đang xuất bản. "Quay về bản cũ" = "Tạo nháp từ bản này", người soạn tự Xuất bản — không có
+    xuất bản lại tại chỗ.
+*   **Xuất bản = lưu nháp rồi xuất bản** trong một Server Action (`saveAndPublishAction`): backend xuất
+    bản bản nháp ĐANG NẰM trên server, bỏ bước lưu là xuất bản nhầm bản cũ.
+*   **Kiểm tra chính thức ở backend.** Lỗi 422 hiện TỪNG vi phạm (`issues[].code` + `path`, câu tiếng
+    Việt ở `TEMPLATE_ISSUE_MESSAGES` của `problem.ts`) — `ActionResult` vì vậy mang thêm `issues`.
+    `lib/template-syntax.ts` chỉ để tô màu / xem thử, đừng biến nó thành cổng chặn thứ hai.
+*   **Biến bắt buộc mới so với bản đang xuất bản → hộp chặn trước khi xuất bản**: app chưa gửi biến đó
+    thì mọi lần gửi bị `MISSING_VARIABLE`.
+*   **Lưu trữ không có đường quay lại** — `tone="blocking"`, nêu `TEMPLATE_ARCHIVED`.
+*   **KHÔNG có "Gửi thử", "Import từ API", binding template ↔ topic.** Backend không có đường nào cho
+    chúng; nhãn "Nhờ AI" ở danh sách (mock) đã bỏ — AI thật nằm trong khung soạn HTML
+    (`/api/ai/generate-html`, prompt kèm luật biến của backend), kết quả luôn là nháp.
+*   Lịch sử gửi có cột **Template** ("tên · vN", "—" = nội dung viết thẳng) — `templateLabelOf()` trong
+    `notification-outcome.tsx`, dùng chung bảng và panel.
+*   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -501,7 +533,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
 | `<LifecycleTimeline notification compact?>` | `components/lifecycle-timeline.tsx` | ✓ | vòng đời 11 trạng thái (SVG orbital), node đã đi qua + stub nhánh không đi + "event horizon" `queued → sending`; đường đi từ `lifecycleOf()` trong mock; reduced-motion để CSS lo (không `useReducedMotion` → tránh #418) |
 | `<MailFrame subject body|bodyHtml device? header? footerNote?>` | `components/mail-frame.tsx` | ✓ | khung email nền sáng duy nhất (token `--mail-*`), footer opt-out có khoá (tooltip qua `footerNote`) — Composer block 3, chi tiết lần gửi và Template editor dùng chung; `bodyHtml` chỉ nhận HTML đã qua `renderHtmlPreview()` (sanitize + escape) |
-| `<ContractPanel template topicKey schema>` | `components/templates/contract-panel.tsx` | ✓ | Hợp đồng biến (05 §E): required_vars + payload mẫu + lỗi thường gặp — editor và tab Template của topic dùng chung |
+| `<ContractPanel templateId variables>` | `components/templates/contract-panel.tsx` | ✓ | Hợp đồng cho đội app: biến bắt buộc + lời gọi `POST /v1/notifications` mẫu (`templateId` + `payload`) + lỗi template lấy từ `v1-errors.ts` |
 | Composer blocks | `components/compose/{recipient,content,preview,send}-block.tsx`, `composer.tsx` | ✓ | 4 khối gated |
 | `RoleContext` | `components/role-context.tsx` | ✓ | `RoleProvider` bọc `<AppShell>` trong `layout.tsx`; đọc bằng `useRole()` để gate nút / nhóm nav (`EWS Tổng` chỉ Super Admin) |
 | `<AppRegistrationWizard>`, `<AppAdminList>` | `components/app-registration-wizard.tsx`, `app-admin-list.tsx` | ✓ | thêm từ v0 cho UC-001 — giữ, không tạo bản song song |

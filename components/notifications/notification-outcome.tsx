@@ -91,6 +91,19 @@ export function NotificationOutcome({
   )
 }
 
+/**
+ * Template đã dùng cho lần gửi: "tên · vN" (bản đã đổ biến lúc app gọi — ADR-0020). "—" = nội dung viết
+ * thẳng. Nguồn duy nhất của chữ này, dùng chung cột bảng và panel.
+ */
+export function templateLabelOf(n: NotificationSummaryDto) {
+  if (!n.template) return <span className="text-[var(--text-muted)]">—</span>
+  return (
+    <span className="text-xs">
+      {n.template.name} <span className="font-mono text-[var(--text-muted)]">· v{n.template.version}</span>
+    </span>
+  )
+}
+
 function OutcomeDetail({ n, linkRecipient }: { n: NotificationSummaryDto; linkRecipient: boolean }) {
   const unknown = n.recipient?.error?.startsWith(OUTCOME_UNKNOWN) ?? false
 
@@ -156,6 +169,8 @@ function OutcomeDetail({ n, linkRecipient }: { n: NotificationSummaryDto; linkRe
               <span className="text-[var(--text-muted)]">không còn trong sổ người nhận</span>
             )}
           </dd>
+          <dt className="text-[var(--text-secondary)]">Template</dt>
+          <dd className="min-w-0">{templateLabelOf(n)}</dd>
           <dt className="text-[var(--text-secondary)]">idempotencyKey</dt>
           <dd className="truncate font-mono">{n.idempotencyKey ?? '—'}</dd>
           {n.recipient?.error && (

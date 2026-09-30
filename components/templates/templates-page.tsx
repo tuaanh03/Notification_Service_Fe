@@ -1,51 +1,29 @@
 'use client'
-import { useState } from 'react'
+import { FilePlus2 } from 'lucide-react'
 import { useAppRouter } from '@/components/app-link'
-import { FilePlus2, Sparkles, TerminalSquare } from 'lucide-react'
-import { CodeBlock } from '@/components/code-block'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
-import { useApp } from '@/components/app-context'
-import { AiComposeDialog } from './ai-compose-dialog'
 import { TemplatesTable } from './templates-table'
 
-const IMPORT_API = `POST /v1/templates
-Authorization: Bearer <access_token>
-{ "key": "vm_high_load", "subject": "…", "html": "…", "schema": [ … ] }
-→ 201 { "template_id": "tpl_…", "version": "v1", "status": "draft" }
-API chỉ tạo draft — người thật vẫn phải xem thử và Xuất bản.`
-
-/** UC-006 §A — 3 action: Tạo template / Nhờ AI soạn / Import từ API (read-only). */
+/**
+ * Danh sách template của app (ADR-0020). Admin soạn và xuất bản ở đây; app service chỉ gửi thư bằng
+ * `templateId` của bản đã xuất bản — không có đường nào để app tạo / sửa template, nên không có
+ * "Import từ API". "Nhờ AI" nằm trong màn soạn (sinh HTML thật), không phải ở danh sách.
+ */
 export function TemplatesPage() {
   const router = useAppRouter()
-  const { app } = useApp()
-  const [ai, setAi] = useState(false)
-  const [apiInfo, setApiInfo] = useState(false)
   return (
     <>
       <PageHeader
         title="Templates"
-        subtitle="Template ≠ Version ≠ Variable Schema ≠ Binding — không bao giờ gửi email còn {{ }} chưa render"
+        subtitle="Admin soạn và xuất bản · app gửi bằng templateId + payload · luôn dùng bản đang xuất bản"
         actions={
-          <>
-            <Button onClick={() => router.push('/templates/new?new=1')}>
-              <FilePlus2 /> Tạo template
-            </Button>
-            <Button variant="outline" onClick={() => setAi(true)}>
-              <Sparkles /> Nhờ AI soạn
-            </Button>
-            <Button variant="outline" onClick={() => setApiInfo(true)}>
-              <TerminalSquare /> Import từ API
-            </Button>
-          </>
+          <Button onClick={() => router.push('/templates/new')}>
+            <FilePlus2 /> Tạo template
+          </Button>
         }
       />
       <TemplatesTable />
-      <AiComposeDialog open={ai} namespace={app.namespace} onClose={() => setAi(false)} onResult={(r) => { setAi(false); router.push(`/templates/ai_draft?ai=${encodeURIComponent(r.prompt)}`) }} />
-      <ConfirmDialog open={apiInfo} title="Import từ API" description="Read-only — app service tạo template qua API, dashboard chỉ xem." confirmLabel="Đã hiểu" onConfirm={() => setApiInfo(false)} onCancel={() => setApiInfo(false)}>
-        <CodeBlock language="http" value={IMPORT_API} />
-      </ConfirmDialog>
     </>
   )
 }

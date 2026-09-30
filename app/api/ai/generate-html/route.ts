@@ -72,6 +72,11 @@ export async function POST(req: NextRequest) {
       body.prompt ||
       'Hãy tạo layout HTML email thông báo responsive chuẩn, hiện đại, có tiêu đề, nội dung chính, thẻ thông tin nổi bật, nút bấm hành động (CTA), và footer bản quyền.'
 
+    // Biến đang khai trong template — AI chỉ được dùng đúng các tên này (không bịa tên mới).
+    const variables: string[] = Array.isArray(body.variables)
+      ? body.variables.filter((v: unknown): v is string => typeof v === 'string').slice(0, 100)
+      : []
+
     const apiKey = process.env.AI_API_KEY?.trim()
     const apiUrl = process.env.AI_API_URL?.trim() || 'https://api.openai.com/v1/chat/completions'
     const model = process.env.AI_MODEL?.trim() || 'gpt-4o-mini'
@@ -104,7 +109,13 @@ export async function POST(req: NextRequest) {
           {
             role: 'system',
             content:
-              'You are an expert responsive HTML email designer. Return ONLY the raw HTML code for the email template. Do NOT include markdown fences (like ```html or ```). Use valid inline styles or embedded CSS in <style> block compatible with email clients. The design must be clean, responsive, and aesthetically pleasing.',
+              'You are an expert responsive HTML email designer. Return ONLY the raw HTML code for the email template. Do NOT include markdown fences (like ```html or ```). Use valid inline styles or embedded CSS in <style> block compatible with email clients. The design must be clean, responsive, and aesthetically pleasing.\n' +
+              // Luật của backend EWS lúc xuất bản (ADR-0020) — vi phạm là bản nháp không xuất bản được.
+              'Template rules: placeholders MUST use the exact syntax {{ payload.<name> }} (never {{ name }}). ' +
+              (variables.length
+                ? `Only use these placeholders: ${variables.map((v) => `{{ ${v} }}`).join(', ')}. `
+                : 'Do not add placeholders unless necessary. ') +
+              'Links must start with https:// or mailto: only. Do NOT write any unsubscribe link, the word "unsubscribe", or a {{ footer }} placeholder: the system appends the footer itself.',
           },
           {
             role: 'user',

@@ -1,132 +1,167 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import {
-  linkSchemeIssues,
-  renderHtmlPreview,
-  renderTemplate,
-  sampleValuesOf,
-  sanitizeHtml,
-  schemaIssues,
-  schemaOf,
-  templateAudit,
-  templateByKey,
-  unresolvedVariables,
-  type AuditEntry,
-  type Template,
-  type TemplateVersion,
-  type VariableSchemaEntry,
-} from '@/lib/mock-data'
+  archiveTemplateAction,
+  draftFromVersionAction,
+  loadTemplateAction,
+  renameTemplateAction,
+  saveAndPublishAction,
+  saveDraftAction,
+} from '@/app/templates/actions'
+import type { Issue } from '@/lib/api/problem'
+import type { ActionResult } from '@/lib/api/result'
+import type { TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
+import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
 
-export type SchemaRow = VariableSchemaEntry & { defaultValue?: string }
+/** Lỗi của thao tác GHI gần nhất — kèm `issues` khi xuất bản bị 422. */
+export type EditorError = { message: string; code: string; issues: readonly Issue[] }
 
-const blank = (key: string, ns: string): Template => ({ key, namespace: ns, versions: ['v1 draft'], name: key, channel: 'email', status: 'active', subject: '', html: '' })
+/**
+ * Toàn bộ state của màn soạn một template (ADR-0020) — component ở `components/templates/*` chỉ render.
+ *
+ * Bản đang sửa = bản NHÁP nếu có. Không có nháp thì hiện bản đang xuất bản ở chế độ chỉ đọc; bấm "Sửa"
+ * là tạo nháp mới chép từ bản đó (backend không cho sửa tại chỗ bản đã xuất bản).
+ */
+export function useTemplateEditor(appId: string, templateId: string) {
+  const [detail, setDetail] = useState<TemplateDetailDto | null>(null)
+  const [loadError, setLoadError] = useState<{ message: string; code: string } | null>(null)
+  const [error, setError] = useState<EditorError | null>(null)
+  const [pending, startTransition] = useTransition()
 
-/** Toàn bộ state/derived của Template editor (05 §B–§D) — UI ở components/templates/* chỉ render. */
-export function useTemplateEditor(key: string, namespace: string, ai?: { prompt: string; subject: string; html: string } | null) {
-  const base = templateByKey(key) ?? blank(key, namespace)
-  const initialHistory: TemplateVersion[] = base.history ?? [
-    { version: base.published ?? 'v1', status: base.published ? 'published' : 'draft', by: base.updated_by ?? 'bạn', at: '2026-09-01', diff: 'bản đầu', subject: base.subject ?? '', html: base.html ?? '' },
-  ]
-  const [history, setHistory] = useState<TemplateVersion[]>(initialHistory)
-  const editing = ai ? { version: 'v1', status: 'draft' as const } : history.find((v) => v.status === 'draft') ?? history[history.length - 1]
-  const [version, setVersion] = useState(editing.version)
-  const [status, setStatus] = useState<'published' | 'superseded' | 'draft'>(ai ? 'draft' : editing.status)
-  const [subject, setSubject] = useState(ai?.subject ?? (base.subject ?? ''))
-  const [html, setHtml] = useState(ai?.html ?? (base.html ?? ''))
-  const [schema, setSchema] = useState<SchemaRow[]>(() => schemaOf(base))
-  const [aiBanner, setAiBanner] = useState(Boolean(ai))
-  const [audit, setAudit] = useState<AuditEntry[]>(() => [
-    ...(ai ? [{ actor: 'ai', action: 'ai_generated', to: `prompt: "${ai.prompt}"`, timestamp: 'vừa xong', source: 'dashboard' }] : []),
-    ...templateAudit(base),
-  ])
-  const [demoHtmlValue, setDemoHtmlValue] = useState(false)
-  const [archived, setArchived] = useState(base.status === 'archived')
+  const [subject, setSubject] = useState('')
+  const [html, setHtml] = useState('')
+  const [text, setText] = useState('')
+  const [variables, setVariables] = useState<TemplateVariableDto[]>([])
+  const [dirty, setDirty] = useState(false)
+  const [aiBanner, setAiBanner] = useState(false)
+
+  const draft = detail?.versions.find((v) => v.status === 'draft') ?? null
+  const published = detail?.versions.find((v) => v.status === 'published') ?? null
+  /** Bản đang hiện trong khung soạn. */
+  const shown: TemplateVersionDto | null = draft ?? published ?? detail?.versions[0] ?? null
+  const archived = detail?.status === 'archived'
+  const locked = !draft || archived
+
+  /** Nạp bản đang hiện vào ô soạn — sau mỗi lần backend trả chi tiết mới. */
+  const adopt = useCallback((next: TemplateDetailDto) => {
+    setDetail(next)
+    const v =
+      next.versions.find((x) => x.status === 'draft') ??
+      next.versions.find((x) => x.status === 'published') ??
+      next.versions[0]
+    setSubject(v?.subject ?? '')
+    setHtml(v?.html ?? '')
+    setText(v?.text ?? '')
+    setVariables(v?.variables ?? [])
+    setDirty(false)
+  }, [])
+
+  const load = useCallback(async () => {
+    const result = await loadTemplateAction(appId, templateId)
+    if (result.ok) {
+      adopt(result.data)
+      setLoadError(null)
+    } else {
+      setDetail(null)
+      setLoadError({ message: result.message, code: result.code })
+    }
+  }, [appId, templateId, adopt])
+
+  useEffect(() => {
+    void load()
+  }, [load])
 
   const derived = useMemo(() => {
-    const issues = schemaIssues(schema, subject, html)
-    const sanitized = sanitizeHtml(html)
-    const values = sampleValuesOf(schema)
-    // §H: custom_data chứa HTML → hiện như chữ (escape), không phải markup
-    if (demoHtmlValue && schema[0]) values[schema[0].name] = '<b>Xin chào</b> <script>alert(1)</script>'
-    const previewSubject = renderTemplate(subject, values)
-    const previewHtml = renderHtmlPreview(html, values)
-    const unresolved = Array.from(new Set([...unresolvedVariables(previewSubject), ...unresolvedVariables(previewHtml)]))
-    const links = linkSchemeIssues(html)
-    const htmlVars = schema.filter((v) => v.type === 'html').map((v) => v.name)
-    const urlMissingSample = schema.filter((v) => v.type === 'url' && !(v.sample ?? '').trim()).map((v) => v.name)
-    const newRequired = schema.filter((v) => v.required && !schemaOf(base).some((b) => b.name === v.name)).map((v) => v.name)
-    return { ...issues, sanitized, values, previewSubject, previewHtml, unresolved, links, htmlVars, urlMissingSample, newRequired }
-  }, [schema, subject, html, demoHtmlValue, base])
+    const used = usedVariablePaths(subject, html, text)
+    const declared = variables.map((v) => v.name)
+    return {
+      declared,
+      /** Dùng trong nội dung mà chưa khai — có nguồn thì bấm "Khai báo" được. */
+      undeclared: used.filter((p) => !declared.includes(p) && hasSource(p)),
+      /** `{{ vm_name }}` — thiếu `payload.`, backend sẽ từ chối. */
+      missingSource: used.filter((p) => !hasSource(p)),
+      unused: declared.filter((d) => !used.includes(d)),
+      previewSubject: renderPreview(subject, variables, { escape: false }),
+      previewHtml: renderPreview(html, variables, { escape: true }),
+      /** Bắt buộc mới so với bản ĐANG XUẤT BẢN — app chưa gửi biến này thì mọi lần gửi bị MISSING_VARIABLE. */
+      newRequired: published
+        ? variables
+            .filter((v) => v.required && !published.variables.some((p) => p.name === v.name && p.required))
+            .map((v) => v.name)
+        : [],
+    }
+  }, [subject, html, text, variables, published])
 
-  const canSave = derived.undeclared.length === 0
-  const canPublish = canSave && derived.unresolved.length === 0 && derived.links.length === 0 && derived.urlMissingSample.length === 0 && status === 'draft'
+  const edit = (setter: (value: string) => void) => (value: string) => {
+    setter(value)
+    setDirty(true)
+  }
 
-  const updateVar = (name: string, patch: Partial<SchemaRow>) => setSchema((s) => s.map((v) => (v.name === name ? { ...v, ...patch } : v)))
-  const declareVar = (name: string) => setSchema((s) => [...s, { name, type: 'string', required: true, sample: '' }])
-  const removeVar = (name: string) => setSchema((s) => s.filter((v) => v.name !== name))
-  const log = (e: AuditEntry) => setAudit((a) => [e, ...a])
+  const updateVar = (name: string, patch: Partial<TemplateVariableDto>) => {
+    setVariables((vs) => vs.map((v) => (v.name === name ? { ...v, ...patch } : v)))
+    setDirty(true)
+  }
+  const declareVar = (name: string) => {
+    setVariables((vs) => [...vs, { name, source: sourceOf(name), required: true }])
+    setDirty(true)
+  }
+  const removeVar = (name: string) => {
+    setVariables((vs) => vs.filter((v) => v.name !== name))
+    setDirty(true)
+  }
 
-  const saveDraft = () => {
-    if (!canSave) return false
-    setHistory((h) => (h.some((v) => v.version === version) ? h.map((v) => (v.version === version ? { ...v, subject, html, status: 'draft' } : v)) : [...h, { version, status: 'draft', by: 'bạn', at: 'vừa xong', diff: 'nháp', subject, html }]))
-    log({ actor: 'bạn', action: 'template_draft_saved', to: version, timestamp: 'vừa xong', source: 'dashboard' })
-    return true
-  }
-  const publish = () => {
-    setHistory((h) => [...h.filter((v) => v.version !== version).map((v) => (v.status === 'published' ? { ...v, status: 'superseded' as const } : v)), { version, status: 'published', by: 'bạn', at: 'vừa xong', diff: derived.newRequired.length ? `+${derived.newRequired.length} biến bắt buộc` : 'sửa nội dung', subject, html }])
-    setStatus('published')
-    setAiBanner(false)
-    log({ actor: 'bạn', action: 'template_published', to: version, timestamp: 'vừa xong', source: 'dashboard' })
-  }
-  /** Sửa bản published → không sửa tại chỗ: tạo draft v(n+1) */
-  const startEdit = () => {
-    const n = Math.max(...history.map((v) => Number(v.version.replace('v', '')))) + 1
-    const next = `v${n}`
-    setHistory((h) => [...h, { version: next, status: 'draft', by: 'bạn', at: 'vừa xong', diff: 'nháp từ ' + version, subject, html }])
-    setVersion(next)
-    setStatus('draft')
-    return next
-  }
-  const rollback = (v: TemplateVersion) => {
-    setHistory((h) => h.map((x) => (x.version === v.version ? { ...x, status: 'published' } : x.status === 'published' ? { ...x, status: 'superseded' } : x)))
-    setSubject(v.subject)
-    setHtml(v.html)
-    setVersion(v.version)
-    setStatus('published')
-    log({ actor: 'bạn', action: 'template_rolled_back', from: version, to: v.version, timestamp: 'vừa xong', source: 'dashboard' })
-  }
-  const archive = () => {
-    setArchived(true)
-    log({ actor: 'bạn', action: 'template_archived', timestamp: 'vừa xong', source: 'dashboard' })
-  }
+  /** Chạy một lệnh ghi; thành công thì nạp chi tiết mới trả về, lỗi thì giữ nguyên ô soạn. */
+  const run = (op: () => Promise<ActionResult<TemplateDetailDto>>, onOk?: () => void) =>
+    new Promise<boolean>((resolve) => {
+      startTransition(async () => {
+        const result = await op()
+        if (result.ok) {
+          setError(null)
+          adopt(result.data)
+          onOk?.()
+          resolve(true)
+        } else {
+          setError({ message: result.message, code: result.code, issues: result.issues ?? [] })
+          resolve(false)
+        }
+      })
+    })
+
+  const content = () => ({ subject, html, text, variables })
 
   return {
-    base,
-    version,
-    status,
+    detail,
+    loadError,
+    reload: load,
+    error,
+    clearError: () => setError(null),
+    pending,
+    draft,
+    published,
+    shown,
+    archived,
+    locked,
+    dirty,
     subject,
-    setSubject,
+    setSubject: edit(setSubject),
     html,
-    setHtml,
-    schema,
+    setHtml: edit(setHtml),
+    text,
+    setText: edit(setText),
+    variables,
     updateVar,
     declareVar,
     removeVar,
-    history,
-    audit,
     aiBanner,
     setAiBanner,
-    archived,
-    demoHtmlValue,
-    setDemoHtmlValue,
     ...derived,
-    canSave,
-    canPublish,
-    saveDraft,
-    publish,
-    startEdit,
-    rollback,
-    archive,
+    saveDraft: () => run(() => saveDraftAction(appId, templateId, content())),
+    publish: () => run(() => saveAndPublishAction(appId, templateId, content()), () => setAiBanner(false)),
+    /** "Sửa" bản đang xuất bản / "Tạo nháp từ bản này". */
+    draftFrom: (version: number) => run(() => draftFromVersionAction(appId, templateId, version)),
+    rename: (name: string) => run(() => renameTemplateAction(appId, templateId, name)),
+    archive: () => run(() => archiveTemplateAction(appId, templateId)),
   }
 }
+
 export type TemplateEditorState = ReturnType<typeof useTemplateEditor>

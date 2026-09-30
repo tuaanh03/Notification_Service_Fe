@@ -152,6 +152,8 @@ export type NotificationSummaryDto = {
   idempotencyKey: string | null
   /** null = worker chưa xử lý tới (còn `queued`). */
   recipient: NotificationRecipientSummaryDto | null
+  /** Gửi bằng template: tên + bản đã dùng (ADR-0020). null = nội dung viết thẳng. Optional: backend cũ chưa có. */
+  template?: { id: string; name: string; version: number } | null
   createdAt: string
   queuedAt: string | null
   sendingAt: string | null
@@ -216,3 +218,53 @@ export type AppOverviewDto = {
   recipients: { total: number; emailActive: number; emailUnsubscribed: number; emailInvalid: number }
   topics: { total: number; active: number }
 }
+
+/**
+ * Một biến khai trong template, sao đúng `VariableSpec` của backend. `name` là đường dẫn đầy đủ
+ * (`payload.vm_name`), `sample` / `description` chỉ để xem thử — không dùng lúc gửi thật.
+ */
+export type TemplateVariableDto = {
+  name: string
+  source: 'payload' | 'user'
+  required: boolean
+  sample?: string
+  description?: string
+}
+
+/** Sao đúng `TemplateVersionDto` (`GET /admin/apps/:appId/templates/:id`). */
+export type TemplateVersionDto = {
+  id: string
+  version: number
+  /** draft | published | superseded */
+  status: string
+  subject: string
+  html: string
+  text: string
+  variables: TemplateVariableDto[]
+  aiGenerated: boolean
+  /** id admin — backend chưa trả email nên màn hình chưa hiện. */
+  createdBy: string | null
+  publishedBy: string | null
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Sao đúng `TemplateSummaryDto` — một dòng của danh sách template. */
+export type TemplateSummaryDto = {
+  /** `templateId` app service gửi kèm để dùng template này. */
+  id: string
+  name: string
+  channel: string
+  /** active | archived */
+  status: string
+  publishedVersion: number | null
+  publishedAt: string | null
+  draftVersion: number | null
+  variableCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** Sao đúng `TemplateDetailDto`: tóm tắt + mọi version, mới nhất trước. */
+export type TemplateDetailDto = TemplateSummaryDto & { versions: TemplateVersionDto[] }

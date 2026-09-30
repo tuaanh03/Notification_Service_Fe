@@ -1,300 +1,290 @@
 'use client'
-import { useState } from 'react'
-import { Eye, FlaskConical, Save, Sparkles, UploadCloud } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Archive, Copy, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
 import { toast } from 'sonner'
-import { TestSendDialog, type TestSendMode } from '@/components/compose/test-send-dialog'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useApp } from '@/components/app-context'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useApp } from '@/components/app-context'
-import { useTemplateEditor } from '@/hooks/use-template-editor'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Textarea } from '@/components/ui/textarea'
+import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
+import { TEMPLATE_ISSUE_MESSAGES } from '@/lib/api/problem'
+import { ContractPanel } from './contract-panel'
 import { EditorPane, Highlight } from './editor-pane'
 import { PreviewPane } from './preview-pane'
 import { SchemaPane } from './schema-pane'
-import { useAppRouter } from '@/components/app-link'
-import { cn } from '@/lib/utils'
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable'
+import { VersionsPanel } from './versions-panel'
 
-const slugify = (str: string) =>
-  str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-
-/** UC-006 §B — editor 3 pane + toolbar; §C version; §E hợp đồng biến; §G lưu trữ; §H exception. */
-export function TemplateEditor({
-  templateKey,
-  aiPrompt,
-  isNew = false,
-}: {
-  templateKey: string
-  aiPrompt?: string
-  isNew?: boolean
-}) {
-  const router = useAppRouter()
+/**
+ * Màn soạn một template (ADR-0020). Thứ tự khối theo việc người soạn làm: tên + mã cho đội app →
+ * bảng biến → tiêu đề → nội dung + xem thử → lịch sử phiên bản → hợp đồng gửi.
+ *
+ * Không có "Gửi thử": backend chưa có đường gửi thử. Xuất bản = lưu nháp rồi xuất bản (một action).
+ */
+export function TemplateEditor({ templateId }: { templateId: string }) {
   const { app } = useApp()
-  const isCreation = isNew || templateKey === 'new'
-  const [nameInput, setNameInput] = useState(isCreation ? '' : (templateKey === 'new' ? '' : templateKey))
-  const [keyInput, setKeyInput] = useState(templateKey === 'new' ? '' : templateKey)
-  const [keyTouched, setKeyTouched] = useState(false)
-  const keyOk = /^[a-z][a-z0-9_]{2,}$/.test(keyInput)
-
-  const ai = aiPrompt !== undefined ? { prompt: aiPrompt, subject: '[{{alert_title}}] {{vm_name}} cần xử lý', html: `<h2>{{alert_title}}</h2>\n<p>${aiPrompt || 'Máy ảo {{vm_name}} vượt ngưỡng {{threshold}}%.'}</p>\n<p>Mức hiện tại: {{current_usage}}% · Chủ sở hữu: {{owner}}</p>\n<p><a href="{{action_url}}">Xử lý</a></p>` } : null
-  const ed = useTemplateEditor(templateKey, app.namespace, ai)
-  const [test, setTest] = useState<TestSendMode>(null)
+  const ed = useTemplateEditor(app.app_id, templateId)
+  const [name, setName] = useState('')
   const [publishWarn, setPublishWarn] = useState(false)
-  const locked = ed.status !== 'draft' || ed.archived
+  const [archiveConfirm, setArchiveConfirm] = useState(false)
 
-  const declared = ed.schema.map((v) => v.name)
+  const savedName = ed.detail?.name ?? ''
+  useEffect(() => setName(savedName), [savedName])
 
-  const validateForm = () => {
-    if (isCreation) {
-      if (!nameInput.trim()) {
-        toast.error('Vui lòng nhập Tên template', {
-          description: 'Tên template giúp nhận biết mục đích của mẫu email.',
-        })
-        document.getElementById('tpl-name')?.focus()
-        return false
-      }
-      if (!keyOk) {
-        toast.error('Mã template (key) chưa hợp lệ', {
-          description: 'Key phải khớp ^[a-z][a-z0-9_]{2,}$ (bắt đầu bằng chữ thường, chỉ gồm chữ, số và gạch dưới, từ 3 ký tự).',
-        })
-        document.getElementById('tpl-key')?.focus()
-        return false
-      }
-      ed.base.name = nameInput.trim()
-      ed.base.key = keyInput
-    }
-    return true
+  if (ed.loadError) {
+    return (
+      <>
+        <PageHeader title="Template" breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: templateId }]} />
+        <EmptyState
+          icon={FileWarning}
+          title={ed.loadError.code === 'NOT_FOUND' ? 'Không có template này trong app' : 'Không tải được template'}
+          description={`${ed.loadError.message} (mã: ${ed.loadError.code})`}
+          action={<Button variant="outline" onClick={() => void ed.reload()}>Thử lại</Button>}
+        />
+      </>
+    )
+  }
+  if (!ed.detail) {
+    return <PageHeader title="Đang tải…" breadcrumb={[{ label: 'Templates', href: '/templates' }]} />
   }
 
-  const doPublish = () => {
-    if (!validateForm()) return
-    ed.publish()
+  const detail = ed.detail
+  const shown = ed.shown
+  const nextVersion = Math.max(0, ...detail.versions.map((v) => v.version)) + 1
+
+  const doPublish = async () => {
     setPublishWarn(false)
-    toast.success(`Đã xuất bản ${ed.version}`, { description: `${ed.base.key} ${ed.version} phục vụ mọi lần gửi từ giờ.` })
-    if (isCreation && keyInput !== templateKey) {
-      router.replace(`/templates/${keyInput}`)
+    const version = ed.draft?.version
+    if (await ed.publish()) {
+      toast.success(`Đã xuất bản v${version}`, { description: 'Từ lần gửi kế tiếp, app dùng bản này.' })
     }
   }
-
-  const onPublish = () => {
-    if (!validateForm()) return
-    if (!ed.canPublish) return
-    // §C: thêm biến bắt buộc mới → app chưa gửi biến này → mọi event 422 → dialog chặn
-    if (ed.newRequired.length > 0) setPublishWarn(true)
-    else doPublish()
-  }
-
-  const onSaveDraft = () => {
-    if (!validateForm()) return
-    if (ed.saveDraft()) {
-      toast.success('Đã lưu nháp', { description: `${ed.base.key} ${ed.version}` })
-      if (isCreation && keyInput !== templateKey) {
-        router.replace(`/templates/${keyInput}`)
-      }
-    }
+  const onPublish = () => (ed.newRequired.length > 0 ? setPublishWarn(true) : void doPublish())
+  const onSave = async () => {
+    if (await ed.saveDraft()) toast.success(`Đã lưu nháp v${ed.draft?.version ?? nextVersion}`)
   }
 
   return (
     <>
       <PageHeader
-        title={isCreation ? 'Tạo template mới' : ed.base.key}
-        subtitle={`${ed.base.namespace ?? app.namespace} · ${isCreation ? (nameInput || 'Bản nháp mới') : (ed.base.name ?? 'template')} · ${ed.version}`}
+        title={detail.name}
+        breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: detail.name }]}
+        subtitle={shown ? `v${shown.version} · ${ed.locked ? 'chỉ đọc' : 'bản nháp đang soạn'}${ed.dirty ? ' · chưa lưu' : ''}` : undefined}
         actions={
           <>
-            <StatusPill status={ed.archived ? 'archived' : ed.status} />
-            <Button variant="outline" onClick={() => document.querySelector('[data-testid=preview-pane]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
-              <Eye /> Xem thử
-            </Button>
-            <Button variant="outline" onClick={() => setTest('me')}>
-              <FlaskConical /> Gửi thử cho tôi
-            </Button>
-            <Button variant="outline" disabled={locked || !ed.canSave} onClick={onSaveDraft}>
-              <Save /> Lưu nháp
-            </Button>
-            <Button disabled={!ed.canPublish || ed.archived} onClick={onPublish} data-testid="publish-btn">
-              <UploadCloud /> Xuất bản {ed.version}
-            </Button>
+            <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
+            {!ed.archived && ed.draft && (
+              <>
+                <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()}>
+                  <Save /> Lưu nháp
+                </Button>
+                <Button disabled={ed.pending} onClick={onPublish} data-testid="publish-btn">
+                  <UploadCloud /> Xuất bản v{ed.draft.version}
+                </Button>
+              </>
+            )}
+            {!ed.archived && !ed.draft && ed.published && (
+              <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
+                <Pencil /> Sửa (tạo nháp v{nextVersion})
+              </Button>
+            )}
+            {!ed.archived && (
+              <Button variant="outline" disabled={ed.pending} onClick={() => setArchiveConfirm(true)}>
+                <Archive /> Lưu trữ
+              </Button>
+            )}
           </>
         }
       />
+
       <div className="space-y-5">
+        {ed.error && <ErrorAlert error={ed.error} />}
         {ed.aiBanner && (
-          <Alert className="border-[var(--pulsar)]/40 bg-[var(--pulsar)]/10" data-testid="ai-banner">
-            <Sparkles />
-            <AlertDescription className="text-[var(--pulsar)]">
-              Bản nháp do AI sinh. Người thật phải xem thử và bấm Xuất bản. AI không bao giờ tự xuất bản.
-            </AlertDescription>
+          <Alert className="bg-[var(--pulsar)]/10" data-testid="ai-banner">
+            <Sparkles className="text-[var(--pulsar)]" />
+            <AlertDescription>Nội dung HTML do AI sinh. Người thật phải xem thử và bấm Xuất bản — AI không bao giờ tự xuất bản.</AlertDescription>
           </Alert>
         )}
-        {ed.links.length > 0 && (
-          <Alert variant="destructive" className="border-[var(--supernova)]/40 bg-[var(--supernova)]/10" data-testid="scheme-error">
-            <AlertDescription className="text-[var(--supernova)]">
-              Chỉ chấp nhận scheme <span className="font-mono">https</span> và <span className="font-mono">mailto</span>. Bị chặn lúc xuất bản: <span className="font-mono">{ed.links.join(', ')}</span>
-            </AlertDescription>
+        {ed.archived && (
+          <Alert data-testid="archived-notice">
+            <Archive />
+            <AlertDescription>Template đã lưu trữ: không sửa, không xuất bản, app gửi bằng mã này sẽ bị <span className="font-mono">TEMPLATE_ARCHIVED</span>.</AlertDescription>
           </Alert>
         )}
-        {locked && !ed.archived && (
-          <Alert className="border-[var(--orbit)] bg-transparent" data-testid="locked-notice">
+        {!ed.archived && ed.locked && ed.published && (
+          <Alert data-testid="locked-notice">
             <AlertDescription className="text-[var(--text-secondary)]">
-              {ed.version} đã xuất bản — không sửa tại chỗ. Bấm <em>Sửa</em> ở Phiên bản để tạo draft mới.
+              v{ed.published.version} đang được dùng để gửi — không sửa tại chỗ. Bấm <em>Sửa</em> để tạo bản nháp mới.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Khối Thông tin định danh Template (Metadata Grid) theo chuẩn thiết kế form */}
-        {isCreation && (
-          <Panel className="min-w-0 p-5">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">1. Thông tin chung</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {/* Cột 1: Tên template */}
-              <div className="space-y-1.5">
-                <Label htmlFor="tpl-name" className="text-xs font-semibold text-[var(--text-primary)]">
-                  Tên template <span className="text-[var(--supernova)]">*</span>
-                </Label>
-                <Input
-                  id="tpl-name"
-                  value={nameInput}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setNameInput(val)
-                    if (!keyTouched) setKeyInput(slugify(val))
-                  }}
-                  placeholder="vd: Cảnh báo quá tải RAM, Chào mừng khách hàng..."
-                  className="text-sm"
-                />
-                <p className="text-[11px] text-[var(--text-muted)]">
-                  Tên hiển thị nội bộ để nhận biết mục đích mẫu email.
-                </p>
-              </div>
-
-              {/* Cột 2: Mã định danh API (key) */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="tpl-key" className="text-xs font-semibold text-[var(--text-primary)]">
-                    Mã template (key) <span className="text-[var(--supernova)]">*</span>
-                  </Label>
-                  <span className="font-mono text-[10px] text-[var(--text-muted)]">
-                    ^[a-z][a-z0-9_]&#123;2,&#125;$
-                  </span>
-                </div>
-                <Input
-                  id="tpl-key"
-                  value={keyInput}
-                  onChange={(e) => {
-                    setKeyTouched(true)
-                    setKeyInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))
-                  }}
-                  className={cn(
-                    "font-mono text-sm",
-                    keyInput && !keyOk && "border-[var(--supernova)]/60 focus-visible:ring-[var(--supernova)]"
-                  )}
-                  placeholder="vd: vm_ram_alert, user_welcome"
-                />
-                {keyInput && !keyOk ? (
-                  <p className="font-mono text-[11px] text-[var(--supernova)]">
-                    Bắt đầu bằng chữ thường, chỉ gồm chữ thường, số và gạch dưới (từ 3 ký tự).
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Mã định danh trong API: <span className="font-mono text-[11px]">POST /v1/templates/:key</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          </Panel>
-        )}
-
-        {/* Khối: Variable Schema rộng toàn hàng */}
         <Panel className="min-w-0 p-5">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
-            {isCreation ? '2. Variable Schema' : 'Variable Schema'}
-          </h2>
-          <div className="mt-3"><SchemaPane ed={ed} locked={locked} /></div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="tpl-name" className="text-xs font-semibold">Tên template</Label>
+              <div className="flex gap-2">
+                <Input id="tpl-name" value={name} onChange={(e) => setName(e.target.value)} disabled={ed.archived} className="text-sm" />
+                <Button
+                  variant="outline"
+                  disabled={ed.archived || ed.pending || !name.trim() || name.trim() === savedName}
+                  onClick={() => void ed.rename(name.trim()).then((ok) => ok && toast.success('Đã đổi tên'))}
+                >
+                  Đổi tên
+                </Button>
+              </div>
+              <p className="text-[11px] text-[var(--text-muted)]">Chỉ để người đọc nhận ra. Đổi tên không ảnh hưởng việc gửi.</p>
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <Label className="text-xs font-semibold">Mã template (templateId)</Label>
+              <Button
+                variant="outline"
+                className="w-full justify-between font-mono text-xs"
+                onClick={() => {
+                  navigator.clipboard?.writeText(detail.id)
+                  toast.success('Đã sao chép', { description: detail.id })
+                }}
+              >
+                <span className="truncate">{detail.id}</span>
+                <Copy />
+              </Button>
+              <p className="text-[11px] text-[var(--text-muted)]">Đưa mã này cho đội app. Máy thử và máy thật có mã khác nhau.</p>
+            </div>
+          </div>
         </Panel>
 
-        {/* Khối: Subject (Tiêu đề email) trải dài toàn hàng */}
         <Panel className="min-w-0 p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Biến</h2>
+          <div className="mt-3">
+            <SchemaPane ed={ed} locked={ed.locked} />
+          </div>
+        </Panel>
+
+        <Panel className="min-w-0 space-y-4 p-5">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="tpl-subject" className="text-xs font-semibold text-[var(--text-primary)]">
-                {isCreation ? '3. Subject (Tiêu đề email)' : 'Subject'}
-              </Label>
-              <span className="font-mono text-[11px] text-[var(--text-muted)]">
-                Tiêu đề email · hỗ trợ biến &#123;&#123;name&#125;&#125;
-              </span>
-            </div>
+            <Label htmlFor="tpl-subject" className="text-xs font-semibold">Tiêu đề</Label>
             <Input
               id="tpl-subject"
               value={ed.subject}
               onChange={(e) => ed.setSubject(e.target.value)}
               className="font-mono text-sm"
-              disabled={locked}
-              placeholder="Nhập subject của email..."
+              disabled={ed.locked}
+              placeholder="[Cảnh báo] {{ payload.vm_name }} vượt ngưỡng"
             />
             <p className="font-mono text-xs" data-testid="subject-highlight">
-              <Highlight text={ed.subject || '(trống)'} declared={declared} />
+              <Highlight text={ed.subject || '(trống)'} declared={ed.declared} />
             </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tpl-text" className="text-xs font-semibold">Bản chữ thường (tuỳ chọn)</Label>
+            <Textarea
+              id="tpl-text"
+              value={ed.text}
+              onChange={(e) => ed.setText(e.target.value)}
+              className="min-h-20 font-mono text-xs"
+              disabled={ed.locked}
+              placeholder="Cho hộp thư không hiển thị HTML. Để trống thì chỉ gửi HTML."
+            />
           </div>
         </Panel>
 
-        {/* Khối 3: Resizable Split Pane — Tin nhắn và Xem thử song song 1:1, cố định chiều cao */}
         <ResizablePanelGroup
           orientation="horizontal"
           style={{ height: '650px', maxHeight: '650px' }}
-          className="cosmic-surface rounded-2xl border border-[var(--orbit)] shadow-xs overflow-hidden"
+          className="cosmic-surface overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs"
         >
-          <ResizablePanel defaultSize={50} minSize={30} className="min-w-0 h-full overflow-hidden" style={{ overflow: 'hidden' }}>
-            <div className="flex h-full flex-col min-w-0 p-5 overflow-hidden">
-              <EditorPane ed={ed} locked={locked} />
+          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden">
+            <div className="flex h-full min-w-0 flex-col overflow-hidden p-5">
+              <EditorPane ed={ed} locked={ed.locked} />
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={50} minSize={30} className="min-w-0 h-full overflow-hidden bg-white" style={{ overflow: 'hidden' }}>
-            <div className="flex h-full flex-col min-w-0 overflow-hidden bg-white">
-              <PreviewPane ed={ed} />
-            </div>
+          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden bg-white">
+            <PreviewPane ed={ed} />
           </ResizablePanel>
         </ResizablePanelGroup>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Panel className="min-w-0 p-5">
+            <h2 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Phiên bản</h2>
+            <VersionsPanel ed={ed} />
+          </Panel>
+          <Panel className="min-w-0 p-5">
+            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">Gửi bằng template này</h2>
+            <p className="mb-3 text-xs text-[var(--text-muted)]">
+              {ed.published
+                ? `Theo bản đang xuất bản v${ed.published.version}.`
+                : 'Chưa xuất bản — app gọi lúc này sẽ nhận TEMPLATE_NOT_PUBLISHED. Mẫu dưới theo bản nháp.'}
+            </p>
+            <ContractPanel templateId={detail.id} variables={ed.published?.variables ?? ed.variables} />
+          </Panel>
+        </div>
       </div>
 
-      <TestSendDialog mode={test} subject={ed.previewSubject} onClose={() => setTest(null)} />
-      {/* §C: xuất bản thêm biến bắt buộc → 3 lựa chọn, không có đường tắt */}
+      {/* Biến bắt buộc mới: từ lúc xuất bản, app chưa gửi biến đó thì mọi lần gửi bị từ chối. */}
       <ConfirmDialog
         open={publishWarn}
         tone="blocking"
-        title="Biến bắt buộc mới — app chưa gửi"
-        description={`Biến ${ed.newRequired.join(', ')} là bắt buộc nhưng app chưa gửi biến này — mọi event sẽ 422.`}
-        facts={[['biến mới', ed.newRequired.join(', ')], ['version', ed.version], ['hệ quả', '422 missing_variable']]}
+        title="Có biến bắt buộc mới"
+        description={`App đang gửi theo v${ed.published?.version} chưa gửi các biến này — từ lúc xuất bản, mọi lần gửi thiếu chúng bị từ chối với MISSING_VARIABLE. Thống nhất với đội app trước.`}
+        facts={[
+          ['biến mới', ed.newRequired.join(', ')],
+          ['bản sẽ xuất bản', `v${ed.draft?.version ?? ''}`],
+          ['lỗi app sẽ gặp', '422 MISSING_VARIABLE'],
+        ]}
         confirmLabel="Vẫn xuất bản"
-        onConfirm={doPublish}
+        onConfirm={() => void doPublish()}
         onCancel={() => setPublishWarn(false)}
-      >
-        <Button
-          variant="outline"
-          onClick={() => {
-            ed.newRequired.forEach((n) => ed.updateVar(n, { required: false, defaultValue: '—' }))
-            setPublishWarn(false)
-            toast.success('Đã đặt required = false kèm mặc định', { description: 'Xuất bản lại khi sẵn sàng.' })
-          }}
-        >
-          Đặt required = false kèm mặc định
-        </Button>
-      </ConfirmDialog>
+      />
+      <ConfirmDialog
+        open={archiveConfirm}
+        tone="blocking"
+        title={`Lưu trữ "${detail.name}"?`}
+        description="Không có đường bỏ lưu trữ. Từ lúc này app gửi bằng mã template này sẽ bị từ chối. Các phiên bản vẫn giữ để tra lịch sử gửi."
+        facts={[
+          ['templateId', detail.id],
+          ['bản đang xuất bản', ed.published ? `v${ed.published.version}` : '—'],
+          ['lỗi app sẽ gặp', '422 TEMPLATE_ARCHIVED'],
+        ]}
+        confirmLabel="Lưu trữ vĩnh viễn"
+        onConfirm={() => {
+          setArchiveConfirm(false)
+          void ed.archive().then((ok) => ok && toast.success('Đã lưu trữ template'))
+        }}
+        onCancel={() => setArchiveConfirm(false)}
+      />
     </>
+  )
+}
+
+/** Lỗi của lệnh ghi. Xuất bản bị 422 thì liệt kê TỪNG vi phạm, kèm biến / ô bị sai. */
+function ErrorAlert({ error }: { error: EditorError }) {
+  return (
+    <Alert variant="destructive" className="bg-[var(--supernova)]/10" data-testid="editor-error">
+      <FileWarning />
+      <AlertTitle>{error.issues.length ? `Chưa xuất bản được — ${error.issues.length} lỗi` : error.message}</AlertTitle>
+      <AlertDescription>
+        {error.issues.length > 0 ? (
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {error.issues.map((issue, i) => (
+              <li key={i}>
+                {issue.path && <span className="font-mono">{issue.path}: </span>}
+                {TEMPLATE_ISSUE_MESSAGES[issue.code] ?? issue.message ?? issue.code}{' '}
+                <span className="font-mono text-[var(--text-muted)]">({issue.code})</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="font-mono text-xs">mã: {error.code}</span>
+        )}
+      </AlertDescription>
+    </Alert>
   )
 }

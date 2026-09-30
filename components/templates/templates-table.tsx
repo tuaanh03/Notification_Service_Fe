@@ -1,106 +1,109 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { FileWarning, Files } from 'lucide-react'
+import { loadTemplatesAction } from '@/app/templates/actions'
+import { useApp } from '@/components/app-context'
 import { useAppRouter } from '@/components/app-link'
-import { Files, Sparkles } from 'lucide-react'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { StatusPill } from '@/components/status-pill'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useApp } from '@/components/app-context'
-import { schemaOf, templateBindings, templates, type Template } from '@/lib/mock-data'
+import type { TemplateSummaryDto } from '@/lib/api/types'
+import { fmtDateTime } from '@/lib/time'
 
-type Row = Template & Record<string, unknown> & { varCount: number; bindingCount: number; status: 'active' | 'archived' }
+type Row = TemplateSummaryDto & Record<string, unknown>
 
 const columns: Column<Row>[] = [
-  {
-    key: 'key',
-    label: 'template_key',
-    mono: true,
-    render: (t) => (
-      <span className="font-mono text-xs font-semibold text-[var(--starlight)]">
-        {t.key}
-        {t.ai_generated && (
-          <Badge variant="outline" className="ml-2 border-[var(--pulsar)]/40 font-mono text-[10px] text-[var(--pulsar)]">
-            <Sparkles data-icon="inline-start" /> ai_generated
-          </Badge>
-        )}
-      </span>
-    ),
-  },
-  { key: 'name', label: 'Tên', render: (t) => t.name ?? '—' },
-  { key: 'channel', label: 'Kênh', mono: true, render: (t) => t.channel ?? 'email' },
+  { key: 'name', label: 'Tên', render: (t) => <span className="font-medium">{t.name}</span> },
   { key: 'status', label: 'Trạng thái', render: (t) => <StatusPill status={t.status} /> },
-  { key: 'published', label: 'Version đang published', mono: true, render: (t) => t.published ?? <span className="text-[var(--text-muted)]">— (draft)</span> },
-  { key: 'varCount', label: 'Số biến', numeric: true },
   {
-    key: 'bindingCount',
-    label: 'Số binding',
-    numeric: true,
+    key: 'publishedVersion',
+    label: 'Đang xuất bản',
+    mono: true,
     render: (t) =>
-      t.bindingCount === 0 ? (
-        <Tooltip>
-          <TooltipTrigger render={<span className="inline-flex cursor-help font-mono text-xs font-bold text-[var(--solar)] underline decoration-dotted" />}>
-            0
-          </TooltipTrigger>
-          <TooltipContent>Chưa gắn vào topic nào</TooltipContent>
-        </Tooltip>
+      t.publishedVersion === null ? (
+        <span className="text-[var(--text-muted)]">— chưa, app chưa gửi được</span>
       ) : (
-        <span className="font-mono text-xs tabular-nums">{t.bindingCount}</span>
+        <span className="font-mono">v{t.publishedVersion}</span>
       ),
   },
-  { key: 'updated_by', label: 'Cập nhật bởi', mono: true, render: (t) => t.updated_by ?? '—' },
+  {
+    key: 'draftVersion',
+    label: 'Nháp',
+    mono: true,
+    render: (t) => (t.draftVersion === null ? <span className="text-[var(--text-muted)]">—</span> : <span className="font-mono">v{t.draftVersion}</span>),
+  },
+  { key: 'variableCount', label: 'Số biến', numeric: true },
+  { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (t) => fmtDateTime(t.updatedAt) },
 ]
 
-/** UC-006 §A — list template; 0 binding = viền gạch đứt + hint. */
+/** Danh sách template thật của app đang chọn — bấm dòng mở màn soạn `/templates/[id]`. */
 export function TemplatesTable() {
-  const router = useAppRouter()
   const { app } = useApp()
-  const [channel, setChannel] = useState<string[]>([])
-  const [status, setStatus] = useState<string[]>([])
-  const [bound, setBound] = useState<string[]>([])
-  const rows = useMemo<Row[]>(
-    () =>
-      templates
-        .filter((t) => !t.namespace || t.namespace === app.namespace)
-        .map((t) => ({
-          ...t,
-          status: t.status ?? 'active',
-          varCount: schemaOf(t).length,
-          bindingCount: templateBindings.filter((b) => b.template_key === t.key).length,
-        })),
-    [app.namespace],
-  )
-  const filtered = rows.filter(
-    (t) =>
-      (channel.length === 0 || channel.includes(t.channel ?? 'email')) &&
-      (status.length === 0 || status.includes(t.status)) &&
-      (bound.length === 0 || (bound.includes('bound') && t.bindingCount > 0) || (bound.includes('unbound') && t.bindingCount === 0)),
-  )
+  const router = useAppRouter()
+  const [rows, setRows] = useState<TemplateSummaryDto[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<string[]>(['active'])
+
+  const appId = app.app_id
+  const load = useCallback(async () => {
+    const result = await loadTemplatesAction(appId)
+    if (result.ok) {
+      setRows(result.data)
+      setError(null)
+    } else {
+      setRows(null)
+      setError(`${result.message} (mã: ${result.code})`)
+    }
+  }, [appId])
+
+  // Đổi app là đổi hẳn tập template: xoá dữ liệu cũ trước khi nạp.
+  useEffect(() => {
+    setRows(null)
+    setError(null)
+    void load()
+  }, [load])
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={FileWarning}
+        title="Không tải được danh sách template"
+        description={error}
+        action={<Button variant="outline" onClick={() => void load()}>Thử lại</Button>}
+      />
+    )
+  }
+
+  const filtered = (rows ?? []).filter((t) => status.length === 0 || status.includes(t.status))
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <ToggleGroup multiple variant="outline" size="sm" value={channel} onValueChange={(v) => setChannel(v as string[])} aria-label="Kênh">
-          <ToggleGroupItem value="email" className="font-mono">email</ToggleGroupItem>
-          <ToggleGroupItem value="in_app" className="font-mono">in_app</ToggleGroupItem>
-        </ToggleGroup>
         <ToggleGroup multiple variant="outline" size="sm" value={status} onValueChange={(v) => setStatus(v as string[])} aria-label="Trạng thái">
           <ToggleGroupItem value="active" className="font-mono">active</ToggleGroupItem>
           <ToggleGroupItem value="archived" className="font-mono">archived</ToggleGroupItem>
         </ToggleGroup>
-        <ToggleGroup variant="outline" size="sm" value={bound} onValueChange={(v) => setBound(v as string[])} aria-label="Binding">
-          <ToggleGroupItem value="bound">Có binding</ToggleGroupItem>
-          <ToggleGroupItem value="unbound">Chưa bind</ToggleGroupItem>
-        </ToggleGroup>
-        <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{filtered.length}/{rows.length}</span>
+        {rows && <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{filtered.length}/{rows.length}</span>}
       </div>
       <DataTable<Row>
         columns={columns}
-        rows={filtered}
-        onRowClick={(t) => router.push(`/templates/${t.key}`)}
-        rowClassName={(t) => (t.bindingCount === 0 ? 'border-dashed border-[var(--solar)]/40' : undefined)}
-        empty={<EmptyState icon={Files} title="Không có template khớp bộ lọc" description="Nới bộ lọc kênh / trạng thái / binding." />}
+        rows={filtered as Row[]}
+        onRowClick={(t) => router.push(`/templates/${t.id}`)}
+        empty={
+          rows === null ? (
+            <EmptyState icon={Files} title="Đang tải…" description="" />
+          ) : rows.length === 0 ? (
+            <EmptyState
+              icon={Files}
+              title="App chưa có template nào"
+              description="Tạo template, soạn nội dung rồi Xuất bản — sau đó đưa templateId cho đội app."
+              action={<Button onClick={() => router.push('/templates/new')}>Tạo template</Button>}
+            />
+          ) : (
+            <EmptyState icon={Files} title="Không có template khớp bộ lọc" description="Bỏ bớt bộ lọc trạng thái." />
+          )
+        }
       />
     </div>
   )

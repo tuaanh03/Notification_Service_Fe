@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AppLink } from '@/components/app-link'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
-import { NotificationOutcome, outcomeOf } from './notification-outcome'
+import { NotificationOutcome, outcomeOf, templateLabelOf } from './notification-outcome'
 
 type Row = NotificationSummaryDto & Record<string, unknown>
 
@@ -52,6 +52,7 @@ const recipientColumn: Column<Row> = {
 const leadingColumns: Column<Row>[] = [
   { key: 'createdAt', label: 'App gọi lúc', mono: true, render: (n) => fmtDateTime(n.createdAt) },
   { key: 'topic', label: 'Chủ đề', mono: true, render: (n) => n.topic || '—' },
+  { key: 'template', label: 'Template', render: (n) => templateLabelOf(n) },
 ]
 
 const trailingColumns: Column<Row>[] = [

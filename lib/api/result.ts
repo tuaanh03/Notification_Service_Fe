@@ -1,4 +1,4 @@
-import { ApiError, messageOf } from './problem'
+import { ApiError, messageOf, type Issue } from './problem'
 
 /**
  * Kết quả của một Server Action gọi backend.
@@ -11,7 +11,8 @@ import { ApiError, messageOf } from './problem'
  */
 export type ActionResult<T> =
   | { ok: true; data: T }
-  | { ok: false; message: string; code: string }
+  /** `issues`: từng vi phạm của lỗi 422 (mã + ô sai) — màn soạn template chỉ đúng biến / ô bị sai. */
+  | { ok: false; message: string; code: string; issues?: readonly Issue[] }
 
 /** Bọc một lời gọi backend thành `ActionResult`. Lỗi không phải `ApiError` là bug -> vẫn ném. */
 export async function toResult<T>(op: () => Promise<T>): Promise<ActionResult<T>> {
@@ -19,7 +20,7 @@ export async function toResult<T>(op: () => Promise<T>): Promise<ActionResult<T>
     return { ok: true, data: await op() }
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
-    return { ok: false, message: messageOf(err), code: err.code }
+    return { ok: false, message: messageOf(err), code: err.code, ...(err.issues.length ? { issues: err.issues } : {}) }
   }
 }
 
