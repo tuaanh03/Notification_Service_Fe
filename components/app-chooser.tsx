@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ChevronRight, Search, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 import { readLastApp } from './app-context'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
@@ -24,6 +25,7 @@ const STATUS_ORDER: Readonly<Record<AppStatus, number>> = {
 }
 
 function AppCard({ app, here, last }: { app: App; here: string; last: boolean }) {
+  const t = useTranslations('chooser')
   return (
     <AppLink
       href={here}
@@ -38,10 +40,10 @@ function AppCard({ app, here, last }: { app: App; here: string; last: boolean })
         <StatusPill status={app.status} />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
-        <span>{app.origin === 'internal' ? 'nội bộ' : 'bên ngoài'}</span>
+        <span>{app.origin === 'internal' ? t('internal') : t('external')}</span>
         {last && (
           <Badge variant="outline" className="text-[10px]">
-            dùng gần nhất
+            {t('lastUsed')}
           </Badge>
         )}
       </div>
@@ -58,6 +60,8 @@ function AppCard({ app, here, last }: { app: App; here: string; last: boolean })
  * Chỉ hiện trường backend đang trả — không có số người nhận / số thư tự chế.
  */
 export function AppChooser({ apps, requested, here }: { apps: App[]; requested: string | null; here: string }) {
+  const t = useTranslations('chooser')
+  const locale = useLocale()
   const [query, setQuery] = useState('')
   // Đọc sau khi mount: server không có localStorage, đọc lúc render là lệch hydrate.
   const [last, setLast] = useState<string | null>(null)
@@ -66,7 +70,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
   const q = query.trim().toLowerCase()
   const shown = apps
     .filter((a) => !q || a.name.toLowerCase().includes(q) || a.slug.includes(q))
-    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name, 'vi'))
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name, locale))
   const live = shown.filter((a) => a.status !== 'revoked')
   const revoked = shown.filter((a) => a.status === 'revoked')
 
@@ -77,10 +81,8 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
         <div className="mb-6 flex items-center gap-3">
           <img src={BRAND_LOGO_SRC} alt="" className="size-10 shrink-0 rounded-full" />
           <div className="min-w-0">
-            <h1 className="font-heading text-xl font-semibold">Chọn app để quản trị</h1>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Mọi màn hình của console đều thuộc một app. Chọn xong sẽ mở đúng màn bạn đang định vào.
-            </p>
+            <h1 className="font-heading text-xl font-semibold">{t('title')}</h1>
+            <p className="text-sm text-[var(--text-secondary)]">{t('subtitle')}</p>
           </div>
         </div>
 
@@ -89,7 +91,10 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
             <Alert className="bg-[var(--solar)]/10">
               <TriangleAlert className="text-[var(--solar)]" />
               <AlertDescription>
-                Không có app <span className="font-mono">«{requested}»</span>. Link có thể gõ sai — chọn lại bên dưới.
+                {t.rich('notFound', {
+                  slug: requested,
+                  mono: (chunks) => <span className="font-mono">{chunks}</span>,
+                })}
               </AlertDescription>
             </Alert>
           )}
@@ -99,14 +104,14 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tìm theo tên hoặc slug…"
+              placeholder={t('searchPlaceholder')}
               className="pl-8"
-              aria-label="Tìm app"
+              aria-label={t('searchLabel')}
             />
           </div>
 
           {live.length === 0 && revoked.length === 0 ? (
-            <p className="py-6 text-center text-xs text-[var(--text-muted)]">Không có app nào khớp «{query}».</p>
+            <p className="py-6 text-center text-xs text-[var(--text-muted)]">{t('noMatch', { query })}</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {live.map((a) => (
@@ -119,7 +124,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
             <Collapsible>
               <CollapsibleTrigger className="group/revoked flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-foreground">
                 <ChevronRight className="size-3.5 transition-transform group-data-[panel-open]/revoked:rotate-90" />
-                Đã thu hồi ({revoked.length})
+                {t('revoked', { count: revoked.length })}
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -134,9 +139,9 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
 
         <p className="mt-4 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
           <ShieldCheck className="size-3.5" />
-          Duyệt, tạm ngưng hay thu hồi app:{' '}
+          {t('adminHint')}{' '}
           <AppLink href="/admin/apps" className="text-[var(--starlight)] underline-offset-2 hover:underline">
-            Quản trị EWS → Tất cả app
+            {t('adminLink')}
           </AppLink>
         </p>
       </div>

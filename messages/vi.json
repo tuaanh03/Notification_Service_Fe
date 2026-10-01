@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "description": "Nền tảng thông báo nội bộ EWS"
+  },
+  "locale": {
+    "label": "Ngôn ngữ",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "login": {
+    "subtitle": "Đăng nhập để quản trị",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Đăng nhập",
+    "submitting": "Đang kiểm tra…",
+    "forgot": "Quên mật khẩu thì nhờ người quản trị máy chủ đặt lại bằng <code>admin-cli</code> — không có đường tự đặt lại qua email."
+  },
+  "nav": {
+    "ews": "EWS",
+    "groupOperate": "Điều hành",
+    "groupSystem": "Hệ thống",
+    "groupEws": "EWS Tổng",
+    "overview": "Tổng quan",
+    "notifications": "Thông báo",
+    "compose": "Soạn thông báo",
+    "history": "Lịch sử gửi",
+    "scheduled": "Đã lên lịch",
+    "topics": "Chủ đề",
+    "recipients": "Người nhận",
+    "users": "Users",
+    "subscriptions": "Subscriptions",
+    "templates": "Templates",
+    "appSettings": "Cài đặt App",
+    "profile": "Hồ sơ",
+    "credentials": "Credentials",
+    "quota": "Kênh & Quota",
+    "origins": "IP & Origin",
+    "sync": "Sync danh bạ",
+    "ewsAdmin": "Quản trị EWS",
+    "sendApprovals": "Duyệt lần gửi",
+    "allApps": "Tất cả app",
+    "audit": "Audit log",
+    "directory": "Danh bạ & Resolver"
+  },
+  "shell": {
+    "collapseSidebar": "Thu gọn sidebar (Ctrl + B)",
+    "expandSidebar": "Mở rộng sidebar (Ctrl + B)",
+    "chooseApp": "Chọn app",
+    "switchApp": "Chuyển App Service",
+    "demoRole": "Chế độ xem demo (Role)",
+    "signOut": "Đăng xuất",
+    "search": "Tìm kiếm",
+    "quotaTitle": "Quota phút: {used}/{max}",
+    "quota": "Quota:",
+    "pendingApprovals": "{count} yêu cầu chờ duyệt"
+  },
+  "preview": {
+    "title": "Bản xem trước — số liệu minh hoạ",
+    "body": "Màn này chưa đấu nối backend. Mọi số, tên và trạng thái hiển thị đều là dữ liệu mẫu, không phản ánh hệ thống thật — đừng dùng để ra quyết định hay báo cáo."
+  },
+  "chooser": {
+    "title": "Chọn app để quản trị",
+    "subtitle": "Mọi màn hình của console đều thuộc một app. Chọn xong sẽ mở đúng màn bạn đang định vào.",
+    "notFound": "Không có app <mono>«{slug}»</mono>. Link có thể gõ sai — chọn lại bên dưới.",
+    "searchPlaceholder": "Tìm theo tên hoặc slug…",
+    "searchLabel": "Tìm app",
+    "noMatch": "Không có app nào khớp «{query}».",
+    "revoked": "Đã thu hồi ({count})",
+    "internal": "nội bộ",
+    "external": "bên ngoài",
+    "lastUsed": "dùng gần nhất",
+    "adminHint": "Duyệt, tạm ngưng hay thu hồi app:",
+    "adminLink": "Quản trị EWS → Tất cả app"
+  },
+  "noApps": {
+    "errorTitle": "Không đọc được danh sách app",
+    "emptyTitle": "Chưa có app nào",
+    "emptyBody": "Org này chưa có app service nào. Đăng ký app đầu tiên để bắt đầu quản trị EWS Notification Service.",
+    "registerFirst": "Đăng ký app đầu tiên"
+  },
+  "errors": {
+    "withCode": "{message} (mã: {code})",
+    "unknown": "Đã có lỗi không xác định.",
+    "unmapped": "Thao tác không thành công (mã: {code}).",
+    "forbidden": "Không đủ quyền thực hiện thao tác này.",
+    "API_UNREACHABLE": "Không kết nối được tới API. Kiểm tra service `ews-astrolink-api` đã chạy chưa.",
+    "API_NOT_CONFIGURED": "Console chưa được cấu hình để gọi API. Kiểm tra biến môi trường EWS_*.",
+    "INVALID_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
+    "INVALID_ADMIN_SESSION": "Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.",
+    "ADMIN_CALLER_REQUIRED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+    "PASSWORD_TOO_SHORT": "Mật khẩu phải có ít nhất 12 ký tự.",
+    "PASSWORD_TOO_LONG": "Mật khẩu quá dài (tối đa 200 ký tự).",
+    "NOT_FOUND": "Không tìm thấy dữ liệu.",
+    "VALIDATION": "Dữ liệu nhập không hợp lệ.",
+    "TOPIC_KEY_TAKEN": "Mã chủ đề này đã có trong app. Chọn mã khác.",
+    "INVALID_TRANSITION": "Không chuyển được trạng thái này. Tải lại trang để xem trạng thái mới nhất.",
+    "CONCURRENT_TRANSITION": "Người khác vừa đổi trạng thái trước bạn. Tải lại trang rồi thử lại.",
+    "ACTIVE_SECRET_LIMIT": "App đã đủ số khoá active cho phép. Thu hồi một khoá cũ rồi cấp lại.",
+    "APP_REVOKED": "App đã bị thu hồi nên không cấp khoá mới được.",
+    "APP_SLUG_TAKEN": "Mã app (slug) này đã có trong tổ chức. Chọn mã khác.",
+    "APP_NAMESPACE_TAKEN": "Namespace này đã thuộc app khác trong tổ chức. Chọn namespace khác.",
+    "TEMPLATE_NAME_TAKEN": "Tên template đã có trong app (không phân biệt hoa thường và dấu). Chọn tên khác.",
+    "TEMPLATE_ARCHIVED": "Template đã lưu trữ — không sửa, không xuất bản được nữa.",
+    "DRAFT_EXISTS": "Template đang có bản nháp. Sửa bản nháp đó, hoặc xuất bản nó trước.",
+    "NO_DRAFT": "Không có bản nháp để xuất bản — có thể người khác vừa xuất bản. Tải lại trang.",
+    "VERSION_NOT_DRAFT": "Bản này đã xuất bản, không sửa tại chỗ được. Bấm Sửa để tạo bản nháp mới.",
+    "AI_NOT_CONFIGURED": "Chưa bật AI: người quản trị máy chủ cần điền AI_API_URL, AI_API_KEY, AI_MODEL cho api.",
+    "AI_RATE_LIMITED": "Đã gọi AI quá 10 lần trong một phút. Chờ một chút rồi thử lại.",
+    "AI_PROVIDER_ERROR": "Nhà cung cấp AI không trả lời được (lỗi, quá giờ hoặc trả sai định dạng). Thử lại sau."
+  }
+}

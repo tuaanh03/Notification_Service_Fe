@@ -4,7 +4,8 @@ import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { listApps } from '@/lib/api/apps'
-import { ApiError, messageOf } from '@/lib/api/problem'
+import { describeError } from '@/lib/api/error-message'
+import { ApiError } from '@/lib/api/problem'
 
 /**
  * Server Component: đọc `/admin/apps` bằng ADMIN_TOKEN phía server rồi truyền
@@ -27,7 +28,7 @@ export default async function Page() {
           <EmptyState
             icon={PlugZap}
             title="Không đọc được dữ liệu từ API"
-            description={`${messageOf(err)} (mã: ${err.code})`}
+            description={await describeError(err)}
           />
         </Panel>
       </>

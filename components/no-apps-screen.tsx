@@ -1,4 +1,5 @@
 import { PlugZap } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { EmptyState } from './empty-state'
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button'
  * được. Đây cũng là lý do `error` quyết định màn hình chứ không chỉ quyết định dòng chữ.
  */
 export function NoAppsScreen({ error }: { error: string | null }) {
+  const t = useTranslations('noApps')
   return (
     <>
       <CosmicBackground />
@@ -24,14 +26,13 @@ export function NoAppsScreen({ error }: { error: string | null }) {
         <Panel className="w-full max-w-md px-6">
           <EmptyState
             icon={PlugZap}
-            title={error ? 'Không đọc được danh sách app' : 'Chưa có app nào'}
+            title={error ? t('errorTitle') : t('emptyTitle')}
             description={
-              error ??
-              'Org này chưa có app service nào. Đăng ký app đầu tiên để bắt đầu quản trị EWS Notification Service.'
+error ?? t('emptyBody')
             }
             action={
               error ? undefined : (
-                <Button render={<AppLink href="/apps/new" />}>Đăng ký app đầu tiên</Button>
+                <Button render={<AppLink href="/apps/new" />}>{t('registerFirst')}</Button>
               )
             }
           />

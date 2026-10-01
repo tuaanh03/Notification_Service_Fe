@@ -3,7 +3,8 @@
 import { addNetworkRule, createApp, toApp, transitionApp, type CreateAppInput } from '@/lib/api/apps'
 import { createTopic, type CreateTopicInput } from '@/lib/api/topics'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
-import { ApiError, messageOf } from '@/lib/api/problem'
+import { messageOf } from '@/lib/api/error-message'
+import { ApiError } from '@/lib/api/problem'
 import type { NetworkRuleDto } from '@/lib/api/types'
 import type { App } from '@/lib/mock-data'
 
@@ -56,7 +57,7 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
       return null
     } catch (err) {
       if (!(err instanceof ApiError)) throw err
-      return { step, message: messageOf(err), code: err.code }
+      return { step, message: await messageOf(err), code: err.code }
     }
   }
 

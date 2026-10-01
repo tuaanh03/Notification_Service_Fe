@@ -1,3 +1,5 @@
+import createNextIntlPlugin from 'next-intl/plugin'
+
 /** @type {import('next').NextConfig} */
 
 // Console chạy trên domain riêng -> không prefix (mặc định rỗng). Nếu đặt lại sau
@@ -21,4 +23,7 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+// Ngôn ngữ giao diện: plugin nạp `i18n/request.ts` (đọc cookie, KHÔNG dùng tiền tố trên URL).
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
+
+export default withNextIntl(nextConfig)

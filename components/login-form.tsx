@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { signInAction } from '@/app/login/actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ function safeNext(raw: string | null): string {
 }
 
 export function LoginForm() {
+  const t = useTranslations('login')
   const router = useRouter()
   // `middleware.ts` gắn `?next=` khi đá người dùng về đây — đăng nhập xong quay lại đúng chỗ.
   const next = safeNext(useSearchParams().get('next'))
@@ -52,11 +54,11 @@ export function LoginForm() {
       <div className="flex flex-col items-center gap-2 text-center">
         <img src={BRAND_LOGO_SRC} alt="" className="size-14 rounded-full" />
         <h1 className="text-lg font-semibold">EWS Notification Service</h1>
-        <p className="text-xs text-[var(--text-secondary)]">Đăng nhập để quản trị</p>
+        <p className="text-xs text-[var(--text-secondary)]">{t('subtitle')}</p>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('email')}</Label>
         <Input
           id="email"
           name="email"
@@ -70,7 +72,7 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Mật khẩu</Label>
+        <Label htmlFor="password">{t('password')}</Label>
         <Input
           id="password"
           name="password"
@@ -89,12 +91,11 @@ export function LoginForm() {
       )}
 
       <Button type="submit" disabled={pending || email === '' || password === ''}>
-        {pending ? 'Đang kiểm tra…' : 'Đăng nhập'}
+        {pending ? t('submitting') : t('submit')}
       </Button>
 
       <p className="text-center text-[11px] leading-5 text-[var(--text-muted)]">
-        Quên mật khẩu thì nhờ người quản trị máy chủ đặt lại bằng <code className="font-mono">admin-cli</code> — không có
-        đường tự đặt lại qua email.
+        {t.rich('forgot', { code: (chunks) => <code className="font-mono">{chunks}</code> })}
       </p>
     </form>
   )

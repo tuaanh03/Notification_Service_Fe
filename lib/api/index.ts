@@ -1,4 +1,5 @@
-export { ApiError, messageOf, type Issue, type ProblemDetails } from './problem'
+export { ApiError, type Issue, type ProblemDetails } from './problem'
+export { messageOf, describeError } from './error-message'
 export { adminFetch, orgId } from './client'
 export { listApps, getApp, toApp, listSecrets, issueSecret, revokeSecret } from './apps'
 export {

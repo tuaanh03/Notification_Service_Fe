@@ -2,6 +2,7 @@
 
 import { TriangleAlert } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { isPreviewRoute } from '@/lib/preview-routes'
 
@@ -15,16 +16,14 @@ import { isPreviewRoute } from '@/lib/preview-routes'
  */
 export function PreviewBanner() {
   const pathname = usePathname()
+  const t = useTranslations('preview')
   if (!isPreviewRoute(pathname)) return null
 
   return (
     <Alert className="mb-5 border-[var(--solar)]/40 bg-[var(--solar)]/10">
       <TriangleAlert className="text-[var(--solar)]" />
-      <AlertTitle>Bản xem trước — số liệu minh hoạ</AlertTitle>
-      <AlertDescription>
-        Màn này chưa đấu nối backend. Mọi số, tên và trạng thái hiển thị đều là dữ liệu mẫu, không
-        phản ánh hệ thống thật — đừng dùng để ra quyết định hay báo cáo.
-      </AlertDescription>
+      <AlertTitle>{t('title')}</AlertTitle>
+      <AlertDescription>{t('body')}</AlertDescription>
     </Alert>
   )
 }

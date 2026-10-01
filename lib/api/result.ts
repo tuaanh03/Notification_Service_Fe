@@ -1,4 +1,5 @@
-import { ApiError, messageOf, type Issue } from './problem'
+import { messageOf } from './error-message'
+import { ApiError, type Issue } from './problem'
 
 /**
  * Kết quả của một Server Action gọi backend.
@@ -20,7 +21,7 @@ export async function toResult<T>(op: () => Promise<T>): Promise<ActionResult<T>
     return { ok: true, data: await op() }
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
-    return { ok: false, message: messageOf(err), code: err.code, ...(err.issues.length ? { issues: err.issues } : {}) }
+    return { ok: false, message: await messageOf(err), code: err.code, ...(err.issues.length ? { issues: err.issues } : {}) }
   }
 }
 

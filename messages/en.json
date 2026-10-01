@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "description": "EWS internal notification platform"
+  },
+  "locale": {
+    "label": "Language",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "login": {
+    "subtitle": "Sign in to manage",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Checking…",
+    "forgot": "Forgot your password? Ask the server administrator to reset it with <code>admin-cli</code> — there is no self-service reset by email."
+  },
+  "nav": {
+    "ews": "EWS",
+    "groupOperate": "Operations",
+    "groupSystem": "System",
+    "groupEws": "EWS Global",
+    "overview": "Overview",
+    "notifications": "Notifications",
+    "compose": "Compose",
+    "history": "Send history",
+    "scheduled": "Scheduled",
+    "topics": "Topics",
+    "recipients": "Recipients",
+    "users": "Users",
+    "subscriptions": "Subscriptions",
+    "templates": "Templates",
+    "appSettings": "App settings",
+    "profile": "Profile",
+    "credentials": "Credentials",
+    "quota": "Channels & Quota",
+    "origins": "IP & Origin",
+    "sync": "Directory sync",
+    "ewsAdmin": "EWS administration",
+    "sendApprovals": "Send approvals",
+    "allApps": "All apps",
+    "audit": "Audit log",
+    "directory": "Directory & Resolver"
+  },
+  "shell": {
+    "collapseSidebar": "Collapse sidebar (Ctrl + B)",
+    "expandSidebar": "Expand sidebar (Ctrl + B)",
+    "chooseApp": "Choose app",
+    "switchApp": "Switch App Service",
+    "demoRole": "Demo view (Role)",
+    "signOut": "Sign out",
+    "search": "Search",
+    "quotaTitle": "Per-minute quota: {used}/{max}",
+    "quota": "Quota:",
+    "pendingApprovals": "{count} pending approval requests"
+  },
+  "preview": {
+    "title": "Preview — sample data",
+    "body": "This screen is not connected to the backend yet. Every number, name and status shown is sample data and does not reflect the real system — do not use it for decisions or reports."
+  },
+  "chooser": {
+    "title": "Choose an app to manage",
+    "subtitle": "Every console screen belongs to an app. Once you choose, the screen you were heading to opens.",
+    "notFound": "There is no app <mono>«{slug}»</mono>. The link may be mistyped — choose again below.",
+    "searchPlaceholder": "Search by name or slug…",
+    "searchLabel": "Search apps",
+    "noMatch": "No app matches «{query}».",
+    "revoked": "Revoked ({count})",
+    "internal": "internal",
+    "external": "external",
+    "lastUsed": "last used",
+    "adminHint": "Approve, suspend or revoke apps:",
+    "adminLink": "EWS administration → All apps"
+  },
+  "noApps": {
+    "errorTitle": "Could not load the app list",
+    "emptyTitle": "No apps yet",
+    "emptyBody": "This org has no app service yet. Register the first app to start managing EWS Notification Service.",
+    "registerFirst": "Register the first app"
+  },
+  "errors": {
+    "withCode": "{message} (code: {code})",
+    "unknown": "An unknown error occurred.",
+    "unmapped": "The operation failed (code: {code}).",
+    "forbidden": "You do not have permission to perform this action.",
+    "API_UNREACHABLE": "Cannot reach the API. Check that the `ews-astrolink-api` service is running.",
+    "API_NOT_CONFIGURED": "The console is not configured to call the API. Check the EWS_* environment variables.",
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "INVALID_ADMIN_SESSION": "Your session has expired. Sign in again to continue.",
+    "ADMIN_CALLER_REQUIRED": "Your session is invalid or has expired.",
+    "PASSWORD_TOO_SHORT": "The password must be at least 12 characters.",
+    "PASSWORD_TOO_LONG": "The password is too long (200 characters max).",
+    "NOT_FOUND": "Data not found.",
+    "VALIDATION": "The input is invalid.",
+    "TOPIC_KEY_TAKEN": "This topic key already exists in the app. Choose another key.",
+    "INVALID_TRANSITION": "This status change is not allowed. Reload the page to see the latest status.",
+    "CONCURRENT_TRANSITION": "Someone else changed the status before you. Reload the page and try again.",
+    "ACTIVE_SECRET_LIMIT": "The app already has the maximum number of active keys. Revoke an old key, then issue a new one.",
+    "APP_REVOKED": "The app has been revoked, so no new key can be issued.",
+    "APP_SLUG_TAKEN": "This app slug already exists in the organization. Choose another one.",
+    "APP_NAMESPACE_TAKEN": "This namespace already belongs to another app in the organization. Choose another one.",
+    "TEMPLATE_NAME_TAKEN": "A template with this name already exists in the app (case- and accent-insensitive). Choose another name.",
+    "TEMPLATE_ARCHIVED": "The template is archived — it can no longer be edited or published.",
+    "DRAFT_EXISTS": "The template already has a draft. Edit that draft, or publish it first.",
+    "NO_DRAFT": "There is no draft to publish — someone may have just published it. Reload the page.",
+    "VERSION_NOT_DRAFT": "This version is published and cannot be edited in place. Click Edit to create a new draft.",
+    "AI_NOT_CONFIGURED": "AI is not enabled: the server administrator must set AI_API_URL, AI_API_KEY and AI_MODEL for the api.",
+    "AI_RATE_LIMITED": "AI was called more than 10 times in one minute. Wait a moment and try again.",
+    "AI_PROVIDER_ERROR": "The AI provider did not respond properly (error, timeout or wrong format). Try again later."
+  }
+}

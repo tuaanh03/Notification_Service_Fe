@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { LoginForm } from '@/components/login-form'
 import { CosmicBackground } from '@/components/cosmic-background'
+import { LocaleToggle } from '@/components/locale-switcher'
 import { Panel } from '@/components/panel'
 import { currentAdmin } from '@/lib/api/auth'
 
@@ -19,6 +20,9 @@ export default async function Page() {
   return (
     <>
       <CosmicBackground />
+      <div className="absolute top-4 right-4 z-10">
+        <LocaleToggle />
+      </div>
       <div className="relative flex min-h-dvh items-center justify-center px-4">
         <Panel className="w-full max-w-sm px-6 py-8">
           <LoginForm />
