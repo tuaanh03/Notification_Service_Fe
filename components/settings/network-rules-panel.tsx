@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { AlertTriangle, Globe, Info, Network, PlugZap, Plus, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
   addNetworkRuleAction,
@@ -9,7 +10,7 @@ import {
   type NetworkRulesView,
 } from '@/app/settings/origins/actions'
 import { useApp } from '@/components/app-context'
-import { validateIp, validateOrigin } from '@/components/apps/wizard-types'
+import { useNetworkValidators } from '@/components/apps/use-network-validators'
 import { AuditTrail } from '@/components/audit-trail'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
@@ -22,28 +23,14 @@ import type { NetworkRuleDto } from '@/lib/api/types'
 
 type Kind = 'ip' | 'origin'
 
-/** Chữ của từng loại — khớp luật `checkNetworkAccess` của backend (`network-access.ts`). */
-const KIND: Record<
-  Kind,
-  { title: string; icon: typeof Network; hint: string; empty: string; placeholder: string; validate: (v: string) => string | null }
-> = {
-  ip: {
-    title: 'Địa chỉ IP',
-    icon: Network,
-    hint: 'IP của máy chủ app service. Từng địa chỉ một — chưa hỗ trợ dải.',
-    empty: 'Chưa khai — MỌI IP đều gọi được.',
-    placeholder: '10.20.0.15',
-    validate: validateIp,
-  },
-  origin: {
-    title: 'Origin (trình duyệt)',
-    icon: Globe,
-    hint: 'Chỉ áp dụng khi lời gọi có header Origin, tức gọi từ trình duyệt. Server gọi server không bị luật này chặn.',
-    empty: 'Chưa khai — không kiểm Origin.',
-    placeholder: 'https://service.enterprise.vn',
-    validate: validateOrigin,
-  },
-}
+/**
+ * Chữ của từng loại (khoá trong nhóm `network`) — khớp luật `checkNetworkAccess` của backend
+ * (`network-access.ts`).
+ */
+const KIND = {
+  ip: { title: 'ipTitle', hint: 'ipHint', empty: 'ipEmpty', icon: Network, placeholder: '10.20.0.15' },
+  origin: { title: 'originTitle', hint: 'originHint', empty: 'originEmpty', icon: Globe, placeholder: 'https://service.enterprise.vn' },
+} as const
 
 /** Backend so Origin không phân biệt hoa thường, bỏ `/` cuối — kiểm trùng theo cùng cách. */
 const sameValue = (kind: Kind, a: string, b: string) =>
@@ -64,7 +51,12 @@ function RuleSection({
   onAdd: (value: string) => void
   onRemove: (rule: NetworkRuleDto) => void
 }) {
+  const t = useTranslations('network')
+  const tv = useTranslations('validation')
+  const { validateIp, validateOrigin } = useNetworkValidators()
   const meta = KIND[kind]
+  const title = t(meta.title)
+  const validate = kind === 'ip' ? validateIp : validateOrigin
   const Icon = meta.icon
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +64,7 @@ function RuleSection({
   const add = () => {
     const value = draft.trim()
     if (!value) return
-    const err = meta.validate(value) ?? (rules.some((r) => sameValue(kind, r.value, value)) ? 'Đã có trong danh sách' : null)
+    const err = validate(value) ?? (rules.some((r) => sameValue(kind, r.value, value)) ? tv('duplicate') : null)
     if (err) return setError(err)
     setError(null)
     setDraft('')
@@ -82,9 +74,9 @@ function RuleSection({
   return (
     <Panel className="p-5">
       <h2 className="flex items-center gap-2 text-sm font-semibold">
-        <Icon className="size-4 text-[var(--starlight)]" /> {meta.title}
+        <Icon className="size-4 text-[var(--starlight)]" /> {title}
       </h2>
-      <p className="mt-1 text-xs text-[var(--text-secondary)]">{meta.hint}</p>
+      <p className="mt-1 text-xs text-[var(--text-secondary)]">{t(meta.hint)}</p>
 
       <ul className="mt-4 space-y-1.5">
         {rules.map((rule) => (
@@ -93,12 +85,12 @@ function RuleSection({
             className="flex items-center justify-between gap-2 rounded-lg border border-[var(--orbit)] px-3 py-1.5"
           >
             <span className="min-w-0 break-all font-mono text-xs">{rule.value}</span>
-            <Button variant="ghost" size="icon-sm" disabled={busy} aria-label={`Gỡ ${rule.value}`} onClick={() => onRemove(rule)}>
+            <Button variant="ghost" size="icon-sm" disabled={busy} aria-label={t('remove', { value: rule.value })} onClick={() => onRemove(rule)}>
               <X />
             </Button>
           </li>
         ))}
-        {rules.length === 0 && <li className="py-2 text-xs text-[var(--text-muted)]">{meta.empty}</li>}
+        {rules.length === 0 && <li className="py-2 text-xs text-[var(--text-muted)]">{t(meta.empty)}</li>}
       </ul>
 
       <div className="mt-4 flex gap-2">
@@ -110,12 +102,12 @@ function RuleSection({
           }}
           onKeyDown={(e) => e.key === 'Enter' && add()}
           placeholder={meta.placeholder}
-          aria-label={`Thêm ${meta.title}`}
+          aria-label={t('addAria', { title })}
           aria-invalid={error !== null}
           className="min-w-0 font-mono"
         />
         <Button variant="outline" size="sm" disabled={busy || !draft.trim()} onClick={add}>
-          <Plus /> Thêm
+          <Plus /> {t('add')}
         </Button>
       </div>
       {error && <p className="mt-1.5 text-xs text-[var(--supernova)]">{error}</p>}
@@ -133,6 +125,8 @@ function RuleSection({
  * Thêm dòng thứ hai trở đi chỉ nới ra, không chặn ai — không hỏi lại.
  */
 export function NetworkRulesPanel() {
+  const t = useTranslations('network')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const appId = app.app_id
   const [view, setView] = useState<NetworkRulesView | null>(null)
@@ -148,9 +142,9 @@ export function NetworkRulesPanel() {
       setLoadError(null)
     } else {
       setView(null)
-      setLoadError(`${result.message} (mã: ${result.code})`)
+      setLoadError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId])
+  }, [appId, te])
 
   useEffect(() => {
     setView(null)
@@ -169,12 +163,12 @@ export function NetworkRulesPanel() {
       const result =
         action === 'add' ? await addNetworkRuleAction(appId, rule) : await removeNetworkRuleAction(appId, rule)
       if (!result.ok) {
-        setActionError(`${result.message} (mã: ${result.code})`)
+        setActionError(te('withCode', { message: result.message, code: result.code }))
         return
       }
       setActionError(null)
       setConfirming(null)
-      toast.success(action === 'add' ? `Đã thêm ${rule.value}` : `Đã gỡ ${rule.value}`)
+      toast.success(action === 'add' ? t('added', { value: rule.value }) : t('removed', { value: rule.value }))
       await load()
     })
 
@@ -184,7 +178,7 @@ export function NetworkRulesPanel() {
     else run({ action: 'add', rule })
   }
 
-  const header = <PageHeader title="IP & Origin" subtitle={`Nguồn được phép gọi /v1 bằng khoá của ${app.slug}`} />
+  const header = <PageHeader title={t('title')} subtitle={t('subtitle', { app: app.slug })} />
 
   if (loadError) {
     return (
@@ -193,11 +187,11 @@ export function NetworkRulesPanel() {
         <Panel className="overflow-hidden">
           <EmptyState
             icon={PlugZap}
-            title="Không đọc được danh sách nguồn gọi"
+            title={t('loadFailed')}
             description={loadError}
             action={
               <Button variant="ghost" size="sm" onClick={() => void load()}>
-                Thử lại
+                {t('retry')}
               </Button>
             }
           />
@@ -213,34 +207,32 @@ export function NetworkRulesPanel() {
     if (action === 'add') {
       return rule.kind === 'ip'
         ? {
-            title: 'Giới hạn IP được gọi?',
-            description: `Hiện MỌI IP đều gọi được. Từ lúc này CHỈ ${rule.value} (và các IP thêm sau) gọi được — máy chủ app service ở IP khác bị chặn IP_NOT_ALLOWED ngay. Kiểm đúng IP máy gọi trước khi thêm.`,
-            label: 'Giới hạn theo IP này',
+            title: t('limitIpTitle'),
+            description: t('limitIpBody', { value: rule.value }),
+            label: t('limitIpLabel'),
           }
         : {
-            title: 'Bắt đầu kiểm Origin?',
-            description: `Từ lúc này lời gọi từ trình duyệt ở origin khác ${rule.value} bị chặn ORIGIN_NOT_ALLOWED. Server gọi server không bị ảnh hưởng.`,
-            label: 'Bắt đầu kiểm Origin',
+            title: t('startOriginTitle'),
+            description: t('startOriginBody', { value: rule.value }),
+            label: t('startOriginLabel'),
           }
     }
     return rule.kind === 'ip'
       ? last
         ? {
-            title: 'Gỡ IP cuối cùng?',
-            description: `Không còn IP nào trong danh sách nghĩa là MỌI IP đều gọi được — ai cầm được khoá cũng gọi được.${app.origin === 'external' ? ' App này là app bên ngoài: nên thêm IP mới TRƯỚC rồi mới gỡ IP cũ.' : ''}`,
-            label: 'Gỡ và mở cho mọi IP',
+            title: t('lastIpTitle'),
+            description: t('lastIpBody') + (app.origin === 'external' ? t('lastIpExternal') : ''),
+            label: t('lastIpLabel'),
           }
         : {
-            title: `Gỡ ${rule.value}?`,
-            description: 'Máy chủ app service đang gọi từ IP này bị chặn IP_NOT_ALLOWED ngay lập tức.',
-            label: 'Gỡ IP',
+            title: t('removeTitle', { value: rule.value }),
+            description: t('removeIpBody'),
+            label: t('removeIpLabel'),
           }
       : {
-          title: `Gỡ ${rule.value}?`,
-          description: last
-            ? 'Không còn origin nào nghĩa là không kiểm Origin nữa — trình duyệt ở đâu cũng gọi được.'
-            : 'Lời gọi từ trình duyệt ở origin này bị chặn ORIGIN_NOT_ALLOWED ngay lập tức.',
-          label: 'Gỡ origin',
+          title: t('removeTitle', { value: rule.value }),
+          description: last ? t('lastOriginBody') : t('removeOriginBody'),
+          label: t('removeOriginLabel'),
         }
   })()
 
@@ -250,31 +242,26 @@ export function NetworkRulesPanel() {
 
       <Alert className="mb-5">
         <Info />
-        <AlertDescription>
-          Mỗi loại tính riêng: chưa khai dòng nào thì loại đó không giới hạn, khai rồi thì chỉ các giá trị trong danh
-          sách qua được. So khớp chính xác từng giá trị. Thay đổi có hiệu lực ngay với lời gọi kế tiếp.
-        </AlertDescription>
+        <AlertDescription>{t('rules')}</AlertDescription>
       </Alert>
 
       {view !== null && app.origin === 'external' && ips.length === 0 && (
         <Alert className="mb-5 bg-[var(--solar)]/10">
           <AlertTriangle className="text-[var(--solar)]" />
-          <AlertDescription>
-            App bên ngoài chưa khai IP nào — ai cầm được khoá cũng gọi được. Thêm IP máy chủ của app service.
-          </AlertDescription>
+          <AlertDescription>{t('externalNoIp')}</AlertDescription>
         </Alert>
       )}
 
       {actionError && (
         <Alert variant="destructive" className="mb-5">
           <AlertTriangle />
-          <AlertTitle>Thao tác không thành công</AlertTitle>
+          <AlertTitle>{t('actionFailed')}</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       )}
 
       {view === null ? (
-        <p className="py-10 text-center text-xs text-[var(--text-muted)]">Đang tải…</p>
+        <p className="py-10 text-center text-xs text-[var(--text-muted)]">{t('loading')}</p>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {(['ip', 'origin'] as const).map((kind) => (
@@ -291,12 +278,12 @@ export function NetworkRulesPanel() {
       )}
 
       <Panel className="mt-5 p-5">
-        <h2 className="mb-4 text-sm font-semibold">Audit IP & Origin</h2>
+        <h2 className="mb-4 text-sm font-semibold">{t('auditTitle')}</h2>
         {view && view.audit.length > 0 ? (
           <AuditTrail entries={view.audit} />
         ) : (
           <p className="text-xs text-[var(--text-muted)]">
-            Chưa có sự kiện nào. Audit được ghi bất đồng bộ nên thao tác vừa xong có thể chưa hiện ngay.
+            {t('auditEmpty')}
           </p>
         )}
       </Panel>
@@ -306,8 +293,16 @@ export function NetworkRulesPanel() {
         tone="warning"
         title={confirmText?.title ?? ''}
         description={confirmText?.description ?? ''}
-        facts={confirming ? [['app', app.slug], ['loại', confirming.rule.kind], ['giá trị', confirming.rule.value]] : undefined}
-        confirmLabel={pending ? 'Đang lưu…' : (confirmText?.label ?? '')}
+        facts={
+          confirming
+            ? [
+                ['app', app.slug],
+                [t('factKind'), confirming.rule.kind],
+                [t('factValue'), confirming.rule.value],
+              ]
+            : undefined
+        }
+        confirmLabel={pending ? t('saving') : (confirmText?.label ?? '')}
         confirmDisabled={pending}
         onConfirm={() => confirming && run(confirming)}
         onCancel={() => setConfirming(null)}

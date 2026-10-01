@@ -1,6 +1,7 @@
 'use client'
 import { AppLink } from '@/components/app-link'
 import { ExternalLink } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { CodeBlock } from '@/components/code-block'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
@@ -14,15 +15,16 @@ const testSendResponse = `202 Accepted
 
 /** UC-001 §A (App Owner view) + §G Gửi thử. */
 export function SettingsProfile() {
+  const t = useTranslations('profile')
   const { app } = useApp()
   return (
     <>
       <PageHeader
-        title="Hồ sơ app"
-        subtitle={`Thông tin đăng ký của ${app.slug}`}
+        title={t('title')}
+        subtitle={t('subtitle', { app: app.slug })}
         actions={
           <Button variant="outline" render={<AppLink href="/apps/new" />}>
-            Đăng ký app khác
+            {t('registerAnother')}
           </Button>
         }
       />
@@ -44,33 +46,33 @@ export function SettingsProfile() {
               <dd className="mt-1 font-mono text-[var(--starlight)]">{app.namespace}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--text-muted)]">Người liên hệ kỹ thuật</dt>
+              <dt className="text-xs text-[var(--text-muted)]">{t('contact')}</dt>
               <dd className="mt-1">{app.technical_contact ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--text-muted)]">Kênh được cấp</dt>
+              <dt className="text-xs text-[var(--text-muted)]">{t('channels')}</dt>
               <dd className="mt-1 font-mono text-xs">{app.granted_channels.join(' · ')}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--text-muted)]">Quota</dt>
-              <dd className="mt-1 font-mono tabular-nums">{app.quota} lần/phút</dd>
+              <dt className="text-xs text-[var(--text-muted)]">{t('quota')}</dt>
+              <dd className="mt-1 font-mono tabular-nums">{t('perMinute', { count: app.quota })}</dd>
             </div>
           </dl>
         </Panel>
         <Panel className="min-w-0 p-5">
-          <h2 className="text-sm font-semibold">Gửi thử</h2>
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">Mô phỏng API call đầu tiên trên topic mới.</p>
+          <h2 className="text-sm font-semibold">{t('testSend')}</h2>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">{t('testSendBody')}</p>
           <div className="mt-4 min-w-0 overflow-x-auto">
             <CodeBlock language="http" value={testSendResponse} />
           </div>
           {/* UC-001 BR-6: 0 người nhận ở đường API là bình thường — màu trung tính, không đỏ */}
           <Alert className="mt-4 border-[var(--orbit)] bg-transparent">
             <AlertDescription className="text-[var(--text-secondary)]">
-              0 người nhận là đúng như mong đợi: topic vừa tạo chưa có subscriber. Đây không phải lỗi.
+              {t('zeroOk')}
             </AlertDescription>
           </Alert>
           <Button variant="link" className="mt-3 px-0" render={<AppLink href="/topics" />}>
-            Quản lý subscriber <ExternalLink data-icon="inline-end" />
+            {t('manageSubscribers')} <ExternalLink data-icon="inline-end" />
           </Button>
         </Panel>
       </div>

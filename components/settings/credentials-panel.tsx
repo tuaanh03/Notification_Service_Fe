@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { AlertTriangle, KeyRound, PlugZap, RotateCcw, ShieldOff } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
   issueSecretAction,
@@ -24,7 +25,7 @@ import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
 import { MAX_ACTIVE_SECRETS } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
 
-const HEADERS = ['Hint', 'Trạng thái', 'Tạo lúc', 'Thu hồi lúc', '']
+const HEADERS = ['colHint', 'colStatus', 'colCreated', 'colRevoked', null] as const
 
 /**
  * UC-001 §E — vòng đời khoá API của app đang chọn. Bảng chỉ có hint; plaintext chỉ hiện
@@ -35,6 +36,8 @@ const HEADERS = ['Hint', 'Trạng thái', 'Tạo lúc', 'Thu hồi lúc', '']
  * sang, rồi mới thu hồi khoá cũ. Cấp mới KHÔNG tự thu hồi khoá cũ.
  */
 export function CredentialsPanel() {
+  const t = useTranslations('credentials')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const [view, setView] = useState<CredentialsView | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -54,9 +57,9 @@ export function CredentialsPanel() {
       setLoadError(null)
     } else {
       setView(null)
-      setLoadError(`${result.message} (mã: ${result.code})`)
+      setLoadError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId])
+  }, [appId, te])
 
   useEffect(() => {
     setView(null)
@@ -73,7 +76,7 @@ export function CredentialsPanel() {
     startTransition(async () => {
       const result = await issueSecretAction(appId)
       if (!result.ok) {
-        setActionError(`${result.message} (mã: ${result.code})`)
+        setActionError(te('withCode', { message: result.message, code: result.code }))
         return
       }
       setActionError(null)
@@ -87,18 +90,18 @@ export function CredentialsPanel() {
     startTransition(async () => {
       const result = await revokeSecretAction(appId, target.id)
       if (!result.ok) {
-        setActionError(`${result.message} (mã: ${result.code})`)
+        setActionError(te('withCode', { message: result.message, code: result.code }))
         return
       }
       setActionError(null)
       setRevoking(null)
-      toast.success(`Đã thu hồi ${target.hint}`)
+      toast.success(t('revoked', { hint: target.hint }))
       await load()
     })
   }
 
   const header = (
-    <PageHeader title="Credentials" subtitle={`Vòng đời khoá API của ${app.slug} · app_id không đổi`} />
+    <PageHeader title={t('title')} subtitle={t('subtitle', { app: app.slug })} />
   )
 
   if (loadError) {
@@ -108,11 +111,11 @@ export function CredentialsPanel() {
         <Panel className="overflow-hidden">
           <EmptyState
             icon={PlugZap}
-            title="Không đọc được danh sách khoá"
+            title={t('loadFailed')}
             description={loadError}
             action={
               <Button variant="ghost" size="sm" onClick={() => void load()}>
-                Thử lại
+                {t('retry')}
               </Button>
             }
           />
@@ -124,7 +127,7 @@ export function CredentialsPanel() {
   const issueButton = (
     <Button variant="outline" disabled={atLimit || pending} onClick={() => setIssueOpen(true)}>
       <RotateCcw />
-      Cấp khoá mới
+      {t('issue')}
     </Button>
   )
 
@@ -135,7 +138,7 @@ export function CredentialsPanel() {
       {actionError && (
         <Alert variant="destructive" className="mb-5">
           <AlertTriangle />
-          <AlertTitle>Thao tác không thành công</AlertTitle>
+          <AlertTitle>{t('actionFailed')}</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       )}
@@ -143,20 +146,20 @@ export function CredentialsPanel() {
       <Panel className="p-5" ring>
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold">Khoá API</h2>
+            <h2 className="text-sm font-semibold">{t('keys')}</h2>
             {/* UC-001 BR-4: không bao giờ hiện khoá đầy đủ ở đây */}
             <p className="mt-2 text-xs text-[var(--text-secondary)]">
-              Hệ thống chỉ lưu SHA-256 hash. Mất khoá thì phải cấp khoá mới, không lấy lại được.
+              {t('hashOnly')}
             </p>
             <p className="mt-1 font-mono text-[11px] tabular-nums text-[var(--text-muted)]">
-              {activeCount}/{MAX_ACTIVE_SECRETS} khoá active
+              {t('activeCount', { active: activeCount, max: MAX_ACTIVE_SECRETS })}
             </p>
           </div>
           {atLimit ? (
             <Tooltip>
               <TooltipTrigger render={<span className="inline-flex" />}>{issueButton}</TooltipTrigger>
               <TooltipContent>
-                Đã có {MAX_ACTIVE_SECRETS} khoá active — thu hồi khoá cũ trước khi cấp thêm.
+                {t('atLimit', { max: MAX_ACTIVE_SECRETS })}
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -169,7 +172,7 @@ export function CredentialsPanel() {
               <TableRow className="hover:bg-transparent">
                 {HEADERS.map((h, i) => (
                   <TableHead key={i} className="px-3">
-                    {h}
+                    {h && t(h)}
                   </TableHead>
                 ))}
               </TableRow>
@@ -195,9 +198,9 @@ export function CredentialsPanel() {
                         size="xs"
                         disabled={pending}
                         onClick={() => setRevoking(s)}
-                        aria-label={`Thu hồi ${s.hint}`}
+                        aria-label={t('revokeAria', { hint: s.hint })}
                       >
-                        <ShieldOff /> Thu hồi
+                        <ShieldOff /> {t('revoke')}
                       </Button>
                     )}
                   </TableCell>
@@ -208,20 +211,20 @@ export function CredentialsPanel() {
           {view !== null && secrets.length === 0 && (
             <EmptyState
               icon={KeyRound}
-              title="Chưa có khoá API"
-              description={`${app.name} chưa được cấp khoá nào — app chưa gọi được /v1. Cấp khoá đầu tiên để bắt đầu.`}
+              title={t('emptyTitle')}
+              description={t('emptyBody', { app: app.name })}
             />
           )}
         </div>
       </Panel>
 
       <Panel className="mt-5 p-5">
-        <h2 className="mb-4 text-sm font-semibold">Audit khoá API</h2>
+        <h2 className="mb-4 text-sm font-semibold">{t('auditTitle')}</h2>
         {view && view.audit.length > 0 ? (
           <AuditTrail entries={view.audit} />
         ) : (
           <p className="text-xs text-[var(--text-muted)]">
-            Chưa có sự kiện nào. Audit được ghi bất đồng bộ nên thao tác vừa xong có thể chưa hiện ngay.
+            {t('auditEmpty')}
           </p>
         )}
       </Panel>
@@ -229,14 +232,14 @@ export function CredentialsPanel() {
       <ConfirmDialog
         open={issueOpen}
         tone="warning"
-        title="Cấp khoá API mới?"
-        description="Khoá cũ VẪN hoạt động — cấp mới không thu hồi gì cả. Chuyển app service sang khoá mới xong thì quay lại thu hồi khoá cũ. Khoá mới chỉ hiện đúng một lần."
+        title={t('issueTitle')}
+        description={t('issueBody')}
         facts={[
           ['app_id', app.app_id],
-          ['active hiện tại', `${activeCount}/${MAX_ACTIVE_SECRETS}`],
-          ['active sau khi cấp', `${activeCount + 1}/${MAX_ACTIVE_SECRETS}`],
+          [t('factActiveNow'), `${activeCount}/${MAX_ACTIVE_SECRETS}`],
+          [t('factActiveAfter'), `${activeCount + 1}/${MAX_ACTIVE_SECRETS}`],
         ]}
-        confirmLabel={pending ? 'Đang cấp…' : 'Cấp khoá mới'}
+        confirmLabel={pending ? t('issuing') : t('issue')}
         confirmDisabled={pending}
         onConfirm={issue}
         onCancel={() => setIssueOpen(false)}
@@ -245,18 +248,18 @@ export function CredentialsPanel() {
       <ConfirmDialog
         open={revoking !== null}
         tone="warning"
-        title="Thu hồi khoá này?"
-        description="Mọi lời gọi /v1 dùng khoá này hỏng ngay lập tức. Không hoàn tác được."
+        title={t('revokeTitle')}
+        description={t('revokeBody')}
         facts={
           revoking
             ? [
-                ['khoá', revoking.hint],
-                ['tạo lúc', fmtDateTime(revoking.createdAt)],
-                ['active còn lại', `${activeCount - 1}/${MAX_ACTIVE_SECRETS}`],
+                [t('factKey'), revoking.hint],
+                [t('factCreated'), fmtDateTime(revoking.createdAt)],
+                [t('factActiveLeft'), `${activeCount - 1}/${MAX_ACTIVE_SECRETS}`],
               ]
             : undefined
         }
-        confirmLabel={pending ? 'Đang thu hồi…' : 'Thu hồi'}
+        confirmLabel={pending ? t('revoking') : t('revoke')}
         confirmDisabled={pending}
         onConfirm={() => revoking && revoke(revoking)}
         onCancel={() => setRevoking(null)}

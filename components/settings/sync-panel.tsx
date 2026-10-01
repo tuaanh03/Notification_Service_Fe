@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import { CodeBlock } from '@/components/code-block'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
@@ -9,15 +12,16 @@ import { fmtDateTime } from '@/lib/time'
 
 /** UC-002 §E — sync danh bạ từ App Service, read-only. */
 export function SyncPanel() {
+  const t = useTranslations('sync')
   return (
     <>
-      <PageHeader title="Sync danh bạ" subtitle="Lần sync gần nhất từng app — chỉ xem" />
+      <PageHeader title={t('title')} subtitle={t('subtitle')} />
       <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <Panel className="min-w-0 overflow-hidden">
           <Table className="text-[13px]">
             <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
               <TableRow className="hover:bg-transparent">
-                {['App', 'Mode', 'synced_at', 'Số user', 'Membership group'].map((h) => (
+                {[t('colApp'), t('colMode'), 'synced_at', t('colUsers'), t('colGroups')].map((h) => (
                   <TableHead key={h} className="px-3">
                     {h}
                   </TableHead>
@@ -45,7 +49,7 @@ export function SyncPanel() {
           <CodeBlock language="json" value={SYNC_PAYLOAD} />
           <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]">
             <AlertDescription className="text-[var(--solar)]">
-              Sync danh bạ không xoá bản ghi tắt nhận tin. Người đã tắt vẫn bị trừ ra lúc gửi.
+              {t('note')}
             </AlertDescription>
           </Alert>
         </div>

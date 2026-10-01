@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { RepeatableInput } from '@/components/repeatable-input'
-import { APP_SLUG, APP_SLUG_TEXT, validateIp, validateOrigin, type ProfileDraft } from './wizard-types'
+import { useNetworkValidators } from './use-network-validators'
+import { APP_SLUG, APP_SLUG_TEXT, type ProfileDraft } from './wizard-types'
 
 /** Bước 1 — hồ sơ app: đúng 4 field của `POST /admin/apps` + allowlist đi kèm. */
 export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange: (next: ProfileDraft) => void }) {
+  const { validateIp, validateOrigin } = useNetworkValidators()
   const slugInvalid = draft.slug.length > 0 && !APP_SLUG.test(draft.slug)
   const nsInvalid = draft.namespace.length > 0 && !APP_SLUG.test(draft.namespace)
   const external = draft.origin === 'external'

@@ -1,6 +1,7 @@
 'use client'
 import { Copy, Eye, EyeOff, Rocket } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { CodeBlock } from '@/components/code-block'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -30,6 +31,9 @@ export function CredentialDialog({
   open: boolean
   onClose: () => void
 }) {
+  const t = useTranslations('credentialDialog')
+  const tc = useTranslations('common')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const [visible, setVisible] = useState(false)
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -37,7 +41,7 @@ export function CredentialDialog({
   const copy = (value: string) => {
     navigator.clipboard?.writeText(value)
     setCopied(true)
-    toast.success('Đã sao chép')
+    toast.success(tc('copied'))
   }
   const requestClose = () => (copied ? onClose() : setConfirmClose(true))
   return (
@@ -54,25 +58,24 @@ export function CredentialDialog({
             <div className="mx-auto mb-2 flex size-14 items-center justify-center rounded-full border border-[var(--starlight)] text-[var(--starlight)] shadow-[var(--glow-starlight-lg)]">
               <Rocket className="size-6" />
             </div>
-            <DialogTitle className="font-heading text-2xl">Chỉ hiển thị một lần</DialogTitle>
-            <DialogDescription>Lưu app_secret vào secret store trước khi đóng.</DialogDescription>
+            <DialogTitle className="font-heading text-2xl">{t('title')}</DialogTitle>
+            <DialogDescription>{t('description')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="rounded-lg border border-[var(--orbit)] p-4">
               <p className="text-xs text-[var(--text-muted)]">
-                <span className="font-mono">app_id</span> · Công khai — được phép nhúng vào config app
+                {t.rich('appIdNote', { mono })}
               </p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <code className="break-all font-mono text-xs text-[var(--starlight)]">{app.app_id}</code>
-                <Button variant="ghost" size="icon-sm" aria-label="Sao chép app_id" onClick={() => copy(app.app_id)}>
+                <Button variant="ghost" size="icon-sm" aria-label={t('copyAppId')} onClick={() => copy(app.app_id)}>
                   <Copy />
                 </Button>
               </div>
             </div>
             <div className="rounded-lg border border-[var(--supernova)]/30 p-4">
               <p className="text-xs text-[var(--text-muted)]">
-                <span className="font-mono">app_secret</span> · Bí mật — hệ thống chỉ lưu hash, không có bản gốc để
-                hiện lại
+                {t.rich('secretNote', { mono })}
               </p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <code className="break-all font-mono text-xs text-[var(--supernova)]">
@@ -81,9 +84,9 @@ export function CredentialDialog({
                 <div className="flex shrink-0 gap-1">
                   <Button variant="ghost" size="sm" onClick={() => setVisible(!visible)}>
                     {visible ? <EyeOff /> : <Eye />}
-                    {visible ? 'Ẩn' : 'Hiện'}
+                    {visible ? t('hide') : t('show')}
                   </Button>
-                  <Button variant="ghost" size="icon-sm" aria-label="Sao chép app_secret" onClick={() => copy(apiKey)}>
+                  <Button variant="ghost" size="icon-sm" aria-label={t('copySecret')} onClick={() => copy(apiKey)}>
                     <Copy />
                   </Button>
                 </div>
@@ -92,8 +95,8 @@ export function CredentialDialog({
           </div>
           <Tabs defaultValue="config">
             <TabsList>
-              <TabsTrigger value="config">Config</TabsTrigger>
-              <TabsTrigger value="token">Gọi API</TabsTrigger>
+              <TabsTrigger value="config">{t('tabConfig')}</TabsTrigger>
+              <TabsTrigger value="token">{t('tabCall')}</TabsTrigger>
             </TabsList>
             <TabsContent value="config" className="mt-3">
               <CodeBlock language="env" value={configSnippetFor(app, apiKey)} />
@@ -105,21 +108,21 @@ export function CredentialDialog({
           <div className="flex items-center gap-2">
             <Checkbox id="secret-saved" checked={saved} onCheckedChange={(c) => setSaved(c === true)} />
             <Label htmlFor="secret-saved" className="text-xs">
-              Tôi đã lưu app_secret vào secret store
+              {t('saved')}
             </Label>
           </div>
           <Button variant="outline" disabled={!saved} onClick={requestClose} className="w-full">
-            Đóng
+            {t('close')}
           </Button>
         </DialogContent>
       </Dialog>
       <ConfirmDialog
         open={confirmClose}
         tone="blocking"
-        title="Đóng đi thì không lấy lại được. Vẫn đóng?"
-        description="Bạn chưa bấm sao chép app_secret. Sau khi đóng, hệ thống chỉ còn hash."
-        confirmLabel="Vẫn đóng"
-        cancelLabel="Quay lại"
+        title={t('confirmTitle')}
+        description={t('confirmBody')}
+        confirmLabel={t('closeAnyway')}
+        cancelLabel={t('back')}
         onCancel={() => setConfirmClose(false)}
         onConfirm={() => {
           setConfirmClose(false)

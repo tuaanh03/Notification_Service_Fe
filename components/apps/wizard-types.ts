@@ -21,7 +21,13 @@ export const TOPIC_KEY = /^[a-z][a-z0-9_.-]{1,127}$/
  * RIÊNG console để người nhập không gõ nhầm — đừng nói là backend ép.
  */
 export const ORIGIN_RE = /^https?:\/\/[a-z0-9.-]+(:\d+)?$/i
-export const validateOrigin = (v: string) => (ORIGIN_RE.test(v) ? null : 'Phải là origin, ví dụ https://service.enterprise.vn')
+/**
+ * Hai hàm kiểm trả MÃ lỗi (khoá trong nhóm `validation` của `messages/*.json`), không trả câu —
+ * file này không phải component nên không biết ngôn ngữ. Màn hình dịch qua `useNetworkValidators()`.
+ */
+export type NetworkValueError = 'originInvalid' | 'ipRange' | 'ipInvalid'
+
+export const originError = (v: string): NetworkValueError | null => (ORIGIN_RE.test(v) ? null : 'originInvalid')
 
 /** IPv4 đơn, mỗi phần 0–255. */
 const IPV4_RE = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/
@@ -42,12 +48,8 @@ function isIpv6(v: string): boolean {
  * "CIDR để sau") và không kiểm định dạng — lưu `10.20.0.0/16` là app bị chặn `IP_NOT_ALLOWED`
  * với MỌI IP. Chặn ở đây là chỗ duy nhất đang chặn.
  */
-export const validateIp = (v: string) =>
-  v.includes('/')
-    ? 'Chưa hỗ trợ dải IP — khai từng địa chỉ, ví dụ 10.20.0.15'
-    : IPV4_RE.test(v) || isIpv6(v)
-      ? null
-      : 'Phải là một địa chỉ IP, ví dụ 10.20.0.15'
+export const ipError = (v: string): NetworkValueError | null =>
+  v.includes('/') ? 'ipRange' : IPV4_RE.test(v) || isIpv6(v) ? null : 'ipInvalid'
 
 /** Bước 1. `origins` / `ipAllowlist` đi thành `POST /apps/:id/network-rules`, không nằm trong body tạo app. */
 export type ProfileDraft = CreateAppInput & {
