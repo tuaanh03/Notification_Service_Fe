@@ -24,7 +24,6 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
-  RadioTower,
 } from 'lucide-react'
 import { LogOut } from 'lucide-react'
 import { signOutAction } from '@/app/login/actions'
@@ -36,6 +35,7 @@ import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
 import { statusColors } from '@/lib/theme'
+import { BRAND_LOGO_SRC } from '@/lib/brand'
 import { useRole, type DemoRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
@@ -181,9 +181,11 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                 href="/"
                 className="flex items-center gap-2.5 px-1 py-1 rounded-lg group transition-colors hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center min-w-0"
               >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--starlight)]/25 via-[var(--pulsar)]/20 to-[var(--void)] border border-[var(--starlight)]/35 text-[var(--starlight)] shadow-[0_0_12px_-2px_rgba(34,211,238,0.3)] shrink-0 group-hover:border-[var(--starlight)]/60 transition-all">
-                  <RadioTower className="size-4 text-[var(--starlight)] group-hover:scale-110 transition-transform" />
-                </div>
+                <img
+                  src={BRAND_LOGO_SRC}
+                  alt=""
+                  className="size-8 shrink-0 rounded-full shadow-[0_0_12px_-2px_rgba(34,211,238,0.3)] transition-transform group-hover:scale-110"
+                />
                 <div className="flex flex-col min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="font-heading font-bold text-sm tracking-wide text-sidebar-foreground group-hover:text-[var(--starlight)] transition-colors truncate">
                     EWS AstroLink

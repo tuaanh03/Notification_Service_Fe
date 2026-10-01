@@ -11,6 +11,7 @@ import { listApps, toApp } from '@/lib/api/apps'
 import { isSessionExpired, sessionToken } from '@/lib/api/client'
 import { currentAdmin, type AdminDto } from '@/lib/api/auth'
 import { ApiError, messageOf } from '@/lib/api/problem'
+import { BRAND_APPLE_ICON_SRC, BRAND_ICON_192_SRC, BRAND_ICON_SRC } from '@/lib/brand'
 import type { App } from '@/lib/mock-data'
 import { PATHNAME_HEADER } from '@/middleware'
 const inter = Inter({ subsets: ['latin', 'vietnamese'], variable: '--next-font-sans' })
@@ -19,11 +20,13 @@ const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--next-font-mono' }
 export const metadata: Metadata = {
   title: 'EWS Notification Service',
   description: 'Nền tảng thông báo nội bộ EWS',
-  // metadata.icons KHÔNG tự thêm basePath -> phải tự ghép, nếu không 404 khi
-  // console đứng sau prefix. BASE_PATH inline lúc build (next.config.mjs).
+  // metadata.icons KHÔNG tự thêm basePath -> đường dẫn đã ghép sẵn trong lib/brand.ts.
   icons: {
-    icon: `${process.env.BASE_PATH ?? ''}/icon.svg`,
-    apple: `${process.env.BASE_PATH ?? ''}/apple-icon.png`,
+    icon: [
+      { url: BRAND_ICON_SRC, sizes: '32x32', type: 'image/png' },
+      { url: BRAND_ICON_192_SRC, sizes: '192x192', type: 'image/png' },
+    ],
+    apple: BRAND_APPLE_ICON_SRC,
   },
 }
 export const viewport: Viewport = { colorScheme: 'light', themeColor: '#FFFFFF' }

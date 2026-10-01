@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { RadioTower } from 'lucide-react'
 import { signInAction } from '@/app/login/actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { BRAND_LOGO_SRC } from '@/lib/brand'
 
 /**
  * Form đăng nhập. Mật khẩu chỉ đi trong Server Action — không nằm trong URL, không vào state
@@ -50,9 +50,7 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
       <div className="flex flex-col items-center gap-2 text-center">
-        <span className="flex size-11 items-center justify-center rounded-xl border border-[var(--orbit)] text-[var(--starlight)]">
-          <RadioTower className="size-5" />
-        </span>
+        <img src={BRAND_LOGO_SRC} alt="" className="size-14 rounded-full" />
         <h1 className="text-lg font-semibold">EWS Notification Service</h1>
         <p className="text-xs text-[var(--text-secondary)]">Đăng nhập để quản trị</p>
       </div>

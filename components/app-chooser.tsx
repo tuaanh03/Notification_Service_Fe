@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronRight, RadioTower, Search, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { ChevronRight, Search, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { readLastApp } from './app-context'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
+import { BRAND_LOGO_SRC } from '@/lib/brand'
 import type { App, AppStatus } from '@/lib/mock-data'
 
 /** App đang chạy lên đầu; app đã thu hồi gom riêng ở cuối. */
@@ -74,9 +75,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
       <CosmicBackground />
       <div className="relative mx-auto flex min-h-dvh w-full max-w-3xl flex-col justify-center px-4 py-10">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-[var(--starlight)]/35 bg-[var(--starlight)]/10 text-[var(--starlight)]">
-            <RadioTower className="size-5" />
-          </div>
+          <img src={BRAND_LOGO_SRC} alt="" className="size-10 shrink-0 rounded-full" />
           <div className="min-w-0">
             <h1 className="font-heading text-xl font-semibold">Chọn app để quản trị</h1>
             <p className="text-sm text-[var(--text-secondary)]">

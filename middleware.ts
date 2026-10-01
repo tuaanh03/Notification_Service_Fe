@@ -42,7 +42,7 @@ export const config = {
    * Bỏ qua tài nguyên tĩnh và route handler nội bộ:
    * - `api/*`      tự lo phần xác thực của mình
    * - `_next/*`    bundle và ảnh tối ưu
-   * - file có đuôi (icon.svg, apple-icon.png…) nằm ngay ở `public/`
+   * - file có đuôi (icon.png, logo-icon.png…) nằm ngay ở `public/`
    */
   matcher: ['/((?!api|_next/static|_next/image|.*\\.[^/]+$).*)'],
 }
