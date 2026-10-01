@@ -1,6 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { FilePlus2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { createTemplateAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
 import { useAppRouter } from '@/components/app-link'
@@ -16,6 +17,8 @@ import { Label } from '@/components/ui/label'
  * Không có ô "mã template (key)": app gửi bằng `templateId` do hệ thống sinh (ADR-0020).
  */
 export function TemplateCreate() {
+  const tt = useTranslations('templates')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const router = useAppRouter()
   const [name, setName] = useState('')
@@ -26,12 +29,15 @@ export function TemplateCreate() {
     startTransition(async () => {
       const result = await createTemplateAction(app.app_id, { name: name.trim() })
       if (result.ok) router.replace(`/templates/${result.data.id}`)
-      else setError(`${result.message} (mã: ${result.code})`)
+      else setError(te('withCode', { message: result.message, code: result.code }))
     })
 
   return (
     <>
-      <PageHeader title="Tạo template" breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: 'Tạo mới' }]} />
+      <PageHeader
+        title={tt('newTitle')}
+        breadcrumb={[{ label: tt('title'), href: '/templates' }, { label: tt('newCrumb') }]}
+      />
       <Panel className="max-w-xl space-y-4 p-5">
         {error && (
           <Alert variant="destructive" className="bg-[var(--supernova)]/10">
@@ -46,7 +52,7 @@ export function TemplateCreate() {
           }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="new-tpl-name" className="text-xs font-semibold">Tên template</Label>
+            <Label htmlFor="new-tpl-name" className="text-xs font-semibold">{tt('name')}</Label>
             <Input
               id="new-tpl-name"
               value={name}
@@ -55,15 +61,13 @@ export function TemplateCreate() {
                 setError(null)
               }}
               maxLength={200}
-              placeholder="vd: Cảnh báo VM quá tải"
+              placeholder={tt('namePlaceholder')}
               autoFocus
             />
-            <p className="text-[11px] text-[var(--text-muted)]">
-              Không trùng với template khác trong app — kể cả chỉ khác hoa thường hoặc dấu. Mã để app gửi do hệ thống sinh.
-            </p>
+            <p className="text-[11px] text-[var(--text-muted)]">{tt('nameHint')}</p>
           </div>
           <Button type="submit" disabled={pending || !name.trim()}>
-            <FilePlus2 /> {pending ? 'Đang tạo…' : 'Tạo và soạn nội dung'}
+            <FilePlus2 /> {pending ? tt('creating') : tt('createAndEdit')}
           </Button>
         </form>
       </Panel>

@@ -1,5 +1,6 @@
 'use client'
 import { FilePlus2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useAppRouter } from '@/components/app-link'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
@@ -11,15 +12,16 @@ import { TemplatesTable } from './templates-table'
  * "Import từ API". "Nhờ AI" nằm trong màn soạn (sinh HTML thật), không phải ở danh sách.
  */
 export function TemplatesPage() {
+  const tt = useTranslations('templates')
   const router = useAppRouter()
   return (
     <>
       <PageHeader
-        title="Templates"
-        subtitle="Admin soạn và xuất bản · app gửi bằng templateId + payload · luôn dùng bản đang xuất bản"
+        title={tt('title')}
+        subtitle={tt('subtitle')}
         actions={
           <Button onClick={() => router.push('/templates/new')}>
-            <FilePlus2 /> Tạo template
+            <FilePlus2 /> {tt('create')}
           </Button>
         }
       />

@@ -4,6 +4,7 @@ import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { html } from '@codemirror/lang-html'
 import { vscodeDark } from '@uiw/codemirror-theme-vscode'
 import { Sparkles } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
 import { parseVariable } from '@/lib/template-syntax'
@@ -44,6 +45,7 @@ export function Highlight({ text, declared }: { text: string; declared: string[]
  * khung này không gọi ra ngoài.
  */
 export function EditorPane({ ed, locked, onAi }: { ed: TemplateEditorState; locked: boolean; onAi: () => void }) {
+  const t = useTranslations('editorPane')
   const cmRef = useRef<ReactCodeMirrorRef>(null)
 
   const jumpToToken = (tok: string) => {
@@ -71,7 +73,7 @@ export function EditorPane({ ed, locked, onAi }: { ed: TemplateEditorState; lock
               onClick={onAi}
               className="h-7 border-[var(--pulsar)]/50 bg-[var(--void)]/85 text-[var(--pulsar)] backdrop-blur-md hover:border-[var(--pulsar)] hover:bg-[var(--pulsar)]/20"
             >
-              <Sparkles className="mr-1.5 size-3.5" /> Nhờ AI soạn
+              <Sparkles className="mr-1.5 size-3.5" /> {t('ai')}
             </Button>
           </div>
         )}
@@ -80,9 +82,9 @@ export function EditorPane({ ed, locked, onAi }: { ed: TemplateEditorState; lock
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
             <div className="pointer-events-auto flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--orbit)] bg-[var(--void)]/80 p-6 shadow-xl backdrop-blur-md">
               <Sparkles className="size-6 text-[var(--pulsar)]" />
-              <p className="text-xs text-[var(--text-secondary)]">Khung soạn đang trống. Gõ HTML trực tiếp, hoặc nhờ AI soạn từ một câu mô tả.</p>
+              <p className="text-xs text-[var(--text-secondary)]">{t('emptyHint')}</p>
               <Button size="sm" onClick={onAi} className="border border-[var(--pulsar)]/50 bg-[var(--pulsar)]/20 text-[var(--pulsar)] hover:bg-[var(--pulsar)]/30">
-                <Sparkles className="mr-2 size-4" /> Nhờ AI soạn
+                <Sparkles className="mr-2 size-4" /> {t('ai')}
               </Button>
             </div>
           </div>
@@ -113,7 +115,7 @@ export function EditorPane({ ed, locked, onAi }: { ed: TemplateEditorState; lock
 
       {ed.undeclared.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-1.5 pt-1 text-xs">
-          <span className="text-[var(--supernova)]">Biến chưa khai báo:</span>
+          <span className="text-[var(--supernova)]">{t('undeclared')}</span>
           {ed.undeclared.map((tok) => (
             <Button
               key={tok}
@@ -121,7 +123,7 @@ export function EditorPane({ ed, locked, onAi }: { ed: TemplateEditorState; lock
               size="xs"
               className="h-5 border-[var(--supernova)]/40 px-1.5 font-mono text-[11px] text-[var(--supernova)] hover:bg-[var(--supernova)]/10"
               onClick={() => jumpToToken(tok)}
-              title={`Nhảy tới biến {{ ${tok} }} trong khung soạn`}
+              title={t('jumpTo', { name: tok })}
             >
               &#123;&#123; {tok} &#125;&#125; →
             </Button>

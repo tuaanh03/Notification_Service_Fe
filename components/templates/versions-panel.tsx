@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { CopyPlus, GitCompare } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { StatusPill } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils'
  * sang nháp mới, người soạn xem lại rồi tự Xuất bản — bản cũ giữ nguyên vì lịch sử gửi trỏ tới nó.
  */
 export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
+  const t = useTranslations('versions')
   const [diff, setDiff] = useState<TemplateVersionDto | null>(null)
   const [copyFrom, setCopyFrom] = useState<TemplateVersionDto | null>(null)
   const versions = ed.detail?.versions ?? []
@@ -39,19 +41,19 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
               <span className="font-mono text-sm text-[var(--text-primary)]">v{v.version}</span>
               <StatusPill status={v.status} />
               <span className="font-mono tabular-nums text-[var(--text-muted)]">
-                {v.publishedAt ? `xuất bản ${fmtDateTime(v.publishedAt)}` : `sửa ${fmtDateTime(v.updatedAt)}`}
+                {v.publishedAt ? t('publishedAt', { at: fmtDateTime(v.publishedAt) }) : t('editedAt', { at: fmtDateTime(v.updatedAt) })}
               </span>
-              <span className="font-mono text-[var(--text-muted)]">{v.variables.length} biến</span>
+              <span className="font-mono text-[var(--text-muted)]">{t('varCount', { count: v.variables.length })}</span>
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1">
               {prevOf(v) && (
                 <Button variant="ghost" size="xs" onClick={() => setDiff(v)}>
-                  <GitCompare /> So với v{prevOf(v)!.version}
+                  <GitCompare /> {t('compareWith', { version: prevOf(v)!.version })}
                 </Button>
               )}
               {v.status !== 'draft' && canCopy && (
                 <Button variant="ghost" size="xs" onClick={() => setCopyFrom(v)} disabled={ed.pending}>
-                  <CopyPlus /> Tạo nháp từ bản này
+                  <CopyPlus /> {t('draftFromThis')}
                 </Button>
               )}
             </div>
@@ -59,9 +61,7 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
         ))}
       </ol>
       {!canCopy && ed.draft && (
-        <p className="text-xs text-[var(--text-muted)]">
-          Đang có bản nháp v{ed.draft.version} — xuất bản nó trước khi tạo nháp từ bản khác.
-        </p>
+        <p className="text-xs text-[var(--text-muted)]">{t('draftExists', { version: ed.draft.version })}</p>
       )}
 
       <Dialog open={diff !== null} onOpenChange={(o) => !o && setDiff(null)}>
@@ -70,7 +70,7 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
             <DialogTitle className="font-heading">
               {diff && prevOf(diff) ? `v${prevOf(diff)!.version} → v${diff.version}` : ''}
             </DialogTitle>
-            <DialogDescription>Tiêu đề + HTML của hai bản cạnh nhau.</DialogDescription>
+            <DialogDescription>{t('diffBody')}</DialogDescription>
           </DialogHeader>
           {diff && (
             <div className="grid gap-3 md:grid-cols-2" data-testid="diff-view">
@@ -89,10 +89,18 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
 
       <ConfirmDialog
         open={copyFrom !== null}
-        title={`Tạo nháp từ v${copyFrom?.version}?`}
-        description="Nội dung và bảng biến của bản này được chép sang một bản nháp mới. Chưa có gì thay đổi với thư đang gửi — tới khi bạn Xuất bản bản nháp đó."
-        facts={copyFrom ? [['chép từ', `v${copyFrom.version}`], ['trạng thái bản đó', copyFrom.status], ['số biến', String(copyFrom.variables.length)]] : []}
-        confirmLabel={`Tạo nháp từ v${copyFrom?.version}`}
+        title={t('copyTitle', { version: copyFrom?.version ?? '' })}
+        description={t('copyBody')}
+        facts={
+          copyFrom
+            ? [
+                [t('factFrom'), `v${copyFrom.version}`],
+                [t('factStatus'), copyFrom.status],
+                [t('factVars'), String(copyFrom.variables.length)],
+              ]
+            : []
+        }
+        confirmLabel={t('copyConfirm', { version: copyFrom?.version ?? '' })}
         onConfirm={() => {
           if (copyFrom) void ed.draftFrom(copyFrom.version)
           setCopyFrom(null)

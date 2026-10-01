@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { FileWarning, Files } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { loadTemplatesAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
 import { useAppRouter } from '@/components/app-link'
@@ -14,32 +15,40 @@ import { fmtDateTime } from '@/lib/time'
 
 type Row = TemplateSummaryDto & Record<string, unknown>
 
-const columns: Column<Row>[] = [
-  { key: 'name', label: 'Tên', render: (t) => <span className="font-medium">{t.name}</span> },
-  { key: 'status', label: 'Trạng thái', render: (t) => <StatusPill status={t.status} /> },
+/** Cột của bảng — trong hook vì nhãn theo ngôn ngữ đang chọn. */
+function useColumns(): Column<Row>[] {
+  const tt = useTranslations('templates')
+  return [
+  { key: 'name', label: tt('colName'), render: (t) => <span className="font-medium">{t.name}</span> },
+  { key: 'status', label: tt('colStatus'), render: (t) => <StatusPill status={t.status} /> },
   {
     key: 'publishedVersion',
-    label: 'Đang xuất bản',
+    label: tt('colPublished'),
     mono: true,
     render: (t) =>
       t.publishedVersion === null ? (
-        <span className="text-[var(--text-muted)]">— chưa, app chưa gửi được</span>
+        <span className="text-[var(--text-muted)]">{tt('notPublished')}</span>
       ) : (
         <span className="font-mono">v{t.publishedVersion}</span>
       ),
   },
   {
     key: 'draftVersion',
-    label: 'Nháp',
+    label: tt('colDraft'),
     mono: true,
     render: (t) => (t.draftVersion === null ? <span className="text-[var(--text-muted)]">—</span> : <span className="font-mono">v{t.draftVersion}</span>),
   },
-  { key: 'variableCount', label: 'Số biến', numeric: true },
-  { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (t) => fmtDateTime(t.updatedAt) },
+  { key: 'variableCount', label: tt('colVariables'), numeric: true },
+  { key: 'updatedAt', label: tt('colUpdated'), mono: true, render: (t) => fmtDateTime(t.updatedAt) },
 ]
+}
 
 /** Danh sách template thật của app đang chọn — bấm dòng mở màn soạn `/templates/[id]`. */
 export function TemplatesTable() {
+  const tt = useTranslations('templates')
+  const tc = useTranslations('common')
+  const te = useTranslations('errors')
+  const columns = useColumns()
   const { app } = useApp()
   const router = useAppRouter()
   const [rows, setRows] = useState<TemplateSummaryDto[] | null>(null)
@@ -54,9 +63,9 @@ export function TemplatesTable() {
       setError(null)
     } else {
       setRows(null)
-      setError(`${result.message} (mã: ${result.code})`)
+      setError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId])
+  }, [appId, te])
 
   // Đổi app là đổi hẳn tập template: xoá dữ liệu cũ trước khi nạp.
   useEffect(() => {
@@ -69,9 +78,9 @@ export function TemplatesTable() {
     return (
       <EmptyState
         icon={FileWarning}
-        title="Không tải được danh sách template"
+        title={tt('loadFailed')}
         description={error}
-        action={<Button variant="outline" onClick={() => void load()}>Thử lại</Button>}
+        action={<Button variant="outline" onClick={() => void load()}>{tt('retry')}</Button>}
       />
     )
   }
@@ -80,7 +89,7 @@ export function TemplatesTable() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <ToggleGroup multiple variant="outline" size="sm" value={status} onValueChange={(v) => setStatus(v as string[])} aria-label="Trạng thái">
+        <ToggleGroup multiple variant="outline" size="sm" value={status} onValueChange={(v) => setStatus(v as string[])} aria-label={tt('colStatus')}>
           <ToggleGroupItem value="active" className="font-mono">active</ToggleGroupItem>
           <ToggleGroupItem value="archived" className="font-mono">archived</ToggleGroupItem>
         </ToggleGroup>
@@ -92,16 +101,16 @@ export function TemplatesTable() {
         onRowClick={(t) => router.push(`/templates/${t.id}`)}
         empty={
           rows === null ? (
-            <EmptyState icon={Files} title="Đang tải…" description="" />
+            <EmptyState icon={Files} title={tt('loading')} description="" />
           ) : rows.length === 0 ? (
             <EmptyState
               icon={Files}
-              title="App chưa có template nào"
-              description="Tạo template, soạn nội dung rồi Xuất bản — sau đó đưa templateId cho đội app."
-              action={<Button onClick={() => router.push('/templates/new')}>Tạo template</Button>}
+              title={tt('emptyTitle')}
+              description={tt('emptyBody')}
+              action={<Button onClick={() => router.push('/templates/new')}>{tt('create')}</Button>}
             />
           ) : (
-            <EmptyState icon={Files} title="Không có template khớp bộ lọc" description="Bỏ bớt bộ lọc trạng thái." />
+            <EmptyState icon={Files} title={tt('noMatchTitle')} description={tt('noMatchBody')} />
           )
         }
       />

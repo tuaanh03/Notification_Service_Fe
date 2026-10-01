@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Archive, Copy, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
@@ -15,10 +16,10 @@ import { Label } from '@/components/ui/label'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Textarea } from '@/components/ui/textarea'
 import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
-import { TEMPLATE_ISSUE_MESSAGES } from '@/lib/api/problem'
 import { AiComposeDialog } from './ai-compose-dialog'
 import { ContractPanel } from './contract-panel'
 import { EditorPane, Highlight } from './editor-pane'
+import { useIssueText } from './issue-text'
 import { PreviewPane } from './preview-pane'
 import { SchemaPane } from './schema-pane'
 import { VersionsPanel } from './versions-panel'
@@ -30,6 +31,9 @@ import { VersionsPanel } from './versions-panel'
  * Không có "Gửi thử": backend chưa có đường gửi thử. Xuất bản = lưu nháp rồi xuất bản (một action).
  */
 export function TemplateEditor({ templateId }: { templateId: string }) {
+  const t = useTranslations('templateEditor')
+  const tc = useTranslations('common')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const ed = useTemplateEditor(app.app_id, templateId)
   const [name, setName] = useState('')
@@ -48,15 +52,19 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <PageHeader title="Template" breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: templateId }]} />
         <EmptyState
           icon={FileWarning}
-          title={ed.loadError.code === 'NOT_FOUND' ? 'Không có template này trong app' : 'Không tải được template'}
-          description={`${ed.loadError.message} (mã: ${ed.loadError.code})`}
-          action={<Button variant="outline" onClick={() => void ed.reload()}>Thử lại</Button>}
+          title={ed.loadError.code === 'NOT_FOUND' ? t('notInApp') : t('loadFailed')}
+          description={te('withCode', { message: ed.loadError.message, code: ed.loadError.code })}
+          action={
+            <Button variant="outline" onClick={() => void ed.reload()}>
+              {t('retry')}
+            </Button>
+          }
         />
       </>
     )
   }
   if (!ed.detail) {
-    return <PageHeader title="Đang tải…" breadcrumb={[{ label: 'Templates', href: '/templates' }]} />
+    return <PageHeader title={t('loading')} breadcrumb={[{ label: 'Templates', href: '/templates' }]} />
   }
 
   const detail = ed.detail
@@ -67,12 +75,12 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     setPublishWarn(false)
     const version = ed.draft?.version
     if (await ed.publish()) {
-      toast.success(`Đã xuất bản v${version}`, { description: 'Từ lần gửi kế tiếp, app dùng bản này.' })
+      toast.success(t('published', { version: version ?? '' }), { description: t('publishedBody') })
     }
   }
   const onPublish = () => (ed.newRequired.length > 0 ? setPublishWarn(true) : void doPublish())
   const onSave = async () => {
-    if (await ed.saveDraft()) toast.success(`Đã lưu nháp v${ed.draft?.version ?? nextVersion}`)
+    if (await ed.saveDraft()) toast.success(t('saved', { version: ed.draft?.version ?? nextVersion }))
   }
 
   return (
@@ -80,28 +88,30 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       <PageHeader
         title={detail.name}
         breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: detail.name }]}
-        subtitle={shown ? `v${shown.version} · ${ed.locked ? 'chỉ đọc' : 'bản nháp đang soạn'}${ed.dirty ? ' · chưa lưu' : ''}` : undefined}
+        subtitle={
+          shown ? `v${shown.version} · ${ed.locked ? t('readOnly') : t('editingDraft')}${ed.dirty ? t('unsaved') : ''}` : undefined
+        }
         actions={
           <>
             <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
             {!ed.archived && ed.draft && (
               <>
                 <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()}>
-                  <Save /> Lưu nháp
+                  <Save /> {t('saveDraft')}
                 </Button>
                 <Button disabled={ed.pending} onClick={onPublish} data-testid="publish-btn">
-                  <UploadCloud /> Xuất bản v{ed.draft.version}
+                  <UploadCloud /> {t('publish', { version: ed.draft.version })}
                 </Button>
               </>
             )}
             {!ed.archived && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
-                <Pencil /> Sửa (tạo nháp v{nextVersion})
+                <Pencil /> {t('edit', { version: nextVersion })}
               </Button>
             )}
             {!ed.archived && (
               <Button variant="outline" disabled={ed.pending} onClick={() => setArchiveConfirm(true)}>
-                <Archive /> Lưu trữ
+                <Archive /> {t('archive')}
               </Button>
             )}
           </>
@@ -113,19 +123,21 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         {ed.aiBanner && (
           <Alert className="bg-[var(--pulsar)]/10" data-testid="ai-banner">
             <Sparkles className="text-[var(--pulsar)]" />
-            <AlertDescription>Nội dung do AI soạn, CHƯA lưu. Đọc lại, xem thử rồi tự Lưu nháp / Xuất bản — AI không bao giờ tự làm hai việc đó.</AlertDescription>
+            <AlertDescription>{t('aiBanner')}</AlertDescription>
           </Alert>
         )}
         {ed.archived && (
           <Alert data-testid="archived-notice">
             <Archive />
-            <AlertDescription>Template đã lưu trữ: không sửa, không xuất bản, app gửi bằng mã này sẽ bị <span className="font-mono">TEMPLATE_ARCHIVED</span>.</AlertDescription>
+            <AlertDescription>
+              {t.rich('archivedNotice', { mono: (chunks) => <span className="font-mono">{chunks}</span> })}
+            </AlertDescription>
           </Alert>
         )}
         {!ed.archived && ed.locked && ed.published && (
           <Alert data-testid="locked-notice">
             <AlertDescription className="text-[var(--text-secondary)]">
-              v{ed.published.version} đang được dùng để gửi — không sửa tại chỗ. Bấm <em>Sửa</em> để tạo bản nháp mới.
+              {t.rich('lockedNotice', { version: ed.published.version, em: (chunks) => <em>{chunks}</em> })}
             </AlertDescription>
           </Alert>
         )}
@@ -133,39 +145,39 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <Panel className="min-w-0 p-5">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="tpl-name" className="text-xs font-semibold">Tên template</Label>
+              <Label htmlFor="tpl-name" className="text-xs font-semibold">{t('name')}</Label>
               <div className="flex gap-2">
                 <Input id="tpl-name" value={name} onChange={(e) => setName(e.target.value)} disabled={ed.archived} className="text-sm" />
                 <Button
                   variant="outline"
                   disabled={ed.archived || ed.pending || !name.trim() || name.trim() === savedName}
-                  onClick={() => void ed.rename(name.trim()).then((ok) => ok && toast.success('Đã đổi tên'))}
+                  onClick={() => void ed.rename(name.trim()).then((ok) => ok && toast.success(t('renamed')))}
                 >
-                  Đổi tên
+                  {t('rename')}
                 </Button>
               </div>
-              <p className="text-[11px] text-[var(--text-muted)]">Chỉ để người đọc nhận ra. Đổi tên không ảnh hưởng việc gửi.</p>
+              <p className="text-[11px] text-[var(--text-muted)]">{t('nameHint')}</p>
             </div>
             <div className="min-w-0 space-y-1.5">
-              <Label className="text-xs font-semibold">Mã template (templateId)</Label>
+              <Label className="text-xs font-semibold">{t('id')}</Label>
               <Button
                 variant="outline"
                 className="w-full justify-between font-mono text-xs"
                 onClick={() => {
                   navigator.clipboard?.writeText(detail.id)
-                  toast.success('Đã sao chép', { description: detail.id })
+                  toast.success(tc('copied'), { description: detail.id })
                 }}
               >
                 <span className="truncate">{detail.id}</span>
                 <Copy />
               </Button>
-              <p className="text-[11px] text-[var(--text-muted)]">Đưa mã này cho đội app. Máy thử và máy thật có mã khác nhau.</p>
+              <p className="text-[11px] text-[var(--text-muted)]">{t('idHint')}</p>
             </div>
           </div>
         </Panel>
 
         <Panel className="min-w-0 p-5">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Biến</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('variables')}</h2>
           <div className="mt-3">
             <SchemaPane ed={ed} locked={ed.locked} />
           </div>
@@ -173,28 +185,28 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
 
         <Panel className="min-w-0 space-y-4 p-5">
           <div className="space-y-2">
-            <Label htmlFor="tpl-subject" className="text-xs font-semibold">Tiêu đề</Label>
+            <Label htmlFor="tpl-subject" className="text-xs font-semibold">{t('subject')}</Label>
             <Input
               id="tpl-subject"
               value={ed.subject}
               onChange={(e) => ed.setSubject(e.target.value)}
               className="font-mono text-sm"
               disabled={ed.locked}
-              placeholder="[Cảnh báo] {{ payload.vm_name }} vượt ngưỡng"
+              placeholder={t('subjectPlaceholder')}
             />
             <p className="font-mono text-xs" data-testid="subject-highlight">
-              <Highlight text={ed.subject || '(trống)'} declared={ed.declared} />
+              <Highlight text={ed.subject || t('empty')} declared={ed.declared} />
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="tpl-text" className="text-xs font-semibold">Bản chữ thường (tuỳ chọn)</Label>
+            <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
             <Textarea
               id="tpl-text"
               value={ed.text}
               onChange={(e) => ed.setText(e.target.value)}
               className="min-h-20 font-mono text-xs"
               disabled={ed.locked}
-              placeholder="Cho hộp thư không hiển thị HTML. Để trống thì chỉ gửi HTML."
+              placeholder={t('textPlaceholder')}
             />
           </div>
         </Panel>
@@ -224,15 +236,13 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Panel className="min-w-0 p-5">
-            <h2 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Phiên bản</h2>
+            <h2 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{t('versions')}</h2>
             <VersionsPanel ed={ed} />
           </Panel>
           <Panel className="min-w-0 p-5">
-            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">Gửi bằng template này</h2>
+            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">{t('sendWith')}</h2>
             <p className="mb-3 text-xs text-[var(--text-muted)]">
-              {ed.published
-                ? `Theo bản đang xuất bản v${ed.published.version}.`
-                : 'Chưa xuất bản — app gọi lúc này sẽ nhận TEMPLATE_NOT_PUBLISHED. Mẫu dưới theo bản nháp.'}
+              {ed.published ? t('byPublished', { version: ed.published.version }) : t('notPublished')}
             </p>
             <ContractPanel templateId={detail.id} variables={ed.published?.variables ?? ed.variables} />
           </Panel>
@@ -244,31 +254,31 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       <ConfirmDialog
         open={publishWarn}
         tone="blocking"
-        title="Có biến bắt buộc mới"
-        description={`App đang gửi theo v${ed.published?.version} chưa gửi các biến này — từ lúc xuất bản, mọi lần gửi thiếu chúng bị từ chối với MISSING_VARIABLE. Thống nhất với đội app trước.`}
+        title={t('newRequiredTitle')}
+        description={t('newRequiredBody', { version: ed.published?.version ?? '' })}
         facts={[
-          ['biến mới', ed.newRequired.join(', ')],
-          ['bản sẽ xuất bản', `v${ed.draft?.version ?? ''}`],
-          ['lỗi app sẽ gặp', '422 MISSING_VARIABLE'],
+          [t('factNewVars'), ed.newRequired.join(', ')],
+          [t('factWillPublish'), `v${ed.draft?.version ?? ''}`],
+          [t('factAppError'), '422 MISSING_VARIABLE'],
         ]}
-        confirmLabel="Vẫn xuất bản"
+        confirmLabel={t('publishAnyway')}
         onConfirm={() => void doPublish()}
         onCancel={() => setPublishWarn(false)}
       />
       <ConfirmDialog
         open={archiveConfirm}
         tone="blocking"
-        title={`Lưu trữ "${detail.name}"?`}
-        description="Không có đường bỏ lưu trữ. Từ lúc này app gửi bằng mã template này sẽ bị từ chối. Các phiên bản vẫn giữ để tra lịch sử gửi."
+        title={t('archiveTitle', { name: detail.name })}
+        description={t('archiveBody')}
         facts={[
           ['templateId', detail.id],
-          ['bản đang xuất bản', ed.published ? `v${ed.published.version}` : '—'],
-          ['lỗi app sẽ gặp', '422 TEMPLATE_ARCHIVED'],
+          [t('factPublished'), ed.published ? `v${ed.published.version}` : '—'],
+          [t('factAppError'), '422 TEMPLATE_ARCHIVED'],
         ]}
-        confirmLabel="Lưu trữ vĩnh viễn"
+        confirmLabel={t('archiveForever')}
         onConfirm={() => {
           setArchiveConfirm(false)
-          void ed.archive().then((ok) => ok && toast.success('Đã lưu trữ template'))
+          void ed.archive().then((ok) => ok && toast.success(t('archived')))
         }}
         onCancel={() => setArchiveConfirm(false)}
       />
@@ -278,23 +288,25 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
 
 /** Lỗi của lệnh ghi. Xuất bản bị 422 thì liệt kê TỪNG vi phạm, kèm biến / ô bị sai. */
 function ErrorAlert({ error }: { error: EditorError }) {
+  const t = useTranslations('templateEditor')
+  const issueText = useIssueText()
   return (
     <Alert variant="destructive" className="bg-[var(--supernova)]/10" data-testid="editor-error">
       <FileWarning />
-      <AlertTitle>{error.issues.length ? `Chưa xuất bản được — ${error.issues.length} lỗi` : error.message}</AlertTitle>
+      <AlertTitle>{error.issues.length ? t('publishFailed', { count: error.issues.length }) : error.message}</AlertTitle>
       <AlertDescription>
         {error.issues.length > 0 ? (
           <ul className="mt-1 space-y-0.5 text-xs">
             {error.issues.map((issue, i) => (
               <li key={i}>
                 {issue.path && <span className="font-mono">{issue.path}: </span>}
-                {TEMPLATE_ISSUE_MESSAGES[issue.code] ?? issue.message ?? issue.code}{' '}
+                {issueText(issue)}{' '}
                 <span className="font-mono text-[var(--text-muted)]">({issue.code})</span>
               </li>
             ))}
           </ul>
         ) : (
-          <span className="font-mono text-xs">mã: {error.code}</span>
+          <span className="font-mono text-xs">{t('code', { code: error.code })}</span>
         )}
       </AlertDescription>
     </Alert>
