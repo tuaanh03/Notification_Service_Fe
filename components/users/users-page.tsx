@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { ChevronLeft, ChevronRight, MailX, PlugZap, Search, Users } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { loadRecipientsAction } from '@/app/users/actions'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -10,7 +11,7 @@ import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
 import { useAppRouter } from '@/components/app-link'
-import { SUPPRESSED_LABEL } from '@/components/users/recipient-preferences'
+import { useSuppressedLabel } from '@/components/users/recipient-preferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { RecipientDto } from '@/lib/api/types'
@@ -28,6 +29,10 @@ const PAGE_SIZE = 25
  * Bấm một dòng -> trang chi tiết `/users/[id]` (cài đặt nhận tin + các lần gửi của người đó).
  */
 export function UsersPage() {
+  const t = useTranslations('recipients')
+  const tc = useTranslations('common')
+  const te = useTranslations('errors')
+  const suppressedLabel = useSuppressedLabel()
   const router = useAppRouter()
   const { app } = useApp()
   const appId = app.app_id
@@ -49,9 +54,9 @@ export function UsersPage() {
       setLoadError(null)
     } else {
       setRows(null)
-      setLoadError(`${result.message} (mã: ${result.code})`)
+      setLoadError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId, offset, query])
+  }, [appId, offset, query, te])
 
   useEffect(() => {
     startTransition(load)
@@ -70,29 +75,29 @@ export function UsersPage() {
   }
 
   const columns: Column<Row>[] = [
-    { key: 'externalId', label: 'Mã nhân viên (của app)', mono: true },
+    { key: 'externalId', label: t('colExternalId'), mono: true },
     {
       key: 'email',
-      label: 'Email',
+      label: t('colEmail'),
       render: (row) =>
         row.email ? (
           <span className="font-mono text-xs">{row.email.address}</span>
         ) : (
           <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-            <MailX className="size-3.5" /> chưa khai email
+            <MailX className="size-3.5" /> {t('noEmail')}
           </span>
         ),
     },
     {
       key: 'userId',
-      label: 'Tình trạng',
+      label: t('colState'),
       render: (row) =>
         row.email ? (
           <span className="flex items-center gap-2">
             <StatusPill status={row.email.status} />
             {row.email.suppressedReason && (
               <span className="text-[11px] text-[var(--text-muted)]">
-                {SUPPRESSED_LABEL[row.email.suppressedReason] ?? row.email.suppressedReason}
+                {suppressedLabel(row.email.suppressedReason)}
               </span>
             )}
           </span>
@@ -102,12 +107,12 @@ export function UsersPage() {
     },
     {
       key: 'createdAt',
-      label: 'Tắt mọi tin không bắt buộc',
+      label: t('colOptedOut'),
       render: (row) =>
         row.email?.optedOutOptional ? (
-          <span className="text-xs text-[var(--solar)]">có</span>
+          <span className="text-xs text-[var(--solar)]">{t('yes')}</span>
         ) : (
-          <span className="text-xs text-[var(--text-muted)]">không</span>
+          <span className="text-xs text-[var(--text-muted)]">{t('no')}</span>
         ),
     },
   ]
@@ -117,13 +122,13 @@ export function UsersPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Người nhận"
-        subtitle={`Người nhận mà ${app.name} đã khai báo qua API. Màn này chỉ đọc.`}
+        title={t('title')}
+        subtitle={t('subtitle', { app: app.name })}
       />
 
       {loadError ? (
         <Panel className="overflow-hidden">
-          <EmptyState icon={PlugZap} title="Không đọc được dữ liệu từ API" description={loadError} />
+          <EmptyState icon={PlugZap} title={tc('loadErrorTitle')} description={loadError} />
         </Panel>
       ) : (
         <>
@@ -132,11 +137,11 @@ export function UsersPage() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && search()}
-              placeholder="Tìm theo mã nhân viên…"
+              placeholder={t('searchPlaceholder')}
               className="max-w-xs font-mono"
             />
             <Button variant="outline" size="sm" onClick={search} disabled={pending}>
-              <Search /> Tìm
+              <Search /> {tc('search')}
             </Button>
             {query && (
               <Button
@@ -148,7 +153,7 @@ export function UsersPage() {
                   setOffset(0)
                 }}
               >
-                Bỏ lọc
+                {tc('clearFilters')}
               </Button>
             )}
           </div>
@@ -161,12 +166,8 @@ export function UsersPage() {
             empty={
               <EmptyState
                 icon={Users}
-                title={query ? 'Không tìm thấy' : 'Chưa có người nhận nào'}
-                description={
-                  query
-                    ? `Không có mã nhân viên nào khớp «${query}».`
-                    : 'App service chưa khai báo người nhận nào qua PUT /v1/users/:externalId.'
-                }
+                title={query ? t('notFound') : t('emptyTitle')}
+                description={query ? t('noMatch', { query }) : t('emptyBody')}
               />
             }
           />
@@ -183,7 +184,7 @@ export function UsersPage() {
                   disabled={offset === 0 || pending}
                   onClick={() => setOffset((v) => Math.max(0, v - PAGE_SIZE))}
                 >
-                  <ChevronLeft /> Trước
+                  <ChevronLeft /> {tc('prev')}
                 </Button>
                 <Button
                   variant="outline"
@@ -191,7 +192,7 @@ export function UsersPage() {
                   disabled={to >= total || pending}
                   onClick={() => setOffset((v) => v + PAGE_SIZE)}
                 >
-                  Sau <ChevronRight data-icon="inline-end" />
+                  {tc('next')} <ChevronRight data-icon="inline-end" />
                 </Button>
               </span>
             </div>

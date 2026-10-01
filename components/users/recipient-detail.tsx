@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { PlugZap, UserX } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { loadPreferencesAction, loadRecipientAction } from '@/app/users/actions'
 import { useApp } from '@/components/app-context'
 import { AppLink } from '@/components/app-link'
@@ -13,7 +14,7 @@ import { StatusPill } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
 import type { RecipientDto, UserPreferencesDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
-import { RecipientPreferences, SUPPRESSED_LABEL } from './recipient-preferences'
+import { RecipientPreferences, useSuppressedLabel } from './recipient-preferences'
 
 type Failure = { message: string; code: string }
 
@@ -27,6 +28,11 @@ type Failure = { message: string; code: string }
  * (`APP_DETAIL_ROUTES`) — cùng mã ở app khác là người khác.
  */
 export function RecipientDetail({ externalId }: { externalId: string }) {
+  const t = useTranslations('recipientDetail')
+  const tr = useTranslations('recipients')
+  const tc = useTranslations('common')
+  const te = useTranslations('errors')
+  const suppressedLabel = useSuppressedLabel()
   const { app } = useApp()
   const appId = app.app_id
 
@@ -43,18 +49,18 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
         if (person.ok) setRecipient(person.data)
         else setFailure({ message: person.message, code: person.code })
         if (prefs.ok) setPreferences(prefs.data)
-        else setPreferencesError(`${prefs.message} (mã: ${prefs.code})`)
+        else setPreferencesError(te('withCode', { message: prefs.message, code: prefs.code }))
       },
     )
     return () => {
       live = false
     }
-  }, [appId, externalId])
+  }, [appId, externalId, te])
 
-  const breadcrumb = [{ label: 'Người nhận', href: '/users' }, { label: externalId }]
+  const breadcrumb = [{ label: tr('title'), href: '/users' }, { label: externalId }]
   const back = (
     <Button variant="outline" render={<AppLink href="/users" />}>
-      Về danh sách Người nhận
+      {t('back')}
     </Button>
   )
 
@@ -66,15 +72,15 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
           {failure.code === 'NOT_FOUND' ? (
             <EmptyState
               icon={UserX}
-              title={`Không có «${externalId}» trong ${app.name}`}
-              description="Mã phải khớp đúng từng ký tự. Cùng một mã ở hai app là hai người khác nhau — kiểm tra ô chọn app."
+              title={t('notInApp', { id: externalId, app: app.name })}
+              description={t('notInAppBody')}
               action={back}
             />
           ) : (
             <EmptyState
               icon={PlugZap}
-              title="Không đọc được dữ liệu từ API"
-              description={`${failure.message} (mã: ${failure.code})`}
+              title={tc('loadErrorTitle')}
+              description={te('withCode', { message: failure.message, code: failure.code })}
               action={back}
             />
           )}
@@ -87,7 +93,7 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
     return (
       <>
         <PageHeader title={externalId} breadcrumb={breadcrumb} />
-        <p className="py-10 text-center text-xs text-[var(--text-muted)]">Đang tải…</p>
+        <p className="py-10 text-center text-xs text-[var(--text-muted)]">{t('loading')}</p>
       </>
     )
   }
@@ -98,7 +104,7 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
     <div className="space-y-5">
       <PageHeader
         title={recipient.externalId}
-        subtitle={`Người nhận của ${app.name}, khai báo lúc ${fmtDateTime(recipient.createdAt)}. Màn này chỉ đọc.`}
+        subtitle={t('subtitle', { app: app.name, at: fmtDateTime(recipient.createdAt) })}
         breadcrumb={breadcrumb}
         actions={
           email ? (
@@ -107,12 +113,12 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
               <StatusPill status={email.status} />
               {email.suppressedReason && (
                 <span className="text-[11px] text-[var(--text-muted)]">
-                  {SUPPRESSED_LABEL[email.suppressedReason] ?? email.suppressedReason}
+                  {suppressedLabel(email.suppressedReason)}
                 </span>
               )}
             </span>
           ) : (
-            <span className="text-xs text-[var(--text-muted)]">chưa khai email</span>
+            <span className="text-xs text-[var(--text-muted)]">{t('noEmail')}</span>
           )
         }
       />
@@ -126,10 +132,9 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold">Các lần gửi</h2>
+          <h2 className="text-sm font-semibold">{t('sends')}</h2>
           <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            Kết cục mỗi lần gửi được ghi lúc gửi. Cài đặt nhận tin ở trên là hiện tại — có thể đã khác
-            lúc đó.
+            {t('sendsNote')}
           </p>
         </div>
         <NotificationsTable recipient={recipient.externalId} />

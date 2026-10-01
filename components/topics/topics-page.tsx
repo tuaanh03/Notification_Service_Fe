@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { AlertTriangle, Copy, Lock, MoreHorizontal, Pause, Play, Plus, PlugZap, RadioTower } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
   createTopicAction,
@@ -34,18 +35,19 @@ import { fmtDateTime } from '@/lib/time'
 type Row = TopicDto & Record<string, unknown>
 
 /** Nhãn nút theo TOPIC_TRANSITIONS của backend — trạng thái nào không có nhánh thì không có nút. */
-const NEXT_ACTION: Readonly<Record<string, { action: TopicAction; label: string; icon: typeof Play }>> = {
-  draft: { action: 'activate', label: 'Kích hoạt', icon: Play },
-  suspended: { action: 'activate', label: 'Kích hoạt', icon: Play },
-  active: { action: 'suspend', label: 'Tạm dừng', icon: Pause },
+const NEXT_ACTION: Readonly<Record<string, { action: TopicAction; icon: typeof Play }>> = {
+  draft: { action: 'activate', icon: Play },
+  suspended: { action: 'activate', icon: Play },
+  active: { action: 'suspend', icon: Pause },
 }
 
-const DEFAULT_MODE_LABEL: Readonly<Record<string, string>> = {
-  opt_out: 'Có nhận',
-  opt_in: 'Không nhận',
-}
+/** Nhãn `defaultMode` (khoá trong nhóm `topics`); giá trị lạ hiện nguyên. */
+const DEFAULT_MODE_KEY = { opt_out: 'modeOptOut', opt_in: 'modeOptIn' } as const
+const isKnownMode = (m: string): m is keyof typeof DEFAULT_MODE_KEY => m in DEFAULT_MODE_KEY
 
 export function TopicsPage() {
+  const t = useTranslations('topics')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const [rows, setRows] = useState<TopicDto[] | null>(null)
   /** Lỗi lúc NẠP danh sách — màn hình không có dữ liệu để vẽ. */
@@ -65,9 +67,9 @@ export function TopicsPage() {
       setLoadError(null)
     } else {
       setRows(null)
-      setLoadError(`${result.message} (mã: ${result.code})`)
+      setLoadError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId])
+  }, [appId, te])
 
   // Đổi app trên switcher là đổi hẳn tập chủ đề: xoá dữ liệu cũ trước khi nạp,
   // tránh hiện chủ đề của app trước trong lúc chờ.
@@ -82,12 +84,12 @@ export function TopicsPage() {
     startTransition(async () => {
       const result = await createTopicAction(appId, input)
       if (!result.ok) {
-        setActionError(`${result.message} (mã: ${result.code})`)
+        setActionError(te('withCode', { message: result.message, code: result.code }))
         return
       }
       setActionError(null)
       setCreating(false)
-      toast.success(`Đã tạo chủ đề "${result.data.key}" ở trạng thái draft`)
+      toast.success(t('created', { key: result.data.key }))
       await load()
     })
   }
@@ -96,58 +98,58 @@ export function TopicsPage() {
     startTransition(async () => {
       const result = await transitionTopicAction(appId, topic.key, action)
       if (!result.ok) {
-        setActionError(`${result.message} (mã: ${result.code})`)
+        setActionError(te('withCode', { message: result.message, code: result.code }))
         return
       }
       setActionError(null)
       setSuspending(null)
       toast.success(
         action === 'activate'
-          ? `Đã kích hoạt "${topic.key}" — app gửi được ngay`
-          : `Đã tạm dừng "${topic.key}" — app không gửi được trên chủ đề này`,
+          ? t('activated', { key: topic.key })
+          : t('suspended', { key: topic.key }),
       )
       await load()
     })
   }
 
   const columns: Column<Row>[] = [
-    { key: 'key', label: 'Mã chủ đề', mono: true },
-    { key: 'name', label: 'Tên hiển thị' },
-    { key: 'status', label: 'Trạng thái', render: (r) => <StatusPill status={r.status} /> },
+    { key: 'key', label: t('colKey'), mono: true },
+    { key: 'name', label: t('colName') },
+    { key: 'status', label: t('colStatus'), render: (r) => <StatusPill status={r.status} /> },
     {
       key: 'defaultMode',
-      label: 'Mặc định',
+      label: t('colDefault'),
       render: (r) => (
         <Tooltip>
           <TooltipTrigger render={<span className="cursor-help text-xs text-[var(--text-secondary)] underline decoration-dotted" />}>
-            {DEFAULT_MODE_LABEL[r.defaultMode] ?? r.defaultMode}
+            {isKnownMode(r.defaultMode) ? t(DEFAULT_MODE_KEY[r.defaultMode]) : r.defaultMode}
           </TooltipTrigger>
           <TooltipContent>
-            <span className="font-mono">{r.defaultMode}</span> — áp dụng cho người dùng chưa tự chọn
+            {t.rich('defaultTip', { mode: r.defaultMode, mono: (chunks) => <span className="font-mono">{chunks}</span> })}
           </TooltipContent>
         </Tooltip>
       ),
     },
     {
       key: 'mandatory',
-      label: 'Bắt buộc',
+      label: t('colMandatory'),
       render: (r) =>
         r.mandatory ? (
           <Tooltip>
             <TooltipTrigger render={<Badge variant="outline" className="border-[var(--solar)]/30 text-[9px] text-[var(--solar)]" />}>
               <Lock />
-              bắt buộc
+              {t('mandatoryBadge')}
             </TooltipTrigger>
-            <TooltipContent>Người dùng không tắt được chủ đề này</TooltipContent>
+            <TooltipContent>{t('mandatoryTip')}</TooltipContent>
           </Tooltip>
         ) : (
           <span className="text-[var(--text-muted)]">—</span>
         ),
     },
-    { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (r) => fmtDateTime(r.updatedAt) },
+    { key: 'updatedAt', label: t('colUpdated'), mono: true, render: (r) => fmtDateTime(r.updatedAt) },
     {
       key: 'id',
-      label: 'Thao tác',
+      label: t('colActions'),
       align: 'right',
       render: (r) => {
         const next = NEXT_ACTION[r.status]
@@ -160,7 +162,7 @@ export function TopicsPage() {
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`Thao tác cho ${r.key}`}
+                    aria-label={t('actionsFor', { key: r.key })}
                     className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
                   >
                     <MoreHorizontal className="size-4" />
@@ -180,7 +182,7 @@ export function TopicsPage() {
                         next.action === 'suspend' ? setSuspending(r) : handleTransition(r, 'activate')
                       }
                     >
-                      <Icon className="size-3.5 mr-1.5" /> {next.label}
+                      <Icon className="size-3.5 mr-1.5" /> {t(next.action)}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
@@ -189,10 +191,10 @@ export function TopicsPage() {
                   className="text-xs cursor-pointer"
                   onClick={() => {
                     void navigator.clipboard.writeText(r.key)
-                    toast.success(`Đã sao chép mã chủ đề "${r.key}"`)
+                    toast.success(t('copied', { key: r.key }))
                   }}
                 >
-                  <Copy className="size-3.5 mr-1.5" /> Sao chép mã chủ đề
+                  <Copy className="size-3.5 mr-1.5" /> {t('copyKey')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -204,12 +206,12 @@ export function TopicsPage() {
 
   const header = (
     <PageHeader
-      title="Chủ đề"
-      subtitle={`Chủ đề mà ${app.name} được phép gửi. App gọi API bằng mã chủ đề; người dùng bật/tắt nhận thư theo chủ đề.`}
+      title={t('title')}
+      subtitle={t('subtitle', { app: app.name })}
       actions={
         <Button className="gap-1.5 text-xs" onClick={() => setCreating(true)}>
           <Plus className="size-3.5" />
-          Thêm chủ đề
+          {t('add')}
         </Button>
       }
     />
@@ -222,11 +224,11 @@ export function TopicsPage() {
         <Panel className="overflow-hidden">
           <EmptyState
             icon={PlugZap}
-            title="Không đọc được danh sách chủ đề"
+            title={t('loadFailed')}
             description={loadError}
             action={
               <Button variant="ghost" size="sm" onClick={() => void load()}>
-                Thử lại
+                {t('retry')}
               </Button>
             }
           />
@@ -242,7 +244,7 @@ export function TopicsPage() {
       {actionError && (
         <Alert variant="destructive">
           <AlertTriangle />
-          <AlertTitle>Thao tác không thành công</AlertTitle>
+          <AlertTitle>{t('actionFailed')}</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
       )}
@@ -251,15 +253,15 @@ export function TopicsPage() {
         rows={(rows ?? []) as Row[]}
         columns={columns}
         filterKey="status"
-        searchPlaceholder="Tìm theo mã hoặc tên chủ đề..."
+        searchPlaceholder={t('searchPlaceholder')}
         empty={
           rows === null ? (
-            <EmptyState icon={RadioTower} title="Đang tải" description="Đang đọc danh sách chủ đề từ API." />
+            <EmptyState icon={RadioTower} title={t('loading')} description={t('loadingBody')} />
           ) : (
             <EmptyState
               icon={RadioTower}
-              title="Chưa có chủ đề"
-              description={`${app.name} chưa có chủ đề nào. Tạo chủ đề đầu tiên để app bắt đầu gửi được.`}
+              title={t('emptyTitle')}
+              description={t('emptyBody', { app: app.name })}
             />
           )
         }
@@ -275,18 +277,18 @@ export function TopicsPage() {
 
       <ConfirmDialog
         open={suspending !== null}
-        title="Tạm dừng chủ đề"
-        description="App sẽ không gửi được thư trên chủ đề này cho tới khi kích hoạt lại. Lựa chọn bật/tắt của người dùng được giữ nguyên."
+        title={t('suspendTitle')}
+        description={t('suspendBody')}
         facts={
           suspending
             ? [
-                ['Chủ đề', suspending.key],
-                ['App', app.namespace],
-                ['Trạng thái sau khi dừng', 'suspended'],
+                [t('factTopic'), suspending.key],
+                [t('factApp'), app.namespace],
+                [t('factAfter'), 'suspended'],
               ]
             : undefined
         }
-        confirmLabel={pending ? 'Đang dừng…' : 'Tạm dừng chủ đề'}
+        confirmLabel={pending ? t('suspending') : t('suspendConfirm')}
         confirmDisabled={pending}
         onConfirm={() => suspending && handleTransition(suspending, 'suspend')}
         onCancel={() => setSuspending(null)}

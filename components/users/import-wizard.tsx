@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { AppLink } from '@/components/app-link'
 import { ChevronLeft, ChevronRight, ShieldX } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { OrbitStepper } from '@/components/apps/orbit-stepper'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -10,10 +11,11 @@ import { importPreview } from '@/lib/mock-data'
 import { ImportStepPreview, type ConflictDecision } from './import-step-preview'
 import { ImportStepSpec } from './import-step-spec'
 
-const steps = ['Tải file mẫu', 'Preview (chưa ghi DB)', 'Kết quả']
-
 /** UC-002 §C — import CSV 3 bước dry-run. Thiếu cột bắt buộc → từ chối cả file, không ghi gì. */
 export function ImportWizard() {
+  const t = useTranslations('import')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
+  const steps = [t('stepTemplate'), t('stepPreview'), t('stepResult')]
   const [step, setStep] = useState(0)
   const [rejected, setRejected] = useState(false)
   const [attach, setAttach] = useState({ on: false, topic: '' })
@@ -31,9 +33,9 @@ export function ImportWizard() {
             {rejected && (
               <Alert variant="destructive" className="mb-5 border-[var(--supernova)]/40 bg-[var(--supernova)]/10" data-testid="rejected">
                 <ShieldX />
-                <AlertTitle className="text-[var(--supernova)]">Thiếu cột bắt buộc. Không ghi gì.</AlertTitle>
+                <AlertTitle className="text-[var(--supernova)]">{t('rejectedTitle')}</AlertTitle>
                 <AlertDescription className="text-[var(--supernova)]">
-                  File thiếu cột <span className="font-mono">external_id</span> — cả file bị từ chối, không có dòng nào được đọc.
+                  {t.rich('rejectedBody', { mono })}
                 </AlertDescription>
               </Alert>
             )}
@@ -55,12 +57,12 @@ export function ImportWizard() {
             <ImportStepPreview decisions={decisions} onDecide={(line, next) => setDecisions((d) => ({ ...d, [line]: next }))} />
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--orbit)] pt-5">
               <Button variant="ghost" onClick={() => setStep(0)}>
-                <ChevronLeft /> Quay lại
+                <ChevronLeft /> {t('back')}
               </Button>
               <div className="flex items-center gap-3">
-                {!allDecided && <span className="text-xs text-[var(--supernova)]">Còn mâu thuẫn chưa quyết (chọn + ghi chú).</span>}
+                {!allDecided && <span className="text-xs text-[var(--supernova)]">{t('undecided')}</span>}
                 <Button disabled={!allDecided} onClick={() => setStep(2)}>
-                  Xác nhận ghi <ChevronRight data-icon="inline-end" />
+                  {t('confirm')} <ChevronRight data-icon="inline-end" />
                 </Button>
               </div>
             </div>
@@ -68,14 +70,14 @@ export function ImportWizard() {
         )}
         {step === 2 && (
           <div className="space-y-5" data-testid="import-result">
-            <h2 className="text-lg font-semibold">Kết quả</h2>
+            <h2 className="text-lg font-semibold">{t('stepResult')}</h2>
             <dl className="grid gap-3 font-mono text-sm tabular-nums sm:grid-cols-4">
               {(
                 [
-                  ['Tạo mới', p.createdTotal],
-                  ['Đã gộp', p.mergedTotal + mergedFromConflict],
-                  ['Bỏ qua', skipped + p.errors.length],
-                  ['Binding thêm', attach.on && attach.topic ? p.createdTotal + p.mergedTotal : 0],
+                  [t('created'), p.createdTotal],
+                  [t('merged'), p.mergedTotal + mergedFromConflict],
+                  [t('skipped'), skipped + p.errors.length],
+                  [t('bindings'), attach.on && attach.topic ? p.createdTotal + p.mergedTotal : 0],
                 ] as const
               ).map(([k, v]) => (
                 <div key={k} className="rounded-lg border border-[var(--orbit)] p-3">
@@ -86,19 +88,19 @@ export function ImportWizard() {
             </dl>
             {attach.on && attach.topic && (
               <p className="text-xs text-[var(--text-secondary)]">
-                Đã gắn binding <span className="font-mono">type=user</span> vào <span className="font-mono">{attach.topic}</span>.
+                {t.rich('attached', { topic: attach.topic, mono })}
               </p>
             )}
             <Alert className="border-[var(--starlight)]/30 bg-[var(--starlight)]/[.06]">
               <AlertDescription className="text-[var(--text-secondary)]">
-                Import là idempotent theo khoá nhận diện. Chạy lại cùng file không nhân đôi user, subscription hay binding.
+                {t('idempotent')}
               </AlertDescription>
             </Alert>
             <p className="text-xs text-[var(--text-muted)]">
-              {p.conflicts.length} quyết định mâu thuẫn đã ghi audit kèm ghi chú của bạn.
+              {t('auditNote', { count: p.conflicts.length })}
             </p>
             <Button variant="outline" render={<AppLink href="/users" />}>
-              Về Users
+              {t('backToUsers')}
             </Button>
           </div>
         )}

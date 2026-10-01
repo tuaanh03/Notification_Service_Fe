@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +31,7 @@ export function CreateTopicDialog({
   onCancel: () => void
   onSubmit: (input: CreateTopicInput) => void
 }) {
+  const t = useTranslations('createTopic')
   const [form, setForm] = useState<CreateTopicInput>(EMPTY)
   const keyValid = TOPIC_KEY.test(form.key)
   const valid = keyValid && form.name.trim().length > 0
@@ -42,16 +44,16 @@ export function CreateTopicDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="Thêm chủ đề"
-      description={`Chủ đề mới của ${appName} được tạo ở trạng thái draft — app chưa gửi được cho tới khi bạn kích hoạt.`}
-      confirmLabel={pending ? 'Đang tạo…' : 'Tạo chủ đề'}
+      title={t('title')}
+      description={t('body', { app: appName })}
+      confirmLabel={pending ? t('creating') : t('create')}
       confirmDisabled={!valid || pending}
       onConfirm={() => onSubmit({ ...form, name: form.name.trim() })}
       onCancel={close}
     >
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="topic-key">Mã chủ đề</Label>
+          <Label htmlFor="topic-key">{t('key')}</Label>
           <Input
             id="topic-key"
             value={form.key}
@@ -61,23 +63,22 @@ export function CreateTopicDialog({
             aria-invalid={form.key.length > 0 && !keyValid}
           />
           <p className="text-xs text-[var(--text-muted)]">
-            App gọi API sẽ gửi đúng mã này. Chữ thường, số và <code className="font-mono">_ . -</code>,
-            bắt đầu bằng chữ, 2–128 ký tự. Tạo xong không đổi được.
+            {t.rich('keyHint', { code: (chunks) => <code className="font-mono">{chunks}</code> })}
           </p>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="topic-name">Tên hiển thị</Label>
+          <Label htmlFor="topic-name">{t('name')}</Label>
           <Input
             id="topic-name"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="Cập nhật đơn hàng"
+            placeholder={t('namePlaceholder')}
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="topic-default-mode">Mặc định khi người dùng chưa chọn</Label>
+          <Label htmlFor="topic-default-mode">{t('defaultMode')}</Label>
           <NativeSelect
             id="topic-default-mode"
             className="w-full"
@@ -86,17 +87,15 @@ export function CreateTopicDialog({
               setForm((f) => ({ ...f, defaultMode: e.target.value as CreateTopicInput['defaultMode'] }))
             }
           >
-            <NativeSelectOption value="opt_out">Có nhận (opt_out) — người dùng phải tự tắt</NativeSelectOption>
-            <NativeSelectOption value="opt_in">Không nhận (opt_in) — người dùng phải tự bật</NativeSelectOption>
+            <NativeSelectOption value="opt_out">{t('optOut')}</NativeSelectOption>
+            <NativeSelectOption value="opt_in">{t('optIn')}</NativeSelectOption>
           </NativeSelect>
         </div>
 
         <div className="flex items-start justify-between gap-4 rounded-lg border border-[var(--orbit)] p-3">
           <div>
-            <Label htmlFor="topic-mandatory">Bắt buộc</Label>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Người dùng không tắt được chủ đề này. Chỉ dành cho thông báo giao dịch bắt buộc.
-            </p>
+            <Label htmlFor="topic-mandatory">{t('mandatory')}</Label>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{t('mandatoryHint')}</p>
           </div>
           <Switch
             id="topic-mandatory"

@@ -1,12 +1,14 @@
 import { ImportWizard } from '@/components/users/import-wizard'
+import { getTranslations } from 'next-intl/server'
 import { PageHeader } from '@/components/page-header'
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('import')
   return (
     <>
       <PageHeader
-        title="Import CSV"
-        subtitle="Dry-run 3 bước — preview trước, xác nhận mới ghi"
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
       <ImportWizard />
     </>

@@ -1,6 +1,8 @@
 'use client'
 
 import { Lock, TriangleAlert } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { tOr } from '@/i18n/dynamic'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -8,27 +10,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { RecipientDto, TopicPreferenceDto, UserPreferencesDto } from '@/lib/api/types'
 
-/** Vì sao địa chỉ không dùng được nữa — chữ cho người vận hành, không phải mã kỹ thuật. */
-export const SUPPRESSED_LABEL: Readonly<Record<string, string>> = {
-  user_unsubscribe: 'người dùng tự ngắt',
-  hard_bounce: 'thư dội về vĩnh viễn',
-  complaint: 'bị báo là thư rác',
+/**
+ * Vì sao địa chỉ không dùng được nữa — chữ cho người vận hành, không phải mã kỹ thuật
+ * (`messages/*.json` nhóm `suppressed`). Lý do chưa có câu dịch thì hiện nguyên mã.
+ */
+export function useSuppressedLabel(): (reason: string) => string {
+  const t = useTranslations('suppressed')
+  return (reason) => tOr(t, reason)
 }
 
 /** Người này đã BẤM gì — khác với "rốt cuộc có nhận không". */
 function Chosen({ topic }: { topic: TopicPreferenceDto }) {
+  const t = useTranslations('prefs')
   if (topic.optedIn === null) {
     return (
       <Tooltip>
-        <TooltipTrigger render={<span className="text-xs text-[var(--text-muted)]" />}>chưa chọn</TooltipTrigger>
+        <TooltipTrigger render={<span className="text-xs text-[var(--text-muted)]" />}>{t('notChosen')}</TooltipTrigger>
         <TooltipContent>
-          Chưa đụng đến chủ đề này. Đang theo mặc định:{' '}
-          {topic.defaultMode === 'opt_out' ? 'có nhận' : 'không nhận'}.
+          {t('defaultTip', { mode: topic.defaultMode === 'opt_out' ? t('receives') : t('notReceives') })}
         </TooltipContent>
       </Tooltip>
     )
   }
-  return <span className="text-xs">{topic.optedIn ? 'bật' : 'tắt'}</span>
+  return <span className="text-xs">{topic.optedIn ? t('on') : t('off')}</span>
 }
 
 /**
@@ -50,18 +54,19 @@ export function RecipientPreferences({
   loading: boolean
 }) {
   // L0 / L1 chặn thư BẤT KỂ từng chủ đề bật hay tắt — phải nói trước khi người trực đọc bảng dưới.
+  const t = useTranslations('prefs')
   const blocked =
     recipient.email === null
-      ? 'Người này chưa khai email — mọi thư đều bị chặn, không phụ thuộc chủ đề.'
+      ? t('blockedNoEmail')
       : recipient.email.status !== 'active'
-        ? `Địa chỉ đang ở trạng thái ${recipient.email.status} — mọi thư đều bị chặn, kể cả chủ đề bắt buộc.`
+        ? t('blockedStatus', { status: recipient.email.status })
         : recipient.email.optedOutOptional
-          ? 'Người này đã tắt mọi tin không bắt buộc — chỉ chủ đề bắt buộc còn đi được.'
+          ? t('blockedOptional')
           : null
 
   return (
     <Panel className="p-5">
-      <h2 className="mb-4 text-sm font-semibold">Cài đặt nhận tin</h2>
+      <h2 className="mb-4 text-sm font-semibold">{t('title')}</h2>
 
       {blocked && (
         <Alert className="mb-4 bg-[var(--solar)]/10">
@@ -76,19 +81,19 @@ export function RecipientPreferences({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : loading ? (
-        <p className="py-6 text-center text-xs text-[var(--text-muted)]">Đang tải…</p>
+        <p className="py-6 text-center text-xs text-[var(--text-muted)]">{t('loading')}</p>
       ) : preferences === null ? null : preferences.topics.length === 0 ? (
         <p className="py-6 text-center text-xs text-[var(--text-muted)]">
-          App chưa có chủ đề nào đang hoạt động.
+          {t('noTopics')}
         </p>
       ) : (
         <>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Chủ đề</TableHead>
-                <TableHead>Người này đã chọn</TableHead>
-                <TableHead>Qua được lớp chủ đề</TableHead>
+                <TableHead>{t('colTopic')}</TableHead>
+                <TableHead>{t('colChosen')}</TableHead>
+                <TableHead>{t('colEffective')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -101,11 +106,9 @@ export function RecipientPreferences({
                         <Tooltip>
                           <TooltipTrigger render={<Badge variant="outline" className="text-[9px]" />}>
                             <Lock />
-                            bắt buộc
+                            {t('mandatory')}
                           </TooltipTrigger>
-                          <TooltipContent>
-                            Người dùng không tắt được. Vẫn KHÔNG gửi tới địa chỉ đã chết hoặc đã tự ngắt.
-                          </TooltipContent>
+                          <TooltipContent>{t('mandatoryTip')}</TooltipContent>
                         </Tooltip>
                       )}
                     </span>
@@ -116,7 +119,7 @@ export function RecipientPreferences({
                   </TableCell>
                   <TableCell>
                     <span className={topic.effectiveOptIn ? 'text-xs text-[var(--aurora)]' : 'text-xs text-[var(--text-muted)]'}>
-                      {topic.effectiveOptIn ? 'có' : 'không'}
+                      {topic.effectiveOptIn ? t('yes') : t('no')}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -124,8 +127,7 @@ export function RecipientPreferences({
             </TableBody>
           </Table>
           <p className="mt-3 text-[11px] text-[var(--text-muted)]">
-            Cột cuối chỉ là <strong>lớp chủ đề</strong>. Địa chỉ chết hoặc tắt mọi tin không bắt buộc
-            vẫn chặn thư dù cột này ghi «có».
+            {t.rich('note', { b: (chunks) => <strong>{chunks}</strong> })}
           </p>
         </>
       )}

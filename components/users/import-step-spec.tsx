@@ -1,5 +1,6 @@
 'use client'
 import { Download, FileWarning, Upload } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { CodeBlock } from '@/components/code-block'
 import { Panel } from '@/components/panel'
@@ -22,15 +23,17 @@ export function ImportStepSpec({
   onAttach: (next: { on: boolean; topic: string }) => void
   onUpload: (kind: 'ok' | 'missing_column') => void
 }) {
+  const t = useTranslations('import')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   return (
     <div className="space-y-5">
       <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
         <Panel className="min-w-0 p-4">
-          <h3 className="text-sm font-semibold">Tải file mẫu</h3>
+          <h3 className="text-sm font-semibold">{t('stepTemplate')}</h3>
           <div className="mt-3">
             <CodeBlock language="csv" value={IMPORT_SAMPLE_CSV} />
           </div>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.success('Đang tải users-template.csv')}>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.success(t('downloadingTemplate'))}>
             <Download /> users-template.csv
           </Button>
         </Panel>
@@ -38,16 +41,16 @@ export function ImportStepSpec({
           <Table className="text-[13px]">
             <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="px-3">Cột</TableHead>
-                <TableHead className="px-3">Bắt buộc</TableHead>
-                <TableHead className="px-3">Ghi chú</TableHead>
+                <TableHead className="px-3">{t('colColumn')}</TableHead>
+                <TableHead className="px-3">{t('colRequired')}</TableHead>
+                <TableHead className="px-3">{t('colNote')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {IMPORT_COLUMNS.map((c) => (
                 <TableRow key={c.name} className="h-11 border-[var(--orbit)]">
                   <TableCell className="px-3 font-mono text-xs text-[var(--starlight)]">{c.name}</TableCell>
-                  <TableCell className="px-3 font-mono text-xs">{c.required ? 'có' : '—'}</TableCell>
+                  <TableCell className="px-3 font-mono text-xs">{c.required ? t('yes') : '—'}</TableCell>
                   <TableCell className="px-3 text-xs text-[var(--text-secondary)]">{c.note || '—'}</TableCell>
                 </TableRow>
               ))}
@@ -57,21 +60,20 @@ export function ImportStepSpec({
       </div>
       <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]">
         <AlertDescription className="text-[var(--solar)]">
-          <span className="font-mono">email</span> và <span className="font-mono">phone</span> để trống 1 trong 2 được. Trống cả hai
-          thì dòng đó không hợp lệ.
+          {t.rich('emailOrPhone', { mono })}
         </AlertDescription>
       </Alert>
       <div className="flex flex-wrap items-end gap-3">
         <Label className="flex items-center gap-2 pb-2 text-xs">
           <Checkbox checked={attach.on} onCheckedChange={(v) => onAttach({ ...attach, on: v === true })} />
-          Gắn luôn vào topic này
+          {t('attachTopic')}
         </Label>
         <div className="space-y-1">
           <Label htmlFor="imp-topic" className="text-xs">
-            Topic
+            {t('topic')}
           </Label>
           <NativeSelect id="imp-topic" disabled={!attach.on} value={attach.topic} onChange={(e) => onAttach({ ...attach, topic: e.target.value })} className="font-mono">
-            <NativeSelectOption value="">chọn topic</NativeSelectOption>
+            <NativeSelectOption value="">{t('chooseTopic')}</NativeSelectOption>
             {topics.map((t) => (
               <NativeSelectOption key={t.topic_key} value={t.topic_key}>
                 {t.topic_key}
@@ -83,16 +85,16 @@ export function ImportStepSpec({
       <div className="flex flex-wrap items-end gap-3 border-t border-[var(--orbit)] pt-4">
         <div className="space-y-1">
           <Label htmlFor="imp-file" className="text-xs">
-            Chọn file CSV
+            {t('chooseFile')}
           </Label>
           {/* mock: chọn file bất kỳ → chạy dry-run với fixture importPreview */}
           <Input id="imp-file" type="file" accept=".csv" className="max-w-xs" onChange={(e) => e.target.files?.length && onUpload('ok')} />
         </div>
         <Button variant="outline" onClick={() => onUpload('ok')}>
-          <Upload /> Dùng file mẫu (dry-run)
+          <Upload /> {t('useSample')}
         </Button>
         <Button variant="ghost" onClick={() => onUpload('missing_column')}>
-          <FileWarning /> Thử file thiếu cột
+          <FileWarning /> {t('tryMissing')}
         </Button>
       </div>
     </div>

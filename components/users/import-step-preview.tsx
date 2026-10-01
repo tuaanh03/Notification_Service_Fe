@@ -1,5 +1,6 @@
 'use client'
 import { Download } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -37,17 +38,19 @@ export function ImportStepPreview({
   decisions: Record<number, ConflictDecision>
   onDecide: (line: number, next: ConflictDecision) => void
 }) {
+  const t = useTranslations('import')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const p = importPreview
   const counts = [
-    ['Tạo mới', p.createdTotal, 'text-[var(--aurora)]'],
-    ['Trùng — sẽ gộp', p.mergedTotal, 'text-[var(--pulsar)]'],
-    ['Mâu thuẫn', p.conflicts.length, 'text-[var(--supernova)]'],
-    ['Lỗi', p.errors.length, 'text-[var(--solar)]'],
+    [t('created'), p.createdTotal, 'text-[var(--aurora)]'],
+    [t('willMerge'), p.mergedTotal, 'text-[var(--pulsar)]'],
+    [t('conflicts'), p.conflicts.length, 'text-[var(--supernova)]'],
+    [t('errors'), p.errors.length, 'text-[var(--solar)]'],
   ] as const
   return (
     <div className="space-y-4">
       <p className="font-mono text-sm text-[var(--solar)]" data-testid="dry-run-line">
-        Chưa ghi gì vào hệ thống. Bấm Xác nhận mới ghi.
+        {t('dryRun')}
       </p>
       <div className="grid gap-3 sm:grid-cols-4" data-testid="import-counts">
         {counts.map(([label, n, tone]) => (
@@ -59,14 +62,14 @@ export function ImportStepPreview({
       </div>
       <Tabs defaultValue="created">
         <TabsList variant="line" className="h-auto w-full flex-wrap justify-start">
-          <TabsTrigger value="created">Tạo mới</TabsTrigger>
-          <TabsTrigger value="merged">Sẽ gộp</TabsTrigger>
-          <TabsTrigger value="conflicts">Mâu thuẫn</TabsTrigger>
-          <TabsTrigger value="errors">Lỗi</TabsTrigger>
+          <TabsTrigger value="created">{t('created')}</TabsTrigger>
+          <TabsTrigger value="merged">{t('tabMerge')}</TabsTrigger>
+          <TabsTrigger value="conflicts">{t('conflicts')}</TabsTrigger>
+          <TabsTrigger value="errors">{t('errors')}</TabsTrigger>
         </TabsList>
         <TabsContent value="created" className="overflow-x-auto">
           <Table className="text-[13px]">
-            <Head cols={['#', 'external_id', 'full_name', 'email', 'phone', 'Sinh subscription']} />
+            <Head cols={['#', 'external_id', 'full_name', 'email', 'phone', t('colSubscriptions')]} />
             <TableBody>
               {p.created.map((r) => {
                 const s = subscriptionsFromRow(r)
@@ -85,11 +88,11 @@ export function ImportStepPreview({
               })}
             </TableBody>
           </Table>
-          <p className="p-3 text-xs text-[var(--text-muted)]">… và {p.createdTotal - p.created.length} dòng nữa</p>
+          <p className="p-3 text-xs text-[var(--text-muted)]">{t('more', { count: p.createdTotal - p.created.length })}</p>
         </TabsContent>
         <TabsContent value="merged" className="overflow-x-auto">
           <Table className="text-[13px]">
-            <Head cols={['#', 'Dòng trong file', 'Khớp user', 'Khoá khớp (thứ tự ưu tiên)']} />
+            <Head cols={['#', t('colFileRow'), t('colMatchedUser'), t('colMatchKey')]} />
             <TableBody>
               {p.merged.map((r) => (
                 <TableRow key={r.line} className="h-11 border-[var(--orbit)]">
@@ -125,7 +128,7 @@ export function ImportStepPreview({
         <TabsContent value="conflicts" className="space-y-3">
           <Alert className="border-[var(--supernova)]/30 bg-[var(--supernova)]/[.06]">
             <AlertDescription className="text-[var(--supernova)]">
-              Hệ thống không tự gộp khi mâu thuẫn. Người quyết, và quyết định được ghi audit.
+              {t('noAutoMerge')}
             </AlertDescription>
           </Alert>
           {p.conflicts.map((r) => {
@@ -136,18 +139,25 @@ export function ImportStepPreview({
                   #{r.line} · {r.external_id} · {r.full_name}
                 </p>
                 <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                  <span className="font-mono">email {r.email}</span> thuộc <span className="font-mono text-[var(--starlight)]">A = {r.user_a}</span> ·{' '}
-                  <span className="font-mono">phone {r.phone}</span> thuộc <span className="font-mono text-[var(--pulsar)]">B = {r.user_b}</span>
+                  {t.rich('conflictLine', {
+                    email: r.email ?? '',
+                    phone: r.phone ?? '',
+                    a: r.user_a,
+                    b: r.user_b,
+                    mono,
+                    userA: (chunks) => <span className="font-mono text-[var(--starlight)]">{chunks}</span>,
+                    userB: (chunks) => <span className="font-mono text-[var(--pulsar)]">{chunks}</span>,
+                  })}
                 </p>
                 <div className="mt-3 flex flex-wrap items-start gap-3">
                   <ToggleGroup variant="outline" size="sm" value={d.choice ? [d.choice] : []} onValueChange={(v) => onDecide(r.line, { ...d, choice: v[0] as ConflictDecision['choice'] })}>
-                    <ToggleGroupItem value="A">Gộp vào A</ToggleGroupItem>
-                    <ToggleGroupItem value="B">Gộp vào B</ToggleGroupItem>
-                    <ToggleGroupItem value="skip">Bỏ qua dòng này</ToggleGroupItem>
+                    <ToggleGroupItem value="A">{t('mergeA')}</ToggleGroupItem>
+                    <ToggleGroupItem value="B">{t('mergeB')}</ToggleGroupItem>
+                    <ToggleGroupItem value="skip">{t('skipRow')}</ToggleGroupItem>
                   </ToggleGroup>
                   <div className="min-w-0 flex-1 space-y-1">
                     <Label htmlFor={`note-${r.line}`} className="text-xs">
-                      Ghi chú quyết định <span className="text-[var(--supernova)]">*</span>
+                      {t('decisionNote')} <span className="text-[var(--supernova)]">*</span>
                     </Label>
                     <Textarea id={`note-${r.line}`} value={d.note} onChange={(e) => onDecide(r.line, { ...d, note: e.target.value })} className="min-h-16" />
                   </div>
@@ -159,7 +169,7 @@ export function ImportStepPreview({
         <TabsContent value="errors" className="space-y-3">
           <div className="overflow-x-auto">
             <Table className="text-[13px]">
-              <Head cols={['Dòng', 'Lý do']} />
+              <Head cols={[t('colLine'), t('colReason')]} />
               <TableBody>
                 {p.errors.map((r) => (
                   <TableRow key={r.line} className="h-11 border-[var(--orbit)]">
@@ -170,8 +180,8 @@ export function ImportStepPreview({
               </TableBody>
             </Table>
           </div>
-          <Button variant="outline" size="sm" onClick={() => toast.success('Đang tải users-errors.csv', { description: `${p.errors.length} dòng lỗi` })}>
-            <Download /> Tải file lỗi
+          <Button variant="outline" size="sm" onClick={() => toast.success(t('downloadingErrors'), { description: t('errorRows', { count: p.errors.length }) })}>
+            <Download /> {t('downloadErrors')}
           </Button>
         </TabsContent>
       </Tabs>
