@@ -32,21 +32,6 @@ export const SECRET_AUDIT_ACTIONS = ['AppSecretIssued', 'AppSecretRevoked'] as c
 /** Event thêm / gỡ allowlist IP & Origin — cho màn `/settings/origins`. */
 export const NETWORK_RULE_AUDIT_ACTIONS = ['AppNetworkRuleAdded', 'AppNetworkRuleRemoved'] as const
 
-/** Tên event của backend -> câu người trực đọc được. Chưa có bản dịch thì giữ nguyên tên event. */
-const ACTION_LABELS: Readonly<Record<string, string>> = {
-  AppCreated: 'tạo app',
-  AppSubmittedForReview: 'gửi app đi duyệt',
-  AppApproved: 'duyệt app',
-  AppRejected: 'từ chối app',
-  AppSuspended: 'tạm ngưng app',
-  AppResumed: 'mở lại app',
-  AppRevoked: 'thu hồi app',
-  AppSecretIssued: 'cấp khoá API',
-  AppSecretRevoked: 'thu hồi khoá API',
-  AppNetworkRuleAdded: 'thêm nguồn gọi',
-  AppNetworkRuleRemoved: 'gỡ nguồn gọi',
-}
-
 /** Lấy phần đáng hiện của `before`/`after`: hint của khoá, `kind value` của nguồn gọi, hoặc trạng thái. */
 function summarize(payload: Record<string, unknown> | null): string | undefined {
   if (!payload) return undefined
@@ -59,7 +44,8 @@ function summarize(payload: Record<string, unknown> | null): string | undefined 
 export function toAuditEntry(dto: AuditEntryDto): AuditEntry {
   return {
     actor: dto.actor,
-    action: ACTION_LABELS[dto.action] ?? dto.action,
+    // Giữ TÊN EVENT — `<AuditTrail>` dịch theo ngôn ngữ đang chọn (`messages/*.json` nhóm `auditActions`).
+    action: dto.action,
     ...(summarize(dto.before) === undefined ? {} : { from: summarize(dto.before) }),
     ...(summarize(dto.after) === undefined ? {} : { to: summarize(dto.after) }),
     timestamp: fmtDateTime(dto.at),

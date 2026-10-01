@@ -1,13 +1,17 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import { ReasonBadge } from '@/components/reason-badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { recipientSnapshot, type Notification, type SnapshotRow } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 
-const HEADERS = ['Người', 'Kênh', 'Địa chỉ', 'Vì sao nhận', 'Template đã dùng', 'Kết quả', 'Thời điểm']
+const HEADERS = ['colPerson', 'colChannel', 'colAddress', 'colWhy', 'colTemplate', 'colResult', 'colAt'] as const
 
 function SnapshotTable({ rows, tone }: { rows: SnapshotRow[]; tone?: 'muted' | 'error' }) {
-  if (rows.length === 0) return <p className="p-4 text-sm text-[var(--text-muted)]">Không có ai trong nhóm này.</p>
+  const t = useTranslations('snapshot')
+  if (rows.length === 0) return <p className="p-4 text-sm text-[var(--text-muted)]">{t('empty')}</p>
   return (
     <div className="overflow-x-auto">
       <Table className="text-[13px]">
@@ -15,7 +19,7 @@ function SnapshotTable({ rows, tone }: { rows: SnapshotRow[]; tone?: 'muted' | '
           <TableRow className="hover:bg-transparent">
             {HEADERS.map((h) => (
               <TableHead key={h} className="px-3">
-                {h}
+                {t(h)}
               </TableHead>
             ))}
           </TableRow>
@@ -33,7 +37,7 @@ function SnapshotTable({ rows, tone }: { rows: SnapshotRow[]; tone?: 'muted' | '
                   ))}
                   {/* UC-002 BR-5: trúng 2 binding vẫn nhận đúng 1 lần */}
                   {r.reasons.length > 1 && (
-                    <span className="text-[10px] text-[var(--text-muted)]">Trúng {r.reasons.length} binding — nhận đúng 1 lần</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">{t('multiBinding', { count: r.reasons.length })}</span>
                   )}
                 </span>
               </TableCell>
@@ -52,23 +56,21 @@ function SnapshotTable({ rows, tone }: { rows: SnapshotRow[]; tone?: 'muted' | '
 
 /** 07 §B3 — snapshot người nhận kèm lý do trúng binding; 3 tab Đã nhận / Bị trừ ra / Lỗi phát. */
 export function RecipientsTabs({ notification }: { notification: Notification }) {
+  const t = useTranslations('snapshot')
   const { received, deducted, failed } = recipientSnapshot(notification)
   return (
     <div className="space-y-3">
-      <p className="text-xs text-[var(--text-secondary)]">
-        Snapshot người nhận được lưu kèm lý do trúng binding. Ba tháng sau vẫn trả lời được &quot;tại sao người này nhận
-        được tin đó&quot;.
-      </p>
+      <p className="text-xs text-[var(--text-secondary)]">{t('intro')}</p>
       <Tabs defaultValue="received">
         <TabsList variant="line" className="h-auto w-full flex-wrap justify-start">
           <TabsTrigger value="received">
-            Đã nhận <span className="ml-1 font-mono tabular-nums text-[var(--text-muted)]">{received.length}</span>
+            {t('received')} <span className="ml-1 font-mono tabular-nums text-[var(--text-muted)]">{received.length}</span>
           </TabsTrigger>
           <TabsTrigger value="deducted">
-            Bị trừ ra <span className="ml-1 font-mono tabular-nums text-[var(--text-muted)]">{deducted.length}</span>
+            {t('deducted')} <span className="ml-1 font-mono tabular-nums text-[var(--text-muted)]">{deducted.length}</span>
           </TabsTrigger>
           <TabsTrigger value="failed">
-            Lỗi phát <span className="ml-1 font-mono tabular-nums text-[var(--text-muted)]">{failed.length}</span>
+            {t('failed')} <span className="ml-1 font-mono tabular-nums text-[var(--text-muted)]">{failed.length}</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="received">

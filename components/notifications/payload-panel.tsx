@@ -1,6 +1,7 @@
 'use client'
 import { Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { CodeBlock } from '@/components/code-block'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { apiRequestFor, apiResponseFor, flappingSeries, type Notification } from '@/lib/mock-data'
@@ -8,16 +9,18 @@ import { cosmicTokens } from '@/lib/theme'
 
 /** 07 §B5 — request/response cạnh nhau; callout 202 là thứ bị hiểu sai nhiều nhất (UC-005 BR-3). */
 export function PayloadPanel({ notification: n }: { notification: Notification }) {
+  const t = useTranslations('payload')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   return (
     <div className="space-y-4">
       {/* UC-005 BR-3 — không được bỏ */}
       <Alert className="border-[var(--starlight)]/40 bg-[var(--starlight)]/[.06]" data-testid="callout-202">
         <AlertTriangle />
         <AlertTitle className="text-[var(--starlight)]">
-          <span className="font-mono">202</span> nghĩa là ĐÃ NHẬN, không phải ĐÃ TỚI HỘP THƯ.
+          {t.rich('acceptedTitle', { mono })}
         </AlertTitle>
         <AlertDescription className="text-[var(--text-secondary)]">
-          Trạng thái thật tra bằng <span className="font-mono">GET /v1/notifications/{'{id}'}</span>.
+          {t.rich('acceptedBody', { mono })}
         </AlertDescription>
       </Alert>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -33,8 +36,7 @@ export function PayloadPanel({ notification: n }: { notification: Notification }
       {n.duplicate && (
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]" data-testid="explain-duplicate">
           <AlertDescription className="text-[var(--solar)]">
-            Trùng <span className="font-mono">Idempotency-Key {n.idempotency_key ?? 'alert-88213'}</span> — trả lại bản ghi cũ,
-            không gửi lần hai. <span className="font-mono">200</span> thay vì <span className="font-mono">202</span>.
+            {t.rich('duplicate', { mono, key: n.idempotency_key ?? 'alert-88213' })}
           </AlertDescription>
         </Alert>
       )}
@@ -42,7 +44,7 @@ export function PayloadPanel({ notification: n }: { notification: Notification }
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]" data-testid="explain-collapsed">
           <AlertDescription className="text-[var(--solar)]">
             <p>
-              Gộp {n.occurrence_count ?? 30} lần dao động trong cửa sổ 5 phút về 1 thông báo.{' '}
+              {t('collapsed', { count: n.occurrence_count ?? 30 })}{' '}
               <span className="font-mono">occurrence_count = {n.occurrence_count ?? 30}</span>.
             </p>
             <div className="mt-2 h-10 w-full max-w-xs">
@@ -61,7 +63,7 @@ export function PayloadPanel({ notification: n }: { notification: Notification }
       )}
       {n.stale_directory && (
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]" data-testid="explain-stale">
-          <AlertDescription className="text-[var(--solar)]">Bung từ snapshot danh bạ cũ 3 ngày. Vẫn gửi, có cảnh báo.</AlertDescription>
+          <AlertDescription className="text-[var(--solar)]">{t('stale')}</AlertDescription>
         </Alert>
       )}
     </div>

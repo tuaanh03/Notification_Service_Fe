@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Users } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { useSendSimulation } from '@/hooks/use-send-simulation'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -28,6 +29,8 @@ export function Composer() {
 }
 
 function ComposerDraft() {
+  const t = useTranslations('compose')
+  const tc = useTranslations('common')
   const [topic, setTopic] = useState('')
   const [content, setContent] = useState<ContentSelection>(emptyContent)
   const [contentValid, setContentValid] = useState(false)
@@ -46,7 +49,7 @@ function ComposerDraft() {
   const requiresApproval = mandatory || estimate.expected > APPROVAL_THRESHOLD
   // Gating BR-5: 3 block hợp lệ + đã xem thử + không còn {{ }} sót. contentValid chỉ do <ContentBlock> báo lên.
   const canSend = Boolean(topic) && contentValid && previewOpened && unresolved.length === 0
-  const templateLabel = content.mode === 'quick' ? 'Soạn nhanh' : content.template
+  const templateLabel = content.mode === 'quick' ? t('quickLabel') : content.template
 
   // callback ổn định → effect trong PreviewBlock không chạy lại mỗi render (bẫy §6)
   const markPreviewOpened = useCallback(() => setPreviewOpened(true), [])
@@ -54,39 +57,34 @@ function ComposerDraft() {
   // BR-6: đang có lần gửi chạy → không mở dialog mới, chỉ báo
   const guardRunning = () => {
     if (!sim.running) return false
-    toast.info('Lần gửi đang chạy', { description: `Trạng thái hiện tại: ${sim.state}. Không tạo lần gửi thứ hai.` })
+    toast.info(t('runningTitle'), { description: t('runningBody', { state: sim.state }) })
     return true
   }
 
   const facts = useMemo(
     () =>
       [
-        ['Topic', topic],
-        ['Người nhận', `${estimate.expected} người (ước lượng)`],
-        ['Template', templateLabel],
+        [t('factTopic'), topic],
+        [t('factRecipients'), t('factRecipientsValue', { count: estimate.expected })],
+        [t('factTemplate'), templateLabel],
       ] as [string, string][],
-    [estimate.expected, templateLabel, topic],
+    [estimate.expected, templateLabel, topic, t],
   )
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Soạn thông báo"
-        subtitle="Mỗi bản nháp chỉ được gửi một lần — hãy kiểm tra kỹ trước khi không thể thu hồi."
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
       <Alert className="border-[var(--solar)]/25 bg-[var(--solar)]/10 text-[var(--solar)]">
         <AlertTriangle />
-        <AlertDescription className="text-[var(--solar)]">
-          Đây là email dưới danh nghĩa tổ chức và không thể recall. Người nhận do topic + binding quyết định;
-          không có ô nhập email tự do.
-        </AlertDescription>
+        <AlertDescription className="text-[var(--solar)]">{t('warning')}</AlertDescription>
       </Alert>
       {editorConflict && (
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/10 text-[var(--solar)]">
           <Users />
-          <AlertDescription className="text-[var(--solar)]">
-            Hai admin cùng mở một nháp — minh.tran đang chỉnh sửa. Lần lưu sau sẽ không ghi đè im lặng.
-          </AlertDescription>
+          <AlertDescription className="text-[var(--solar)]">{t('conflict')}</AlertDescription>
         </Alert>
       )}
       <div className="flex items-center gap-2">
@@ -96,7 +94,7 @@ function ComposerDraft() {
           onCheckedChange={(checked) => setEditorConflict(checked === true)}
         />
         <Label htmlFor="demo-conflict" className="text-xs text-[var(--text-secondary)]">
-          Demo: Hai admin cùng mở một nháp
+          {t('conflictDemo')}
         </Label>
       </div>
       <RecipientBlock
@@ -148,14 +146,14 @@ function ComposerDraft() {
       />
       <ConfirmDialog
         open={confirm}
-        title="Kiểm tra trước khi gửi"
+        title={t('confirmTitle')}
         description={
           requiresApproval
-            ? 'Lần gửi này sẽ tạo yêu cầu duyệt, không gửi ngay.'
-            : 'Gửi ngay sẽ khóa bản nháp và bắt đầu cửa sổ huỷ trước khi lô đầu rời hàng đợi.'
+            ? t('confirmApproval')
+            : t('confirmNow')
         }
         facts={facts}
-        confirmLabel={requiresApproval ? 'Gửi yêu cầu duyệt' : `Gửi cho ${estimate.expected} người`}
+        confirmLabel={requiresApproval ? t('sendApproval') : t('sendTo', { count: estimate.expected })}
         onCancel={() => setConfirm(false)}
         onConfirm={() => {
           setConfirm(false)
@@ -165,29 +163,25 @@ function ComposerDraft() {
       <ConfirmDialog
         open={noRecipient}
         tone="blocking"
-        title="0 người nhận — không gửi được."
-        description={`Topic ${topic} hiện không giải ra người nhận nào có kênh email active.`}
-        cancelLabel="Đóng"
-        confirmLabel="Sửa bộ lọc của topic"
+        title={t('zeroTitle')}
+        description={t('zeroBody', { topic })}
+        cancelLabel={tc('close')}
+        confirmLabel={t('zeroFix')}
         confirmHref="/topics"
         onCancel={() => setNoRecipient(false)}
       >
         <ul className="space-y-1 font-mono text-sm tabular-nums text-[var(--text-primary)]">
           {estimate.noChannel > 0 && (
-            <li>
-              {estimate.noChannel} người thuộc {estimate.noChannelReason} nhưng chưa có kênh email active
-            </li>
+            <li>{t('zeroNoChannel', { count: estimate.noChannel, reason: estimate.noChannelReason ?? '' })}</li>
           )}
-          {estimate.optedOut > 0 && <li>{estimate.optedOut} người đã tắt topic này</li>}
-          {estimate.invalid > 0 && <li>{estimate.invalid} người email hỏng (invalid)</li>}
+          {estimate.optedOut > 0 && <li>{t('zeroOptedOut', { count: estimate.optedOut })}</li>}
+          {estimate.invalid > 0 && <li>{t('zeroInvalid', { count: estimate.invalid })}</li>}
           {estimate.noChannel + estimate.optedOut + estimate.invalid === 0 && (
-            <li>Topic chưa có binding nào.</li>
+            <li>{t('zeroNoBinding')}</li>
           )}
         </ul>
         <p className="text-xs leading-5 text-[var(--text-muted)]">
-          Đường API coi 0 người nhận là bình thường (<span className="font-mono">202</span> +{' '}
-          <span className="font-mono">no_recipient</span>). Đường tay thì chặn — vì bạn đang tin là đã gửi
-          xong.
+          {t.rich('zeroApiNote', { mono: (chunks) => <span className="font-mono">{chunks}</span> })}
         </p>
       </ConfirmDialog>
     </div>
@@ -195,12 +189,13 @@ function ComposerDraft() {
 }
 
 export function ComposerForbidden() {
+  const t = useTranslations('compose')
   return (
     <ForbiddenNotice
-      title="Không được phép"
-      description="App Admin chỉ được mở topic thuộc namespace của app."
+      title={t('forbiddenTitle')}
+      description={t('forbiddenBody')}
       backHref="/topics"
-      backLabel="Về danh sách chủ đề"
+      backLabel={t('forbiddenBack')}
     />
   )
 }

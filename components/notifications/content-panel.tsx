@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Monitor, Smartphone } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { MailFrame } from '@/components/mail-frame'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -18,6 +19,7 @@ const SAMPLE_VALUES: Record<string, string> = {
 
 /** 07 §B4 — nội dung đã gửi trong khung thiết bị; nhiều audience → tab theo template kèm số người. */
 export function ContentPanel({ notification }: { notification: Notification }) {
+  const tr = useTranslations('content')
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const c = notificationCounters(notification)
   const primary = templates.find((t) => templateLabel(t) === notification.template)
@@ -38,7 +40,7 @@ export function ContentPanel({ notification }: { notification: Notification }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-[var(--text-secondary)]">Bản đã gửi — footer opt-out do hệ thống chèn, có khoá.</p>
+        <p className="text-xs text-[var(--text-secondary)]">{tr('sentVersion')}</p>
         <ToggleGroup variant="outline" size="sm" value={[device]} onValueChange={(v) => setDevice((v[0] as 'desktop' | 'mobile' | undefined) ?? device)}>
           <ToggleGroupItem value="desktop" aria-label="Desktop">
             <Monitor /> Desktop
@@ -49,7 +51,7 @@ export function ContentPanel({ notification }: { notification: Notification }) {
         </ToggleGroup>
       </div>
       {variants.length === 0 && (
-        <MailFrame device={device} subject="(soạn nhanh)" body="Lần gửi này không dùng template." />
+        <MailFrame device={device} subject={tr('quickSubject')} body={tr('noTemplate')} />
       )}
       {variants.length === 1 && frameOf(variants[0])}
       {variants.length > 1 && (

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Clock } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -26,20 +27,21 @@ export function ScheduleDialog({
   onCancel: () => void
   onConfirm: (at: string) => void
 }) {
+  const t = useTranslations('schedule')
   const [at, setAt] = useState('')
   const late = at && outsideWorkingHours(at)
   return (
     <ConfirmDialog
       open={open}
-      title="Hẹn giờ gửi"
-      description="Nội dung khoá lại khi lưu lịch. Người nhận sẽ được giải lại từ đầu tại thời điểm chạy."
+      title={t('title')}
+      description={t('body')}
       facts={facts}
-      confirmLabel="Lưu lịch"
+      confirmLabel={t('save')}
       onCancel={onCancel}
       onConfirm={() => at && onConfirm(at)}
     >
       <div className="space-y-1">
-        <Label htmlFor="schedule-at">Thời điểm gửi</Label>
+        <Label htmlFor="schedule-at">{t('at')}</Label>
         <Input
           id="schedule-at"
           type="datetime-local"
@@ -52,8 +54,10 @@ export function ScheduleDialog({
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/10">
           <Clock />
           <AlertDescription className="text-[var(--solar)]">
-            Thư sẽ tới lúc <span className="font-mono tabular-nums">{formatTime(at)}</span>. Người nhận nội bộ
-            nhiều khả năng thấy phiền → dễ bấm Junk.
+            {t.rich('late', {
+              time: formatTime(at),
+              mono: (chunks) => <span className="font-mono tabular-nums">{chunks}</span>,
+            })}
           </AlertDescription>
         </Alert>
       )}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { ChevronLeft, ChevronRight, History, PlugZap, Search } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { loadNotificationsAction } from '@/app/notifications/actions'
 import { loadTopicsAction } from '@/app/topics/actions'
 import { useApp } from '@/components/app-context'
@@ -17,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AppLink } from '@/components/app-link'
 import type { NotificationSummaryDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
-import { NotificationOutcome, outcomeOf, templateLabelOf } from './notification-outcome'
+import { NotificationOutcome, templateLabelOf, useOutcomeOf } from './notification-outcome'
 
 type Row = NotificationSummaryDto & Record<string, unknown>
 
@@ -30,49 +31,53 @@ const PAGE_SIZE = 25
  */
 const MVP_STATUSES = ['queued', 'sending', 'sent', 'no_recipient', 'failed'] as const
 
-/** Mã người nhận dẫn sang trang chi tiết người đó — không mở ngăn chi tiết của dòng (`stopPropagation`). */
-const recipientColumn: Column<Row> = {
-  key: 'externalId',
-  label: 'Mã người nhận',
-  mono: true,
-  render: (n) =>
-    n.externalId ? (
-      <AppLink
-        href={`/users/${encodeURIComponent(n.externalId)}`}
-        onClick={(e) => e.stopPropagation()}
-        className="text-[var(--starlight)] underline-offset-2 hover:underline"
-      >
-        {n.externalId}
-      </AppLink>
-    ) : (
-      <span className="text-[var(--text-muted)]">—</span>
-    ),
-}
-
-const leadingColumns: Column<Row>[] = [
-  { key: 'createdAt', label: 'App gọi lúc', mono: true, render: (n) => fmtDateTime(n.createdAt) },
-  { key: 'topic', label: 'Chủ đề', mono: true, render: (n) => n.topic || '—' },
-  { key: 'template', label: 'Template', render: (n) => templateLabelOf(n) },
-]
-
-const trailingColumns: Column<Row>[] = [
-  {
-    key: 'status',
-    label: 'Trạng thái',
+/**
+ * Cột của bảng — dựng trong hook vì nhãn theo ngôn ngữ đang chọn. Mã người nhận dẫn sang trang
+ * chi tiết người đó — không mở ngăn chi tiết của dòng (`stopPropagation`).
+ */
+function useColumns(withRecipient: boolean): Column<Row>[] {
+  const t = useTranslations('notifications')
+  const outcomeOf = useOutcomeOf()
+  const recipientColumn: Column<Row> = {
+    key: 'externalId',
+    label: t('colRecipient'),
+    mono: true,
     render: (n) =>
-      n.status === 'no_recipient' ? (
-        <Tooltip>
-          <TooltipTrigger render={<span className="inline-flex" />}>
-            <StatusPill status={n.status} />
-          </TooltipTrigger>
-          <TooltipContent>Không gửi vì người nhận bị chặn. Đây là hệ thống làm đúng, không phải lỗi.</TooltipContent>
-        </Tooltip>
+      n.externalId ? (
+        <AppLink
+          href={`/users/${encodeURIComponent(n.externalId)}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-[var(--starlight)] underline-offset-2 hover:underline"
+        >
+          {n.externalId}
+        </AppLink>
       ) : (
-        <StatusPill status={n.status} />
+        <span className="text-[var(--text-muted)]">—</span>
       ),
-  },
-  { key: 'recipient', label: 'Kết cục', render: (n) => <span className="text-xs">{outcomeOf(n)}</span> },
-]
+  }
+  return [
+    { key: 'createdAt', label: t('colCreatedAt'), mono: true, render: (n) => fmtDateTime(n.createdAt) },
+    { key: 'topic', label: t('colTopic'), mono: true, render: (n) => n.topic || '—' },
+    { key: 'template', label: t('colTemplate'), render: (n) => templateLabelOf(n) },
+    ...(withRecipient ? [recipientColumn] : []),
+    {
+      key: 'status',
+      label: t('colStatus'),
+      render: (n) =>
+        n.status === 'no_recipient' ? (
+          <Tooltip>
+            <TooltipTrigger render={<span className="inline-flex" />}>
+              <StatusPill status={n.status} />
+            </TooltipTrigger>
+            <TooltipContent>{t('noRecipientTip')}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <StatusPill status={n.status} />
+        ),
+    },
+    { key: 'recipient', label: t('colOutcome'), render: (n) => <span className="text-xs">{outcomeOf(n)}</span> },
+  ]
+}
 
 /**
  * UC-005 §A — Lịch sử gửi, đọc dữ liệu thật (`implementation_plan.md` §5).
@@ -90,6 +95,9 @@ export function NotificationsTable({
   initialExternalId?: string
   recipient?: string
 }) {
+  const t = useTranslations('notifications')
+  const tc = useTranslations('common')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const appId = app.app_id
 
@@ -115,9 +123,9 @@ export function NotificationsTable({
       setLoadError(null)
     } else {
       setRows(null)
-      setLoadError(`${result.message} (mã: ${result.code})`)
+      setLoadError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId, offset, status, topic, externalId])
+  }, [appId, offset, status, topic, externalId, te])
 
   useEffect(() => {
     startTransition(load)
@@ -148,8 +156,8 @@ export function NotificationsTable({
     setSearched('')
   }
 
+  const columns = useColumns(!recipient)
   const filtered = Boolean(status || topic || (!recipient && externalId))
-  const columns = [...leadingColumns, ...(recipient ? [] : [recipientColumn]), ...trailingColumns]
   const clear = () => {
     setStatus('')
     setTopic('')
@@ -162,7 +170,7 @@ export function NotificationsTable({
   if (loadError) {
     return (
       <Panel className="overflow-hidden">
-        <EmptyState icon={PlugZap} title="Không đọc được dữ liệu từ API" description={loadError} />
+        <EmptyState icon={PlugZap} title={tc('loadErrorTitle')} description={loadError} />
       </Panel>
     )
   }
@@ -173,7 +181,7 @@ export function NotificationsTable({
         {!recipient && (
           <div className="space-y-1">
             <Label htmlFor="ntf-external" className="text-xs">
-              Mã người nhận
+              {t('colRecipient')}
             </Label>
             <div className="flex gap-2">
               <Input
@@ -185,7 +193,7 @@ export function NotificationsTable({
                   setOffset(0)
                   setSearched(draft.trim())
                 }}
-                placeholder="khớp đúng, vd. NV-0123"
+                placeholder={t('recipientPlaceholder')}
                 className="w-56 font-mono"
               />
               <Button
@@ -197,14 +205,14 @@ export function NotificationsTable({
                   setSearched(draft.trim())
                 }}
               >
-                <Search /> Tìm
+                <Search /> {tc('search')}
               </Button>
             </div>
           </div>
         )}
         <div className="space-y-1">
           <Label htmlFor="ntf-status" className="text-xs">
-            Trạng thái
+            {t('colStatus')}
           </Label>
           <NativeSelect
             id="ntf-status"
@@ -215,7 +223,7 @@ export function NotificationsTable({
             }}
             className="font-mono"
           >
-            <NativeSelectOption value="">Tất cả</NativeSelectOption>
+            <NativeSelectOption value="">{tc('all')}</NativeSelectOption>
             {MVP_STATUSES.map((s) => (
               <NativeSelectOption key={s} value={s}>
                 {s}
@@ -225,7 +233,7 @@ export function NotificationsTable({
         </div>
         <div className="space-y-1">
           <Label htmlFor="ntf-topic" className="text-xs">
-            Chủ đề
+            {t('colTopic')}
           </Label>
           <NativeSelect
             id="ntf-topic"
@@ -236,7 +244,7 @@ export function NotificationsTable({
             }}
             className="font-mono"
           >
-            <NativeSelectOption value="">Tất cả</NativeSelectOption>
+            <NativeSelectOption value="">{tc('all')}</NativeSelectOption>
             {topicKeys.map((key) => (
               <NativeSelectOption key={key} value={key}>
                 {key}
@@ -246,10 +254,10 @@ export function NotificationsTable({
         </div>
         {filtered && (
           <Button variant="ghost" size="sm" onClick={clear}>
-            Bỏ lọc
+            {tc('clearFilters')}
           </Button>
         )}
-        <span className="ml-auto pb-2 font-mono text-xs tabular-nums text-[var(--text-muted)]">{total} lần gửi</span>
+        <span className="ml-auto pb-2 font-mono text-xs tabular-nums text-[var(--text-muted)]">{t('count', { count: total })}</span>
       </div>
 
       <DataTable<Row>
@@ -261,17 +269,17 @@ export function NotificationsTable({
         empty={
           <EmptyState
             icon={History}
-            title={filtered ? 'Không có lần gửi khớp bộ lọc' : 'Chưa có lần gửi nào'}
+            title={filtered ? t('emptyFilteredTitle') : t('emptyTitle')}
             description={
               recipient
                 ? filtered
-                  ? 'Nới bộ lọc trạng thái hoặc chủ đề.'
-                  : `${app.name} chưa gửi thư nào cho «${recipient}».`
+                  ? t('emptyLoosen')
+                  : t('emptyRecipient', { app: app.name, id: recipient })
                 : filtered
                   ? externalId
-                    ? `Không có thư nào gửi cho «${externalId}» khớp bộ lọc. Mã phải khớp đúng từng ký tự.`
-                    : 'Nới bộ lọc trạng thái hoặc chủ đề.'
-                  : `${app.name} chưa gọi POST /v1/notifications lần nào.`
+                    ? t('emptyRecipientFiltered', { id: externalId })
+                    : t('emptyLoosen')
+                  : t('emptyApp', { app: app.name })
             }
           />
         }
@@ -289,10 +297,10 @@ export function NotificationsTable({
               disabled={offset === 0 || pending}
               onClick={() => setOffset((v) => Math.max(0, v - PAGE_SIZE))}
             >
-              <ChevronLeft /> Trước
+              <ChevronLeft /> {tc('prev')}
             </Button>
             <Button variant="outline" size="sm" disabled={to >= total || pending} onClick={() => setOffset((v) => v + PAGE_SIZE)}>
-              Sau <ChevronRight data-icon="inline-end" />
+              {tc('next')} <ChevronRight data-icon="inline-end" />
             </Button>
           </span>
         </div>

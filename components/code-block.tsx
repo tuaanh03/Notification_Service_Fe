@@ -1,5 +1,6 @@
 'use client'
 import { Copy } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Panel } from './panel'
@@ -15,6 +16,7 @@ export function CodeBlock({
   copyable?: boolean
   lineNumbers?: boolean
 }) {
+  const tc = useTranslations('common')
   return (
     <Panel className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-[var(--orbit)] px-3 py-2 text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
@@ -25,11 +27,11 @@ export function CodeBlock({
             size="sm"
             onClick={() => {
               navigator.clipboard?.writeText(value)
-              toast.success('Đã sao chép')
+              toast.success(tc('copied'))
             }}
           >
             <Copy />
-            Sao chép
+            {tc('copy')}
           </Button>
         )}
       </div>

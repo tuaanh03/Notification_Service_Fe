@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ChevronRight, Info, ShieldAlert, Users } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Panel } from '@/components/panel'
 import { ResolutionPipeline } from '@/components/resolution-pipeline'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -22,6 +23,7 @@ export function RecipientBlock({
   /** bản nháp đã khoá (đang gửi / đã hẹn giờ) — UC-008: bấm Gửi là khoá nháp */
   locked?: boolean
 }) {
+  const t = useTranslations('recipientBlock')
   const [drawer, setDrawer] = useState(false)
   const { app } = useApp()
   const selected = topic.length > 0
@@ -45,10 +47,10 @@ export function RecipientBlock({
             <p className="font-mono text-[10px] uppercase tracking-[.2em] text-[var(--starlight)]">
               block 01
             </p>
-            <h2 className="font-heading text-lg font-semibold">Gửi cho ai</h2>
+            <h2 className="font-heading text-lg font-semibold">{t('title')}</h2>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="compose-topic">Topic</Label>
+            <Label htmlFor="compose-topic">{t('topic')}</Label>
             <NativeSelect
               id="compose-topic"
               value={topic}
@@ -57,7 +59,7 @@ export function RecipientBlock({
               className="w-full font-mono"
             >
               <NativeSelectOption value="">
-                Chọn topic active trong namespace {app.namespace}
+                {t('chooseTopic', { ns: app.namespace })}
               </NativeSelectOption>
               {composableTopics(app.namespace).map((t) => (
                 <NativeSelectOption key={t.topic_key} value={t.topic_key}>
@@ -69,7 +71,7 @@ export function RecipientBlock({
           <div className="rounded-xl border border-[var(--starlight)]/20 bg-[var(--starlight)]/[.04] p-4">
             <div className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
               <Users className="size-4" />
-              {selected ? `Topic ${topic}` : 'Chưa chọn topic'}
+              {selected ? t('selected', { topic }) : t('noTopic')}
             </div>
             {selected && (
               <>
@@ -80,18 +82,18 @@ export function RecipientBlock({
                   <div className="h-full bg-[var(--starlight)]/10" style={{ width: pct(est.excluded) }} />
                 </div>
                 <div className="mt-3 grid gap-1 font-mono text-xs tabular-nums">
-                  <span className="text-[var(--text-primary)]">{est.active} người có kênh email active</span>
-                  <span className="text-[var(--text-muted)]">− {est.optedOut} người đã tắt topic này</span>
-                  <span className="text-[var(--text-muted)]">− {est.invalid} người email hỏng (invalid)</span>
+                  <span className="text-[var(--text-primary)]">{t('active', { count: est.active })}</span>
+                  <span className="text-[var(--text-muted)]">{t('optedOut', { count: est.optedOut })}</span>
+                  <span className="text-[var(--text-muted)]">{t('invalid', { count: est.invalid })}</span>
                   {est.excluded > 0 && (
                     <span className="text-[var(--text-muted)]">
-                      − {est.excluded} người bị binding excluded
+                      {t('excluded', { count: est.excluded })}
                     </span>
                   )}
-                  <strong className="text-[var(--starlight)]">→ Dự kiến gửi {est.expected}</strong>
+                  <strong className="text-[var(--starlight)]">{t('expected', { count: est.expected })}</strong>
                 </div>
                 <Button variant="link" size="sm" className="mt-2 px-0" onClick={() => setDrawer(!drawer)}>
-                  Xem chi tiết <ChevronRight data-icon="inline-end" />
+                  {t('details')} <ChevronRight data-icon="inline-end" />
                 </Button>
                 {drawer && (
                   <div className="mt-4">
@@ -104,17 +106,16 @@ export function RecipientBlock({
           <Alert className="border-[var(--orbit)] bg-transparent text-[var(--text-muted)]">
             <Info />
             <AlertDescription className="text-xs text-[var(--text-muted)]">
-              Người nhận do topic quyết. Cần gửi cho một nhóm rời rạc thì tạo topic hành chính và quản bằng
-              binding cá nhân.
+              {t('topicDecides')}
               <br />
-              Đây là ước lượng tại thời điểm soạn. Số thật chốt lúc gửi.
+              {t('estimateNote')}
             </AlertDescription>
           </Alert>
           {mandatory && (
             <Alert className="border-[var(--solar)]/25 bg-[var(--solar)]/10 text-[var(--solar)]">
               <ShieldAlert />
               <AlertDescription className="text-xs text-[var(--solar)]">
-                Topic bắt buộc — người nhận không tắt được. Lần gửi này sẽ cần Super Admin duyệt.
+                {t('mandatory')}
               </AlertDescription>
             </Alert>
           )}

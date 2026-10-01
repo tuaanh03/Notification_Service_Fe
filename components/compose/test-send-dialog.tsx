@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -22,6 +23,7 @@ export function TestSendDialog({
   subject: string
   onClose: () => void
 }) {
+  const t = useTranslations('testSend')
   const { app } = useApp()
   const reviewers = app.reviewers ?? []
   const [picked, setPicked] = useState<string[]>([])
@@ -29,30 +31,29 @@ export function TestSendDialog({
   return (
     <ConfirmDialog
       open={mode !== null}
-      title={mode === 'me' ? 'Gửi thử cho tôi' : 'Gửi thử cho nhóm rà soát'}
+      title={mode === 'me' ? t('titleMe') : t('titleReviewers')}
       description={
         mode === 'me'
-          ? `Gửi tới ${CURRENT_USER.email}. Không đụng tới subscriber nào của topic.`
-          : 'Chỉ chọn trong nhóm rà soát app đã khai. Không đụng tới subscriber nào.'
+          ? t('bodyMe', { email: CURRENT_USER.email })
+          : t('bodyReviewers')
       }
       facts={[
-        ['Subject', `[BẢN THỬ] ${subject || '(chưa có nội dung)'}`],
-        ['Người nhận', `${targets.length} người (test_send)`],
+        // Tiền tố `[BẢN THỬ]` là chữ trên THƯ gửi đi (spec UC-008 §D), không phải chữ giao diện — giữ nguyên.
+        [t('factSubject'), `[BẢN THỬ] ${subject || t('noContent')}`],
+        [t('factRecipients'), t('recipientsValue', { count: targets.length })],
       ]}
-      confirmLabel={`Gửi thử cho ${targets.length} người`}
+      confirmLabel={t('confirm', { count: targets.length })}
       onCancel={onClose}
       onConfirm={() => {
         if (targets.length === 0) return
-        toast.success('Đã gửi bản thử', {
-          description: `${targets.join(', ')} · ghi log test_send, không tính vào báo cáo thật.`,
-        })
+        toast.success(t('sent'), { description: t('sentBody', { targets: targets.join(', ') }) })
         onClose()
       }}
     >
       {mode === 'reviewers' && (
         <div className="space-y-2">
           {reviewers.length === 0 && (
-            <p className="text-xs text-[var(--text-muted)]">App chưa khai nhóm rà soát (settings → Hồ sơ).</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('noReviewers')}</p>
           )}
           {reviewers.map((email) => (
             <div key={email} className="flex items-center gap-2">

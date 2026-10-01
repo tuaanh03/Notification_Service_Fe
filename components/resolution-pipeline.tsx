@@ -3,6 +3,7 @@
 import { useId, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Panel } from '@/components/panel'
 import { ReasonBadge } from '@/components/reason-badge'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import { estimateRecipients } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 
 /** 5 bước cố định (UC-002 §C4, BR-5) — số từ một helper, không tính lại ở đây. */
-function pipelineSteps(topicKey: string) {
+function pipelineSteps(topicKey: string, t: ReturnType<typeof useTranslations<'pipeline'>>) {
   const e = estimateRecipients(topicKey)
   const bindings = e.bindings ?? 0
   const expanded = e.expanded ?? e.active
@@ -19,21 +20,21 @@ function pipelineSteps(topicKey: string) {
   return {
     e,
     steps: [
-      { count: bindings, unit: 'binding', label: 'Lấy binding included' },
-      { count: expanded, unit: 'người', label: 'Bung role / group qua Directory Resolver' },
+      { count: bindings, unit: t('unitBinding'), label: t('step1') },
+      { count: expanded, unit: t('unitPeople'), label: t('step2') },
       {
         count: deduped,
-        unit: 'người',
-        label: 'Gộp trùng theo user_id',
-        note: expanded > deduped ? `${expanded - deduped} người trúng 2 binding — nhận đúng 1 lần` : undefined,
+        unit: t('unitPeople'),
+        label: t('step3'),
+        note: expanded > deduped ? t('step3Note', { count: expanded - deduped }) : undefined,
       },
       {
         count: afterSubtract,
-        unit: 'người',
-        label: 'Trừ excluded và người đã opt-out',
+        unit: t('unitPeople'),
+        label: t('step4'),
         note: `${e.excluded} excluded, ${e.optedOut} opted_out`,
       },
-      { count: e.expected, unit: 'người nhận', label: 'Map sang subscription active khớp default_channels' },
+      { count: e.expected, unit: t('unitRecipients'), label: t('step5') },
     ],
   }
 }
@@ -56,27 +57,32 @@ export function ResolutionPipeline({ topicKey, readOnly }: { topicKey: string; r
   const reduced = useReducedMotion()
   // id SVG duy nhất — Composer và Topics có thể render 2 pipeline cùng trang
   const uid = useId().replace(/:/g, '')
-  const { e, steps } = pipelineSteps(topicKey)
+  const t = useTranslations('pipeline')
+  const { e, steps } = pipelineSteps(topicKey, t)
   const max = Math.max(...steps.slice(1).map((s) => s.count), 1)
-  const groups: [string, string, string[]][] = [
-    ['Sẽ nhận', `${e.expected} người nhận`, ['tran-minh@enterprise.vn', 'hoa.le@enterprise.vn']],
-    ['Bị trừ ra', `${e.excluded + e.optedOut} người`, ['user:le-hoa · excluded', 'user-07 · opted_out']],
-    ['Không có kênh active', `${e.noChannel + e.invalid} người`, ['legacy.user@enterprise.vn']],
+  // [khoá nhóm, nhãn, số, danh sách mẫu] — khoá cố định để trạng thái mở/đóng không phụ thuộc ngôn ngữ.
+  const groups: [string, string, string, string[]][] = [
+    ['receive', t('willReceive'), t('countRecipients', { count: e.expected }), ['tran-minh@enterprise.vn', 'hoa.le@enterprise.vn']],
+    ['deducted', t('deducted'), t('countPeople', { count: e.excluded + e.optedOut }), ['user:le-hoa · excluded', 'user-07 · opted_out']],
+    ['noChannel', t('noChannel'), t('countPeople', { count: e.noChannel + e.invalid }), ['legacy.user@enterprise.vn']],
   ]
   return (
     <div className="space-y-4">
       {!readOnly && (
         <Button variant="outline" onClick={() => setOpen(!open)}>
-          <RefreshCw /> Giải người nhận (thử)
+          <RefreshCw /> {t('run')}
         </Button>
       )}
       {open && (
         <Panel glow className="space-y-5 p-5">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[.2em] text-[var(--starlight)]">resolution preview</p>
-            <h3 className="mt-1 font-heading text-lg font-semibold">Pipeline bung người nhận</h3>
+            <h3 className="mt-1 font-heading text-lg font-semibold">{t('title')}</h3>
             <p className="mt-1 text-xs text-[var(--text-secondary)]">
-              <span className="font-mono text-[var(--starlight)]">{topicKey}</span> · không lưu danh sách người
+              {t.rich('notStored', {
+                topic: topicKey,
+                mono: (chunks) => <span className="font-mono text-[var(--starlight)]">{chunks}</span>,
+              })}
             </p>
           </div>
 
@@ -148,11 +154,11 @@ export function ResolutionPipeline({ topicKey, readOnly }: { topicKey: string; r
           </ol>
 
           <div className="grid gap-2 md:grid-cols-3">
-            {groups.map(([title, count, items]) => {
-              const isOpen = lists[title]
+            {groups.map(([key, title, count, items]) => {
+              const isOpen = lists[key]
               return (
-                <div key={title} className="rounded-xl border border-[var(--orbit)] bg-[var(--void)]/40">
-                  <Button variant="ghost" className="h-auto w-full justify-between p-3 text-left" onClick={() => setLists({ ...lists, [title]: !isOpen })}>
+                <div key={key} className="rounded-xl border border-[var(--orbit)] bg-[var(--void)]/40">
+                  <Button variant="ghost" className="h-auto w-full justify-between p-3 text-left" onClick={() => setLists({ ...lists, [key]: !isOpen })}>
                     <span>
                       <span className="block text-xs text-[var(--text-secondary)]">{title}</span>
                       <span className="font-mono text-sm tabular-nums text-[var(--text-primary)]">{count}</span>
@@ -164,7 +170,7 @@ export function ResolutionPipeline({ topicKey, readOnly }: { topicKey: string; r
                       {items.map((item) => (
                         <div key={item} className="flex items-center justify-between gap-2">
                           <span className="font-mono text-[var(--text-secondary)]">{item}</span>
-                          {title === 'Bị trừ ra' && <ReasonBadge reason={item.includes('excluded') ? 'excluded' : 'opted_out'} />}
+                          {key === 'deducted' && <ReasonBadge reason={item.includes('excluded') ? 'excluded' : 'opted_out'} />}
                         </div>
                       ))}
                     </div>
@@ -174,7 +180,7 @@ export function ResolutionPipeline({ topicKey, readOnly }: { topicKey: string; r
             })}
           </div>
           <p className={cn('border-t border-[var(--orbit)] pt-3 text-xs text-[var(--text-muted)]')}>
-            Đây là kết quả tại thời điểm bấm. Lúc gửi thật hệ thống chạy lại đúng 5 bước này.
+            {t('atClick')}
           </p>
         </Panel>
       )}

@@ -1,10 +1,10 @@
 'use client'
 import { useId } from 'react'
+import { useTranslations } from 'next-intl'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import {
   BRANCHES_NOT_TAKEN,
-  TERMINAL_CAPTIONS,
   TERMINAL_STATUSES,
   lifecycleOf,
   mailLeft,
@@ -13,6 +13,14 @@ import {
 import { fmtDateTime } from '@/lib/time'
 import { statusColors, type NotificationStatus } from '@/lib/theme'
 import { cn } from '@/lib/utils'
+
+/** `mailLeft()` của mock trả chữ tiếng Việt — đổi sang khoá dịch ở đây, không sửa mock. */
+const LEFT_KEY = { Chưa: 'left_no', 'Một phần': 'left_partial', Rồi: 'left_yes' } as const
+
+/** Trạng thái kết thúc có câu giải thích (`lifecycle.cap_*`). */
+const CAPTIONED = ['sent', 'partially_failed', 'stopped', 'cancelled', 'no_recipient', 'failed'] as const
+type Captioned = (typeof CAPTIONED)[number]
+const isCaptioned = (s: string): s is Captioned => (CAPTIONED as readonly string[]).includes(s)
 
 const W = 1000
 const H = 190
@@ -27,6 +35,7 @@ const STUB_DY = 46
  * useReducedMotion vì SSR trả null còn client trả true → hydration mismatch (#418).
  */
 export function LifecycleTimeline({ notification, compact = false }: { notification: Notification; compact?: boolean }) {
+  const t = useTranslations('lifecycle')
   const uid = useId()
   const steps = lifecycleOf(notification)
   const n = steps.length
@@ -42,7 +51,7 @@ export function LifecycleTimeline({ notification, compact = false }: { notificat
   return (
     <div className={cn('min-w-0 max-w-full space-y-3', compact && 'space-y-1')} data-slot="lifecycle-timeline" data-status={last.status}>
       <div className="w-full max-w-full overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${height}`} className={cn('w-full', compact ? 'min-w-[560px]' : 'min-w-[720px]')} role="img" aria-label={`Vòng đời: ${steps.map((s) => s.status).join(' → ')}`}>
+        <svg viewBox={`0 0 ${W} ${height}`} className={cn('w-full', compact ? 'min-w-[560px]' : 'min-w-[720px]')} role="img" aria-label={t('aria', { steps: steps.map((s) => s.status).join(' → ') })}>
           <defs>
             <linearGradient id={`${uid}-horizon`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="var(--pulsar)" stopOpacity="0" />
@@ -93,7 +102,7 @@ export function LifecycleTimeline({ notification, compact = false }: { notificat
                   className="font-mono"
                   textAnchor="start"
                 >
-                  Ranh giới không thu hồi — lô đầu tiên rời hàng đợi
+                  {t('horizon')}
                 </text>
               )}
             </g>
@@ -126,11 +135,13 @@ export function LifecycleTimeline({ notification, compact = false }: { notificat
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill status={last.status} />
-            {terminal && <span className="text-[var(--text-secondary)]">{TERMINAL_CAPTIONS[last.status as NotificationStatus]}</span>}
+            {terminal && isCaptioned(last.status) && (
+              <span className="text-[var(--text-secondary)]">{t(`cap_${last.status}`)}</span>
+            )}
           </div>
           {/* legend: câu hỏi duy nhất quan trọng */}
           <Panel className="flex items-center gap-3 px-3 py-2 text-xs" data-testid="mail-left">
-            <span className="text-[var(--text-secondary)]">Đã có thư nào rời hệ thống chưa?</span>
+            <span className="text-[var(--text-secondary)]">{t('question')}</span>
             {(['Chưa', 'Một phần', 'Rồi'] as const).map((k) => (
               <span
                 key={k}
@@ -146,7 +157,7 @@ export function LifecycleTimeline({ notification, compact = false }: { notificat
                 )}
                 aria-current={k === left ? 'true' : undefined}
               >
-                {k}
+                {t(LEFT_KEY[k])}
               </span>
             ))}
           </Panel>

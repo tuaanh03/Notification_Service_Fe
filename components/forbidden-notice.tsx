@@ -1,5 +1,6 @@
 import { AppLink } from '@/components/app-link'
 import { ShieldOff } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { PageHeader } from '@/components/page-header'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ export function ForbiddenNotice({
   backLabel: string
   breadcrumb?: { label: string; href?: string }[]
 }) {
+  const t = useTranslations('forbidden')
   return (
     <div className="space-y-6">
       <PageHeader title={`${code} — ${title}`} subtitle={description} />
@@ -30,7 +32,7 @@ export function ForbiddenNotice({
         <ShieldOff />
         <AlertTitle className="font-mono text-[var(--supernova)]">{code}</AlertTitle>
         <AlertDescription className="text-[var(--text-primary)]">
-          {description} Sự kiện đã được ghi vào audit log.
+          {t('audited', { description })}
         </AlertDescription>
         <Button variant="link" render={<AppLink href={backHref} />} className="justify-self-start px-0">
           {backLabel}

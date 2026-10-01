@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Ban, CalendarClock, Undo2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
@@ -12,23 +13,24 @@ import { MOCK_NOW, scheduledSends, type ScheduledSend } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
-/** Đếm ngược từ MOCK_NOW (không Date.now lúc render) — `2h 15m` / `đã quá giờ` */
-const countdown = (runAt: string) => {
+/** Đếm ngược từ MOCK_NOW (không Date.now lúc render) — `2h 15m` / `overdue` (chữ quá giờ do màn truyền vào). */
+const countdown = (runAt: string, overdue: string) => {
   const diff = Math.round((new Date(runAt).getTime() - new Date(MOCK_NOW).getTime()) / 60_000)
-  if (diff <= 0) return 'đã quá giờ'
+  if (diff <= 0) return overdue
   return `${Math.floor(diff / 60)}h ${String(diff % 60).padStart(2, '0')}m`
 }
 
 /** 07 §C — card lần gửi đã lên lịch; hai lối ra khác nhau (UC-008 §E); có 1 card failed để phủ exception. */
 export function ScheduledCards() {
+  const t = useTranslations('scheduled')
   const [items, setItems] = useState<ScheduledSend[]>(scheduledSends)
   const [pending, setPending] = useState<{ item: ScheduledSend; action: 'unschedule' | 'cancel' } | null>(null)
   if (items.length === 0)
-    return <EmptyState icon={CalendarClock} title="Không có lần gửi nào chờ" description="Hẹn giờ từ Composer → Hẹn giờ." />
+    return <EmptyState icon={CalendarClock} title={t('emptyTitle')} description={t('emptyBody')} />
   const commit = () => {
     if (!pending) return
     setItems((prev) => prev.filter((i) => i.id !== pending.item.id))
-    toast.success(pending.action === 'unschedule' ? 'Đã huỷ lịch — bản nháp mở lại để sửa' : 'Đã bỏ hẳn lần gửi', {
+    toast.success(pending.action === 'unschedule' ? t('unscheduled') : t('dropped'), {
       description: `${pending.item.id} → ${pending.action === 'unschedule' ? 'draft' : 'cancelled'}`,
     })
     setPending(null)
@@ -48,17 +50,17 @@ export function ScheduledCards() {
                 <StatusPill status={failed ? 'failed' : 'scheduled'} />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className={cn('font-mono text-2xl tabular-nums', failed ? 'text-[var(--supernova)]' : 'text-[var(--pulsar)]')}>{countdown(s.run_at)}</span>
+                <span className={cn('font-mono text-2xl tabular-nums', failed ? 'text-[var(--supernova)]' : 'text-[var(--pulsar)]')}>{countdown(s.run_at, t('overdue'))}</span>
                 <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{fmtDateTime(s.run_at)}</span>
               </div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
                 <dt className="text-[var(--text-muted)]">template</dt>
                 <dd className="font-mono">{s.template}</dd>
-                <dt className="text-[var(--text-muted)]">người nhận</dt>
+                <dt className="text-[var(--text-muted)]">{t('recipients')}</dt>
                 <dd className="font-mono tabular-nums">
-                  ~{s.estimate} <span className="text-[var(--text-muted)]">(ước lượng)</span>
+                  ~{s.estimate} <span className="text-[var(--text-muted)]">{t('estimate')}</span>
                 </dd>
-                <dt className="text-[var(--text-muted)]">người đặt</dt>
+                <dt className="text-[var(--text-muted)]">{t('author')}</dt>
                 <dd>{s.author}</dd>
               </dl>
               {failed ? (
@@ -67,15 +69,15 @@ export function ScheduledCards() {
                 </Alert>
               ) : (
                 <p className="text-xs text-[var(--text-secondary)]">
-                  Người nhận sẽ được giải lại từ đầu lúc chạy, không dùng ước lượng lúc soạn.
+                  {t('reresolve')}
                 </p>
               )}
               <div className="mt-auto flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => setPending({ item: s, action: 'unschedule' })}>
-                  <Undo2 /> {failed ? 'Mở lại để sửa' : 'Huỷ lịch để sửa'}
+                  <Undo2 /> {failed ? t('reopen') : t('unscheduleToEdit')}
                 </Button>
                 <Button variant="destructive" size="sm" onClick={() => setPending({ item: s, action: 'cancel' })}>
-                  <Ban /> Bỏ hẳn
+                  <Ban /> {t('drop')}
                 </Button>
               </div>
             </Panel>
@@ -85,14 +87,14 @@ export function ScheduledCards() {
       <ConfirmDialog
         open={pending !== null}
         tone={pending?.action === 'cancel' ? 'blocking' : 'warning'}
-        title={pending?.action === 'cancel' ? 'Bỏ hẳn lần gửi?' : 'Huỷ lịch để sửa?'}
+        title={pending?.action === 'cancel' ? t('dropTitle') : t('unscheduleTitle')}
         description={
           pending?.action === 'cancel'
-            ? 'Lần gửi chuyển sang cancelled. Bản nháp không giữ lại.'
-            : 'Lần gửi trở về draft, nội dung mở khoá để sửa rồi hẹn giờ lại.'
+            ? t('dropBody')
+            : t('unscheduleBody')
         }
-        facts={pending ? [['topic', pending.item.topic_key], ['người nhận', `~${pending.item.estimate} (ước lượng)`], ['template', pending.item.template]] : []}
-        confirmLabel={pending?.action === 'cancel' ? 'Bỏ hẳn' : 'Huỷ lịch'}
+        facts={pending ? [['topic', pending.item.topic_key], [t('recipients'), t('estimateFact', { count: pending.item.estimate })], ['template', pending.item.template]] : []}
+        confirmLabel={pending?.action === 'cancel' ? t('drop') : t('unschedule')}
         onConfirm={commit}
         onCancel={() => setPending(null)}
       />

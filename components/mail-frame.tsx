@@ -1,4 +1,5 @@
 import { Lock } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -27,7 +28,9 @@ export function MailFrame({
   footerNote?: string
   className?: string
 }) {
-  const lock = <Lock className="size-3" aria-label="Footer do hệ thống chèn" />
+  const t = useTranslations('mail')
+  // Chân thư bên dưới ("Thông báo nội bộ · …") là NỘI DUNG THƯ mô phỏng, không phải chữ giao diện — không dịch.
+  const lock = <Lock className="size-3" aria-label={t('footerLock')} />
   return (
     <div
       data-slot="mail-frame"

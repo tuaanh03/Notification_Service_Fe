@@ -1,5 +1,6 @@
 import { AppLink } from '@/components/app-link'
 import { BookOpen } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
 import { NotificationsTable } from '@/components/notifications/notifications-table'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
@@ -8,14 +9,15 @@ import { Button } from '@/components/ui/button'
 // tin) ở trang chi tiết `/users/[id]`.
 export default async function Page({ searchParams }: { searchParams: Promise<{ externalId?: string | string[] }> }) {
   const { externalId } = await searchParams
+  const t = await getTranslations('notifications')
   return (
     <>
       <PageHeader
-        title="Lịch sử gửi"
-        subtitle="Mỗi dòng là một lần app service gọi POST /v1/notifications. Màn này chỉ đọc."
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <Button variant="outline" render={<AppLink href="/notifications/errors" />}>
-            <BookOpen /> Mã lỗi API
+            <BookOpen /> {t('errorCodes')}
           </Button>
         }
       />

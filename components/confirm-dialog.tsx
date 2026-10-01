@@ -2,6 +2,7 @@
 
 import { AppLink } from '@/components/app-link'
 import { AlertTriangle, Ban } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -46,11 +47,12 @@ export function ConfirmDialog({
   tone = 'warning',
   onConfirm,
   onCancel,
-  confirmLabel = 'Xác nhận',
+  confirmLabel,
   confirmHref,
-  cancelLabel = 'Hủy',
+  cancelLabel,
   confirmDisabled = false,
 }: ConfirmDialogProps) {
+  const tc = useTranslations('common')
   const Icon = tone === 'blocking' ? Ban : AlertTriangle
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
@@ -88,15 +90,15 @@ export function ConfirmDialog({
         {children}
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel}>
-            {cancelLabel}
+            {cancelLabel ?? tc('cancel')}
           </Button>
           {confirmHref ? (
             <Button render={<AppLink href={confirmHref} />} onClick={onCancel}>
-              {confirmLabel}
+              {confirmLabel ?? tc('confirm')}
             </Button>
           ) : (
             <Button type="button" onClick={onConfirm} disabled={confirmDisabled}>
-              {confirmLabel}
+              {confirmLabel ?? tc('confirm')}
             </Button>
           )}
         </DialogFooter>

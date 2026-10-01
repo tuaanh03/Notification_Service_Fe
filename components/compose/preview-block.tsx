@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { FlaskConical, Monitor, Smartphone, Users } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { MailFrame } from '@/components/mail-frame'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -38,6 +39,8 @@ export function PreviewBlock({
   onOpen: () => void
   onUnresolved: (vars: string[]) => void
 }) {
+  const t = useTranslations('previewBlock')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [testMode, setTestMode] = useState<TestSendMode>(null)
   useEffect(() => onOpen(), [onOpen])
@@ -50,8 +53,8 @@ export function PreviewBlock({
   const frame = (
     <MailFrame
       device={device}
-      subject={hasContent ? subject || '(không có subject)' : 'Chưa có nội dung'}
-      body={hasContent ? body : 'Chọn template hoặc soạn nhanh ở block 2.'}
+      subject={hasContent ? subject || t('noSubject') : t('noContent')}
+      body={hasContent ? body : t('noContentBody')}
     />
   )
   return (
@@ -67,7 +70,7 @@ export function PreviewBlock({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[.2em] text-[var(--starlight)]">block 03</p>
-              <h2 className="font-heading text-lg font-semibold">Xem thử</h2>
+              <h2 className="font-heading text-lg font-semibold">{t('blockTitle')}</h2>
             </div>
             <ToggleGroup
               variant="outline"
@@ -86,21 +89,21 @@ export function PreviewBlock({
           {unresolved.length > 0 && (
             <Alert variant="destructive" className="border-[var(--supernova)]/40 bg-[var(--supernova)]/10">
               <AlertDescription className="text-[var(--supernova)]">
-                Còn {unresolved.length} biến chưa render:{' '}
-                <span className="font-mono">{unresolved.map((v) => `{{${v}}}`).join(' ')}</span> — Gửi bị khoá.
+                {t.rich('unresolved', {
+                  count: unresolved.length,
+                  vars: unresolved.map((v) => `{{${v}}}`).join(' '),
+                  mono,
+                })}
               </AlertDescription>
             </Alert>
           )}
           {topic === 'hypervisor.warning_resources' && content.mode === 'template' ? (
             <Tabs defaultValue="action">
               <TabsList>
-                <TabsTrigger value="action">Bản hành động · 11</TabsTrigger>
-                <TabsTrigger value="readonly">Bản theo dõi · 5</TabsTrigger>
+                <TabsTrigger value="action">{t('actionVersion')}</TabsTrigger>
+                <TabsTrigger value="readonly">{t('readonlyVersion')}</TabsTrigger>
               </TabsList>
-              <p className="mt-2 text-xs text-[var(--text-muted)]">
-                11 người nhận bản có nút hành động (<span className="font-mono">vm_high_load v2</span>) · 5 người
-                nhận bản theo dõi (<span className="font-mono">vm_high_load_readonly v1</span>)
-              </p>
+              <p className="mt-2 text-xs text-[var(--text-muted)]">{t.rich('audienceSplit', { mono })}</p>
               <TabsContent value="action" className="mt-3">
                 {frame}
               </TabsContent>
@@ -114,16 +117,13 @@ export function PreviewBlock({
           {/* UC-008 §D — gửi thử: chỉ tôi hoặc nhóm rà soát khai sẵn, không có ô email */}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" disabled={!hasContent} onClick={() => setTestMode('me')}>
-              <FlaskConical /> Gửi thử cho tôi
+              <FlaskConical /> {t('testMe')}
             </Button>
             <Button variant="outline" size="sm" disabled={!hasContent} onClick={() => setTestMode('reviewers')}>
-              <Users /> Gửi thử cho nhóm rà soát
+              <Users /> {t('testReviewers')}
             </Button>
           </div>
-          <p className="text-xs text-[var(--text-muted)]">
-            Preview đã mở tự động khi block xuất hiện. Bản thử có prefix <span className="font-mono">[BẢN THỬ]</span>,
-            ghi log <span className="font-mono">test_send</span>, không tính vào báo cáo thật.
-          </p>
+          <p className="text-xs text-[var(--text-muted)]">{t.rich('autoOpened', { mono })}</p>
         </div>
       </div>
       <TestSendDialog mode={testMode} subject={subject} onClose={() => setTestMode(null)} />

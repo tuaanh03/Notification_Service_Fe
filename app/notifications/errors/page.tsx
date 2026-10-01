@@ -1,12 +1,14 @@
 import { ErrorCodesTable } from '@/components/notifications/error-codes-table'
+import { getTranslations } from 'next-intl/server'
 import { PageHeader } from '@/components/page-header'
 
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('notifications')
   return (
     <>
       <PageHeader
-        title="Mã lỗi API"
-        subtitle="Mã lỗi mọi đường /v1, sao đúng máy chủ. Hướng dẫn đầy đủ: docs/huong-dan-tich-hop-cho-doi-app.md của ews-astrolink-api."
+        title={t('errorCodes')}
+        subtitle={t('errorCodesSubtitle')}
       />
       <ErrorCodesTable />
     </>

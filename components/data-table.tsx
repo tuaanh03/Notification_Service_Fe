@@ -1,6 +1,7 @@
 'use client'
 import { Search } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +49,7 @@ export function DataTable<T extends Record<string, unknown>>({
    */
   hideSearch?: boolean
 }) {
+  const tc = useTranslations('common')
   const [q, setQ] = useState('')
   const [chip, setChip] = useState<string>('all')
   const chips = filterKey
@@ -63,10 +65,10 @@ export function DataTable<T extends Record<string, unknown>>({
         <div className="flex flex-1 items-center gap-2 max-w-sm rounded-lg border border-[var(--orbit)] bg-muted/20 px-2.5 py-1">
           <Search className="size-3.5 text-[var(--text-muted)]" />
           <Input
-            aria-label="Tìm kiếm"
+            aria-label={tc('searchLabel')}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={searchPlaceholder ?? "Lọc dữ liệu..."}
+            placeholder={searchPlaceholder ?? tc('filterPlaceholder')}
             className="h-6 border-0 bg-transparent px-1 text-xs focus-visible:ring-0 shadow-none dark:bg-transparent"
           />
           <kbd className="pointer-events-none inline-flex h-4 select-none items-center rounded border border-[var(--orbit)] bg-background px-1 font-mono text-[9px] text-muted-foreground">
@@ -83,7 +85,7 @@ export function DataTable<T extends Record<string, unknown>>({
               className="rounded-full font-mono"
               onClick={() => setChip('all')}
             >
-              Tất cả · {rows.length}
+              {tc('allCount', { count: rows.length })}
             </Button>
             {chips.map((c) => (
               <Button

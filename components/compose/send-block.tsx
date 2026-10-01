@@ -2,6 +2,7 @@
 
 import { AppLink } from '@/components/app-link'
 import { Ban, CalendarClock, CheckCircle2, Copy, FilePlus2, Save, Send, Square, Undo2 } from 'lucide-react'
+import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
@@ -23,6 +24,10 @@ type SendBlockProps = {
 
 /** Block 4 — UI cho state machine ở hooks/use-send-simulation.ts (Composer giữ hook). */
 export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }: SendBlockProps) {
+  const t = useTranslations('send')
+  const ts = useTranslations('scheduled')
+  const format = useFormatter()
+  const mono = (chunks: React.ReactNode) => <span className="font-mono tabular-nums">{chunks}</span>
   const { state, seconds, sent, scheduledAt } = sim
   const total = estimate.expected
   // "Bị trừ" là số đã chốt từ helper — không phải counter chạy
@@ -37,11 +42,11 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
           <div className="mx-auto mb-4 flex size-24 items-center justify-center rounded-full border-4 border-[var(--starlight)] font-mono text-3xl tabular-nums text-[var(--text-primary)] shadow-[var(--glow-starlight-lg)]">
             {seconds}
           </div>
-          <h2 className="font-heading text-xl">Đang chờ {UNDO_WINDOW_SECONDS} giây trước khi lô đầu rời hàng đợi.</h2>
-          <p className="mt-2 text-sm text-[var(--text-primary)]">Huỷ bây giờ thì không ai nhận gì.</p>
+          <h2 className="font-heading text-xl">{t('undoTitle', { seconds: UNDO_WINDOW_SECONDS })}</h2>
+          <p className="mt-2 text-sm text-[var(--text-primary)]">{t('undoBody')}</p>
           <Button type="button" variant="destructive" onClick={sim.cancel} className="mt-5">
             <Ban className="size-4" />
-            Huỷ gửi
+            {t('undoCancel')}
           </Button>
         </div>
       </Panel>
@@ -52,10 +57,8 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
       <Panel glow className="p-5">
         <StatusPill status="pending_approval" />
         <Alert className="mt-3 border-[var(--solar)]/25 bg-[var(--solar)]/10">
-          <AlertTitle className="font-heading text-base text-[var(--text-primary)]">Chờ Super Admin duyệt</AlertTitle>
-          <AlertDescription className="text-[var(--solar)]">
-            Lần gửi này cần Super Admin duyệt. Đã gửi yêu cầu kèm link xem thử đúng bản sẽ gửi.
-          </AlertDescription>
+          <AlertTitle className="font-heading text-base text-[var(--text-primary)]">{t('approvalTitle')}</AlertTitle>
+          <AlertDescription className="text-[var(--solar)]">{t('approvalBody')}</AlertDescription>
         </Alert>
       </Panel>
     )
@@ -68,10 +71,10 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
           <div>
             <StatusPill status="scheduled" />
             <h2 className="mt-2 font-heading text-xl">
-              Sẽ gửi lúc{' '}
-              <span className="font-mono tabular-nums text-[var(--pulsar)]">
-                {new Date(scheduledAt).toLocaleString('vi-VN')}
-              </span>
+              {t.rich('scheduledAt', {
+                at: format.dateTime(new Date(scheduledAt), { dateStyle: 'short', timeStyle: 'medium' }),
+                mono: (chunks) => <span className="font-mono tabular-nums text-[var(--pulsar)]">{chunks}</span>,
+              })}
             </h2>
           </div>
           <CalendarClock className="size-8 text-[var(--pulsar)]" />
@@ -79,21 +82,17 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
         {outsideWorkingHours(scheduledAt) && (
           <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/10">
             <AlertDescription className="text-[var(--solar)]">
-              Thư sẽ tới lúc <span className="font-mono tabular-nums">{formatTime(scheduledAt)}</span> — ngoài
-              giờ làm việc.
+              {t.rich('offHours', { time: formatTime(scheduledAt), mono })}
             </AlertDescription>
           </Alert>
         )}
-        <p className="text-sm text-[var(--text-secondary)]">
-          Nội dung đã khoá. Người nhận sẽ được giải lại từ đầu tại thời điểm chạy — người mới vào role thì nhận,
-          người vừa tắt thì không.
-        </p>
+        <p className="text-sm text-[var(--text-secondary)]">{t('scheduledLocked')}</p>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={sim.unschedule}>
-            <Undo2 /> Huỷ lịch để sửa
+            <Undo2 /> {ts('unscheduleToEdit')}
           </Button>
           <Button type="button" variant="destructive" onClick={sim.cancel}>
-            <Ban /> Bỏ hẳn
+            <Ban /> {ts('drop')}
           </Button>
         </div>
       </Panel>
@@ -103,9 +102,7 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
     return (
       <Panel className="p-5">
         <StatusPill status="cancelled" />
-        <p className="mt-3 text-sm text-[var(--text-secondary)]">
-          Lần gửi đã huỷ. Chưa có thư nào rời hệ thống. Bản nháp được giữ lại để sửa.
-        </p>
+        <p className="mt-3 text-sm text-[var(--text-secondary)]">{t('cancelledBody')}</p>
       </Panel>
     )
 
@@ -118,43 +115,41 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
           <div className="relative h-px bg-[var(--starlight)]/30">
             <div className={cn('absolute inset-y-0 left-0 w-2/3 bg-[var(--starlight)]', state === 'sending' && 'animate-pulse')} />
             <p className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--deep)] px-3 font-mono text-[11px] text-[var(--starlight)]">
-              Lô đầu tiên đã rời hàng đợi
+              {t('horizon')}
             </p>
           </div>
         )}
         <div className="flex items-center justify-between gap-4">
           <div>
             <StatusPill status={state} />
-            <h2 className="mt-2 font-heading text-xl">{terminal ? 'Lần gửi đã kết thúc' : 'Đang xử lý lần gửi'}</h2>
+            <h2 className="mt-2 font-heading text-xl">{terminal ? t('finished') : t('processing')}</h2>
           </div>
           <div className="flex size-20 items-center justify-center rounded-full border-4 border-[var(--starlight)]/70 font-mono text-xl tabular-nums text-[var(--text-primary)]">
             {pct}%
           </div>
         </div>
         <div className="grid gap-3 font-mono text-sm tabular-nums text-[var(--text-primary)] sm:grid-cols-3">
-          <span>
-            Đã gửi {sent} / {total}
-          </span>
-          <span>Bounce {bounce}</span>
-          <span>Bị trừ {deducted}</span>
+          <span>{t('sentCount', { sent, total })}</span>
+          <span>{t('bounce', { count: bounce })}</span>
+          <span>{t('deducted', { count: deducted })}</span>
         </div>
         <p className="text-sm text-[var(--text-secondary)]">
-          {state === 'queued' && 'Chưa có thư nào rời hệ thống. Huỷ được sạch.'}
-          {state === 'sending' && 'Từ đây không thu hồi được. Chỉ dừng được phần chưa gửi.'}
-          {state === 'stopped' && `Đã gửi ${sent}/${total}, dừng ${total - sent}.`}
-          {state === 'sent' && `Đã gửi ${sent}/${total}. Số thật đã chốt lúc gửi.`}
+          {state === 'queued' && t('queuedNote')}
+          {state === 'sending' && t('sendingNote')}
+          {state === 'stopped' && t('stoppedNote', { sent, total, rest: total - sent })}
+          {state === 'sent' && t('sentNote', { sent, total })}
         </p>
         {/* SM-3: Huỷ chỉ khi queued, Dừng gửi chỉ khi sending — không bao giờ cùng lúc */}
         {state === 'queued' && (
           <Button type="button" variant="destructive" onClick={sim.cancel}>
             <Ban className="size-4" />
-            Huỷ
+            {t('cancel')}
           </Button>
         )}
         {state === 'sending' && (
           <Button type="button" variant="destructive" onClick={sim.stop}>
             <Square className="size-4" />
-            Dừng gửi
+            {t('stop')}
           </Button>
         )}
         {terminal && <ResultPanel topic={topic} />}
@@ -166,17 +161,17 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
     <Panel className="flex flex-wrap items-center justify-between gap-4 p-5">
       <div>
         <p className="font-mono text-xs uppercase tracking-widest text-[var(--starlight)]">block 04</p>
-        <h2 className="font-heading text-lg">Gửi</h2>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">Một bản nháp chỉ được gửi một lần.</p>
+        <h2 className="font-heading text-lg">{t('title')}</h2>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('oncePerDraft')}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="lg" variant="outline" disabled={!enabled} onClick={onSchedule}>
           <CalendarClock className="size-4" />
-          Hẹn giờ
+          {t('schedule')}
         </Button>
         <Button type="button" size="lg" disabled={!enabled} onClick={onSend} className="disabled:cursor-not-allowed disabled:opacity-40">
           <Send className="size-4" />
-          Gửi ngay <span className="font-mono tabular-nums">({total})</span>
+          {t('sendNow')} <span className="font-mono tabular-nums">({total})</span>
         </Button>
       </div>
     </Panel>
@@ -184,46 +179,39 @@ export function SendBlock({ enabled, onSend, onSchedule, topic, estimate, sim }:
 }
 
 function ResultPanel({ topic }: { topic: string }) {
+  const t = useTranslations('send')
   return (
     <div className="space-y-4 rounded-xl border border-[var(--aurora)]/20 bg-[var(--aurora)]/5 p-4">
       <div className="flex items-center gap-2 text-[var(--aurora)]">
         <CheckCircle2 className="size-4" />
-        Kết quả đã ghi nhận
+        {t('resultRecorded')}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={() => toast.success('Đã nhân bản thành bản nháp mới', { description: 'Giữ topic, template, biến — không sao chép danh sách người nhận cũ.' })}>
+        <Button type="button" variant="outline" onClick={() => toast.success(t('duplicated'), { description: t('duplicatedBody') })}>
           <Copy className="size-4" />
-          Nhân bản
+          {t('duplicate')}
         </Button>
         <Button
           type="button"
           variant="outline"
           onClick={() =>
-            toast.success('Đã tạo template draft', {
-              description: 'Lưu ở Templates dưới dạng draft — người thật phải xem thử và Xuất bản, không tự publish.',
-            })
+            toast.success(t('savedTemplate'), { description: t('savedTemplateBody') })
           }
         >
           <Save className="size-4" />
-          Lưu nội dung thành template
+          {t('saveAsTemplate')}
         </Button>
         <Button type="button" variant="outline">
           <FilePlus2 className="size-4" />
-          Gửi thư đính chính
+          {t('correction')}
         </Button>
       </div>
-      <p className="text-sm text-[var(--text-secondary)]">
-        Bản sao giữ topic, template và biến nhưng không sao chép danh sách người nhận cũ.
-      </p>
-      <p className="text-sm text-[var(--text-secondary)]">
-        Thư đính chính chỉ tới đúng những người đã nhận (lấy từ snapshot). Người chưa nhận thì đừng làm họ bối rối.
-      </p>
+      <p className="text-sm text-[var(--text-secondary)]">{t('copyNote')}</p>
+      <p className="text-sm text-[var(--text-secondary)]">{t('correctionNote')}</p>
       {/* UC-008 BR-12: không có nút thu hồi — chỉ một câu giải thích */}
-      <p className="text-sm text-[var(--text-muted)]">
-        Không có nút thu hồi. Recall của Outlook chỉ chạy nội bộ và thường thất bại nếu thư đã mở.
-      </p>
+      <p className="text-sm text-[var(--text-muted)]">{t('noRecall')}</p>
       <AppLink className="text-sm text-[var(--starlight)] underline" href={`/notifications/ntf_demo_${topic}`}>
-        Mở chi tiết notification
+        {t('openDetail')}
       </AppLink>
     </div>
   )

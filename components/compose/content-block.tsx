@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Bold, Italic, Link2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Panel } from '@/components/panel'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +39,7 @@ export function ContentBlock({
   onValid: (valid: boolean) => void
   onSelect: (value: ContentSelection) => void
 }) {
+  const tr = useTranslations('content')
   const [mode, setMode] = useState<'template' | 'quick'>('template')
   const [template, setTemplate] = useState('')
   const [values, setValues] = useState<Record<string, string>>({
@@ -97,26 +99,26 @@ export function ContentBlock({
             <p className="font-mono text-[10px] uppercase tracking-[.2em] text-[var(--starlight)]">
               block 02
             </p>
-            <h2 className="font-heading text-lg font-semibold">Nội dung</h2>
+            <h2 className="font-heading text-lg font-semibold">{tr('blockTitle')}</h2>
           </div>
           <ToggleGroup
             variant="outline"
             value={[mode]}
             onValueChange={(v) => setMode((v[0] as 'template' | 'quick' | undefined) ?? mode)}
           >
-            <ToggleGroupItem value="template">Dùng template</ToggleGroupItem>
-            <ToggleGroupItem value="quick">Soạn nhanh</ToggleGroupItem>
+            <ToggleGroupItem value="template">{tr('useTemplate')}</ToggleGroupItem>
+            <ToggleGroupItem value="quick">{tr('quick')}</ToggleGroupItem>
           </ToggleGroup>
           {mode === 'template' ? (
             <>
               <NativeSelect
-                aria-label="Template"
+                aria-label={tr('templateLabel')}
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
                 className="w-full font-mono"
               >
                 <NativeSelectOption value="">
-                  {bound.length ? 'Chọn template email đã bind' : 'Topic chưa bind template email nào'}
+                  {bound.length ? tr('chooseBound') : tr('noneBound')}
                 </NativeSelectOption>
                 {bound.map((t) => (
                   <NativeSelectOption key={t.key} value={templateLabel(t)}>
@@ -140,14 +142,14 @@ export function ContentBlock({
                         className="font-mono"
                       />
                       {required && missing(name) && (
-                        <p className="text-[var(--supernova)]">Thiếu biến bắt buộc {name}</p>
+                        <p className="text-[var(--supernova)]">{tr('missingVar', { name })}</p>
                       )}
                       {type === 'number' && notNumber(name) && (
-                        <p className="text-[var(--supernova)]">{name} phải là number</p>
+                        <p className="text-[var(--supernova)]">{tr('notNumber', { name })}</p>
                       )}
                       {urlOutside(name) && (
                         <p className="text-[var(--supernova)]">
-                          Domain không thuộc allowed_origins ({allowedOrigins.join(', ')})
+                          {tr('outsideOrigins', { origins: allowedOrigins.join(', ') })}
                         </p>
                       )}
                       {name === 'action_url' && !urlOutside(name) && (
@@ -169,40 +171,34 @@ export function ContentBlock({
                 onChange={(e) => setQuickSubject(e.target.value)}
               />
               <div className="flex gap-1">
-                <Button type="button" variant="outline" size="icon-sm" aria-label="Đậm">
+                <Button type="button" variant="outline" size="icon-sm" aria-label={tr('bold')}>
                   <Bold />
                 </Button>
-                <Button type="button" variant="outline" size="icon-sm" aria-label="Nghiêng">
+                <Button type="button" variant="outline" size="icon-sm" aria-label={tr('italic')}>
                   <Italic />
                 </Button>
-                <Button type="button" variant="outline" size="icon-sm" aria-label="Chèn link">
+                <Button type="button" variant="outline" size="icon-sm" aria-label={tr('insertLink')}>
                   <Link2 />
                 </Button>
               </div>
               <Textarea
-                aria-label="Nội dung"
+                aria-label={tr('body')}
                 value={quick}
                 onChange={(e) => setQuick(e.target.value.replace(/<[^>]*>/g, ''))}
                 onPaste={(e) => {
                   // UC-008 BR-7: Soạn nhanh chặt hơn — HTML thô bị từ chối, báo bằng toast
                   if (e.clipboardData.getData('text/html')) {
                     e.preventDefault()
-                    toast.error('Soạn nhanh không nhận HTML thô', {
-                      description: 'Chế độ này cố ý chặt hơn. Cần cá nhân hoá thì dùng template.',
-                    })
+                    toast.error(tr('noHtml'), { description: tr('noHtmlBody') })
                   }
                 }}
-                placeholder="Nội dung giống nhau cho mọi người nhận..."
+                placeholder={tr('bodyPlaceholder')}
                 className="min-h-32"
               />
-              <p className="text-xs text-[var(--text-muted)]">
-                Nội dung giống nhau cho mọi người nhận. Cần cá nhân hoá thì dùng template.
-              </p>
+              <p className="text-xs text-[var(--text-muted)]">{tr('sameForAll')}</p>
             </div>
           )}
-          <p className="text-xs text-[var(--text-muted)]">
-            Template chỉ hiện khi đã bind cho topic, kênh email và trạng thái published.
-          </p>
+          <p className="text-xs text-[var(--text-muted)]">{tr('boundHint')}</p>
         </div>
       </div>
     </Panel>

@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Activity, AlertTriangle, BellRing, CheckCircle2, PlugZap, RefreshCw } from 'lucide-react'
+import { useFormatter, useTranslations } from 'next-intl'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { loadOverviewAction, type OverviewView } from '@/app/actions'
 import { AppLink } from '@/components/app-link'
@@ -12,7 +13,7 @@ import { StatPill } from '@/components/stat-pill'
 import { StatusPill } from '@/components/status-pill'
 import { AuditTrail } from '@/components/audit-trail'
 import { EmptyState } from '@/components/empty-state'
-import { EXCLUSION_LABEL, outcomeOf } from '@/components/notifications/notification-outcome'
+import { useExclusionLabel, useOutcomeOf } from '@/components/notifications/notification-outcome'
 import { useApp } from '@/components/app-context'
 import type { AppOverviewDto } from '@/lib/api/types'
 import { fmtDateTime, fmtHour } from '@/lib/time'
@@ -26,12 +27,18 @@ const QUEUE_WARN_MS = 10 * 60_000
 
 /** Ba đường của biểu đồ theo giờ. `pending` không vẽ: thư đang chờ rồi sẽ sang một trong ba cột này. */
 const SERIES = [
-  { key: 'sent', label: 'đã gửi', color: cosmicTokens.aurora },
-  { key: 'failed', label: 'lỗi', color: cosmicTokens.supernova },
-  { key: 'blocked', label: 'bị chặn', color: cosmicTokens.mutedText },
+  { key: 'sent', label: 'seriesSent', color: cosmicTokens.aurora },
+  { key: 'failed', label: 'seriesFailed', color: cosmicTokens.supernova },
+  { key: 'blocked', label: 'seriesBlocked', color: cosmicTokens.mutedText },
 ] as const
 
-const num = (n: number) => n.toLocaleString('vi-VN')
+/** Định dạng số theo ngôn ngữ đang chọn (`1.234` / `1,234`). */
+function useNum(): (n: number) => string {
+  const format = useFormatter()
+  return (n) => format.number(n)
+}
+
+type OverviewT = ReturnType<typeof useTranslations<'overview'>>
 
 /** % so với 24 giờ trước. Hôm trước không gửi gì thì không có mốc để so. */
 function deltaOf({ total, previousTotal }: AppOverviewDto['sends']): string | undefined {
@@ -42,23 +49,23 @@ function deltaOf({ total, previousTotal }: AppOverviewDto['sends']): string | un
 type Alert = { text: string; href?: string }
 
 /** "Cần chú ý" — luật đơn giản trên chính số liệu của màn này, không có nguồn nào khác. */
-function alertsOf(o: AppOverviewDto, now: number): Alert[] {
+function alertsOf(o: AppOverviewDto, now: number, t: OverviewT, num: (n: number) => string): Alert[] {
   const alerts: Alert[] = []
   if (o.topics.active === 0) {
-    alerts.push({ text: 'App chưa có chủ đề nào đang hoạt động — app service chưa gửi được thư.', href: '/topics' })
+    alerts.push({ text: t('alertNoTopic'), href: '/topics' })
   }
   const failed = o.byStatus.failed ?? 0
-  if (failed > 0) alerts.push({ text: `${num(failed)} lần gửi lỗi trong 24 giờ qua.`, href: '/notifications' })
+  if (failed > 0) alerts.push({ text: t('alertFailed', { count: num(failed) }), href: '/notifications' })
   const oldest = o.queue.oldestCreatedAt
   if (oldest !== null && now - Date.parse(oldest) > QUEUE_WARN_MS) {
     alerts.push({
-      text: `Hàng chờ đang dài: ${num(o.queue.waiting)} thư, thư cũ nhất chờ từ ${fmtDateTime(oldest)}. Tốc độ gửi là giới hạn chung của hộp thư gửi, chia cho mọi app.`,
+      text: t('alertQueue', { waiting: num(o.queue.waiting), oldest: fmtDateTime(oldest) }),
     })
   }
   const noChannel = o.blocked.no_channel ?? 0
   if (noChannel > 0) {
     alerts.push({
-      text: `${num(noChannel)} thư bị chặn vì người nhận chưa có email — app service chưa đồng bộ email cho họ.`,
+      text: t('alertNoChannel', { count: num(noChannel) }),
       href: '/users',
     })
   }
@@ -67,7 +74,13 @@ function alertsOf(o: AppOverviewDto, now: number): Alert[] {
   if (r.total > 0 && unusable > 0) {
     const missing = unusable - r.emailUnsubscribed - r.emailInvalid
     alerts.push({
-      text: `${num(unusable)}/${num(r.total)} người nhận không có email dùng được (chưa khai ${num(missing)} · tự ngắt ${num(r.emailUnsubscribed)} · địa chỉ hỏng ${num(r.emailInvalid)}).`,
+      text: t('alertUnusable', {
+        unusable: num(unusable),
+        total: num(r.total),
+        missing: num(missing),
+        unsubscribed: num(r.emailUnsubscribed),
+        invalid: num(r.emailInvalid),
+      }),
       href: '/users',
     })
   }
@@ -82,6 +95,9 @@ function alertsOf(o: AppOverviewDto, now: number): Alert[] {
  * Tải khi mở màn / đổi app và khi bấm Làm mới — không tự cập nhật liên tục.
  */
 export default function Page() {
+  const t = useTranslations('overview')
+  const tc = useTranslations('common')
+  const te = useTranslations('errors')
   const { app } = useApp()
   const appId = app.app_id
   const [view, setView] = useState<OverviewView | null>(null)
@@ -95,9 +111,9 @@ export default function Page() {
       setLoadError(null)
     } else {
       setView(null)
-      setLoadError(`${result.message} (mã: ${result.code})`)
+      setLoadError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId])
+  }, [appId, te])
 
   useEffect(() => {
     startTransition(load)
@@ -113,18 +129,18 @@ export default function Page() {
   return (
     <>
       <PageHeader
-        title="Tổng quan"
-        subtitle={`Sức khỏe gửi thư của ${app.slug} · 24 giờ gần nhất`}
+        title={t('title')}
+        subtitle={t('subtitle', { app: app.slug })}
         actions={
           <Button variant="outline" disabled={pending} onClick={() => startTransition(load)}>
             <RefreshCw className={pending ? 'animate-spin' : undefined} />
-            Làm mới
+            {tc('refresh')}
           </Button>
         }
       />
       {loadError ? (
         <Panel className="overflow-hidden">
-          <EmptyState icon={PlugZap} title="Không đọc được dữ liệu từ API" description={loadError} />
+          <EmptyState icon={PlugZap} title={tc('loadErrorTitle')} description={loadError} />
         </Panel>
       ) : view ? (
         <Overview view={view} />
@@ -143,26 +159,31 @@ export default function Page() {
 }
 
 function Overview({ view }: { view: OverviewView }) {
+  const t = useTranslations('overview')
+  const tc = useTranslations('common')
+  const num = useNum()
+  const exclusion = useExclusionLabel()
+  const outcomeOf = useOutcomeOf()
   const { overview: o, recent, activity } = view
   const distribution = MVP_STATUSES.map((status) => ({ name: status, value: o.byStatus[status] ?? 0 }))
   const windowTotal = distribution.reduce((n, d) => n + d.value, 0)
   const chart = o.hourly.map((h) => ({ ...h, label: fmtHour(h.hour) }))
-  const alerts = alertsOf(o, Date.parse(o.generatedAt))
+  const alerts = alertsOf(o, Date.parse(o.generatedAt), t, num)
   const blockedReasons = Object.entries(o.blocked).filter(([, n]) => n > 0)
 
   return (
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
         <StatPill
-          label="Lần gửi 24h"
+          label={t('statSends')}
           value={num(o.sends.total)}
           delta={deltaOf(o.sends)}
           trend={o.hourly.map((h) => h.sent + h.failed + h.blocked + h.pending)}
         />
-        <StatPill label="Gửi lỗi 24h" value={num(o.byStatus.failed ?? 0)} trend={o.hourly.map((h) => h.failed)} />
-        <StatPill label="Đang chờ gửi" value={num(o.queue.waiting)} />
+        <StatPill label={t('statFailed')} value={num(o.byStatus.failed ?? 0)} trend={o.hourly.map((h) => h.failed)} />
+        <StatPill label={t('statWaiting')} value={num(o.queue.waiting)} />
         <StatPill
-          label="Người nhận có email dùng được"
+          label={t('statRecipients')}
           value={`${num(o.recipients.emailActive)}/${num(o.recipients.total)}`}
         />
       </div>
@@ -170,14 +191,14 @@ function Overview({ view }: { view: OverviewView }) {
         <Panel className="p-5" glow>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold">Lần gửi theo giờ</h2>
-              <p className="mt-1 text-xs text-[var(--text-muted)]">24 giờ gần nhất · theo giờ app gọi · kết cục hiện tại</p>
+              <h2 className="text-sm font-semibold">{t('hourlyTitle')}</h2>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">{t('hourlySubtitle')}</p>
             </div>
             <div className="flex gap-4 text-[11px]">
               {SERIES.map((s) => (
                 <span key={s.key} className="flex items-center gap-1.5">
                   <i className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
-                  {s.label}
+                  {t(s.label)}
                 </span>
               ))}
             </div>
@@ -219,7 +240,7 @@ function Overview({ view }: { view: OverviewView }) {
                     key={s.key}
                     type="monotone"
                     dataKey={s.key}
-                    name={s.label}
+                    name={t(s.label)}
                     stroke={s.color}
                     fill={`url(#fill-${s.key})`}
                     strokeWidth={2}
@@ -232,10 +253,10 @@ function Overview({ view }: { view: OverviewView }) {
         <Panel className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <Activity className="size-4 text-[var(--pulsar)]" />
-            <h2 className="text-sm font-semibold">Trạng thái lần gửi</h2>
+            <h2 className="text-sm font-semibold">{t('statusTitle')}</h2>
           </div>
           {windowTotal === 0 ? (
-            <p className="py-16 text-center text-xs text-[var(--text-muted)]">Chưa có lần gửi nào trong 24 giờ qua.</p>
+            <p className="py-16 text-center text-xs text-[var(--text-muted)]">{t('noSends24h')}</p>
           ) : (
             <div className="flex items-center gap-4">
               <div className="h-52 w-1/2">
@@ -262,11 +283,11 @@ function Overview({ view }: { view: OverviewView }) {
           )}
           {blockedReasons.length > 0 && (
             <div className="mt-4 border-t border-[var(--orbit)] pt-3">
-              <p className="mb-2 text-[11px] text-[var(--text-muted)]">Vì sao bị chặn — hệ thống làm đúng, không phải lỗi</p>
+              <p className="mb-2 text-[11px] text-[var(--text-muted)]">{t('blockedWhy')}</p>
               <div className="space-y-1">
                 {blockedReasons.map(([reason, n]) => (
                   <div key={reason} className="flex justify-between gap-3 text-[11px]">
-                    <span className="text-[var(--text-secondary)]">{EXCLUSION_LABEL[reason] ?? reason}</span>
+                    <span className="text-[var(--text-secondary)]">{exclusion(reason)}</span>
                     <b className="font-mono tabular-nums">{num(n)}</b>
                   </div>
                 ))}
@@ -279,12 +300,12 @@ function Overview({ view }: { view: OverviewView }) {
         <Panel className="p-5">
           <div className="mb-4 flex items-center gap-2">
             <AlertTriangle className="size-4 text-[var(--solar)]" />
-            <h2 className="text-sm font-semibold">Cần chú ý</h2>
+            <h2 className="text-sm font-semibold">{t('attention')}</h2>
           </div>
           {alerts.length === 0 ? (
             <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
               <CheckCircle2 className="size-4 text-[var(--aurora)]" />
-              Không có gì bất thường trong 24 giờ qua.
+              {t('allClear')}
             </div>
           ) : (
             <div className="space-y-2">
@@ -297,7 +318,7 @@ function Overview({ view }: { view: OverviewView }) {
                   <span className="flex-1 text-[var(--text-secondary)]">{a.text}</span>
                   {a.href && (
                     <AppLink href={a.href} className="shrink-0 text-[var(--starlight)] hover:underline">
-                      Xem →
+                      {tc('view')}
                     </AppLink>
                   )}
                 </div>
@@ -308,10 +329,10 @@ function Overview({ view }: { view: OverviewView }) {
         <Panel className="p-5">
           <div className="mb-4 flex items-center gap-2">
             <BellRing className="size-4 text-[var(--starlight)]" />
-            <h2 className="text-sm font-semibold">Hoạt động gần đây của app</h2>
+            <h2 className="text-sm font-semibold">{t('activityTitle')}</h2>
           </div>
           {activity.length === 0 ? (
-            <p className="text-xs text-[var(--text-muted)]">Chưa có hoạt động nào.</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('noActivity')}</p>
           ) : (
             <AuditTrail entries={activity} />
           )}
@@ -320,15 +341,15 @@ function Overview({ view }: { view: OverviewView }) {
       <Panel className="mt-5 overflow-hidden">
         <div className="flex items-center justify-between border-b border-[var(--orbit)] p-5">
           <div>
-            <h2 className="text-sm font-semibold">Lần gửi gần đây</h2>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">5 lần app service gọi gần nhất</p>
+            <h2 className="text-sm font-semibold">{t('recentTitle')}</h2>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{t('recentSubtitle')}</p>
           </div>
           <Button variant="link" size="sm" render={<AppLink href="/notifications" />}>
-            Xem tất cả →
+            {tc('viewAll')}
           </Button>
         </div>
         {recent.length === 0 ? (
-          <p className="p-5 text-xs text-[var(--text-muted)]">App chưa gửi thư nào.</p>
+          <p className="p-5 text-xs text-[var(--text-muted)]">{t('noSends')}</p>
         ) : (
           <div className="divide-y divide-[var(--orbit)]">
             {recent.map((n) => (
