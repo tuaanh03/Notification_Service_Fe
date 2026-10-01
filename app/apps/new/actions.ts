@@ -3,6 +3,7 @@
 import { addNetworkRule, createApp, toApp, transitionApp, type CreateAppInput } from '@/lib/api/apps'
 import { createTopic, type CreateTopicInput } from '@/lib/api/topics'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
+import { getTranslations } from 'next-intl/server'
 import { messageOf } from '@/lib/api/error-message'
 import { ApiError } from '@/lib/api/problem'
 import type { NetworkRuleDto } from '@/lib/api/types'
@@ -45,6 +46,7 @@ export type RegisterAppInput = {
  * để vào sửa nốt, không phải bấm tạo lại rồi dính trùng slug.
  */
 export async function registerAppAction(input: RegisterAppInput): Promise<ActionResult<RegisterResult>> {
+  const t = await getTranslations('wizard')
   const created = await toResult(() => createApp(input.profile))
   if (!created.ok) return created
   const app = toApp(created.data)
@@ -62,17 +64,17 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
   }
 
   for (const rule of input.rules) {
-    const failed = await stop(`Thêm allowlist ${rule.value}`, () => addNetworkRule(app.app_id, rule))
+    const failed = await stop(t('stopRule', { value: rule.value }), () => addNetworkRule(app.app_id, rule))
     if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
     rulesAdded += 1
   }
   for (const topic of input.topics) {
-    const failed = await stop(`Tạo chủ đề ${topic.key}`, () => createTopic(app.app_id, topic))
+    const failed = await stop(t('stopTopic', { key: topic.key }), () => createTopic(app.app_id, topic))
     if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
     topicsCreated += 1
   }
 
-  const failed = await stop('Gửi duyệt', () => transitionApp(app.app_id, 'submit'))
+  const failed = await stop(t('stopSubmit'), () => transitionApp(app.app_id, 'submit'))
   if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
   return { ok: true, data: { app: { ...app, status: 'pending_approval' }, rulesAdded, topicsCreated, stoppedAt: null } }
 }

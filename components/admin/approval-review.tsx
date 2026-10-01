@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { CredentialDialog } from '@/components/apps/credential-dialog'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
@@ -16,6 +17,7 @@ type Decision = '' | 'approved' | 'adjusted' | 'rejected'
 
 /** UC-001 §C — Super Admin rà soát hồ sơ; Duyệt → mở modal credential show-once (§D). */
 export function ApprovalReview({ id }: { id: string }) {
+  const t = useTranslations('appReview')
   const [decision, setDecision] = useState<Decision>('')
   const [issued, setIssued] = useState(false)
   const requested = requestedGrant(approvalApp)
@@ -27,8 +29,8 @@ export function ApprovalReview({ id }: { id: string }) {
   return (
     <>
       <PageHeader
-        title="Duyệt hồ sơ app"
-        subtitle="Rà soát yêu cầu đăng ký trước khi cấp quyền"
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
       <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
         <Panel className="p-5">
@@ -47,31 +49,31 @@ export function ApprovalReview({ id }: { id: string }) {
               <dd className="mt-1 font-mono text-[var(--starlight)]">{approvalApp.namespace}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--text-muted)]">Người liên hệ kỹ thuật</dt>
+              <dt className="text-xs text-[var(--text-muted)]">{t('contact')}</dt>
               <dd className="mt-1">{approvalApp.technical_contact}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--text-muted)]">Kênh xin cấp</dt>
+              <dt className="text-xs text-[var(--text-muted)]">{t('channels')}</dt>
               <dd className="mt-1 font-mono text-xs">{approvalApp.granted_channels.join(', ')}</dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--text-muted)]">Quota đề xuất</dt>
-              <dd className="mt-1 font-mono tabular-nums">{approvalApp.quota}/min</dd>
+              <dt className="text-xs text-[var(--text-muted)]">{t('quota')}</dt>
+              <dd className="mt-1 font-mono tabular-nums">{t('perMin', { count: approvalApp.quota })}</dd>
             </div>
           </dl>
           <div className="mt-6 border-t border-[var(--orbit)] pt-5">
-            <h3 className="text-sm font-semibold">Topics</h3>
-            {approvalApp.submitted_topics.map((t) => (
-              <div key={t} className="mt-3 rounded-lg border border-[var(--orbit)] p-3">
-                <p className="font-mono text-xs text-[var(--starlight)]">{t}</p>
-                <p className="mt-1 text-xs text-[var(--text-secondary)]">Topic này hiện 0 subscriber.</p>
+            <h3 className="text-sm font-semibold">{t('topics')}</h3>
+            {approvalApp.submitted_topics.map((topic) => (
+              <div key={topic} className="mt-3 rounded-lg border border-[var(--orbit)] p-3">
+                <p className="font-mono text-xs text-[var(--starlight)]">{topic}</p>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">{t('zeroSubscribers')}</p>
               </div>
             ))}
           </div>
         </Panel>
         <Panel className="h-fit p-5 lg:sticky lg:top-5">
-          <h2 className="text-sm font-semibold">Quyết định</h2>
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">Duyệt sẽ cấp app_id và app_secret một lần.</p>
+          <h2 className="text-sm font-semibold">{t('decision')}</h2>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">{t('decisionNote')}</p>
           <div className="mt-5 flex flex-col gap-2">
             <Button
               disabled={issued || rejected}
@@ -80,13 +82,13 @@ export function ApprovalReview({ id }: { id: string }) {
                 setIssued(true)
               }}
             >
-              Duyệt
+              {t('approve')}
             </Button>
             <Button variant="secondary" onClick={() => setDecision('adjusted')} disabled={issued || rejected}>
-              Duyệt có điều chỉnh
+              {t('approveAdjusted')}
             </Button>
             <Button variant="destructive" onClick={() => setDecision('rejected')} disabled={issued || rejected}>
-              Từ chối
+              {t('reject')}
             </Button>
           </div>
           {decision === 'adjusted' && !adjusted && (
@@ -103,10 +105,10 @@ export function ApprovalReview({ id }: { id: string }) {
               {!issued && (
                 <div className="mt-4 flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => setAdjusted(null)}>
-                    Sửa lại
+                    {t('editAgain')}
                   </Button>
                   <Button size="sm" className="flex-1" onClick={() => setIssued(true)}>
-                    Duyệt với grant này
+                    {t('approveWithGrant')}
                   </Button>
                 </div>
               )}
@@ -122,39 +124,39 @@ export function ApprovalReview({ id }: { id: string }) {
             >
               <div className="space-y-1">
                 <Label htmlFor="rej-reason" className="text-xs">
-                  Lý do từ chối
+                  {t('rejectReason')}
                 </Label>
                 <NativeSelect id="rej-reason" className="w-full">
-                  <NativeSelectOption>Thiếu ip_allowlist</NativeSelectOption>
-                  <NativeSelectOption>Namespace trùng app khác</NativeSelectOption>
-                  <NativeSelectOption>Kênh xin cấp không phù hợp</NativeSelectOption>
-                  <NativeSelectOption>Khác</NativeSelectOption>
+                  <NativeSelectOption>{t('reasonMissingIp')}</NativeSelectOption>
+                  <NativeSelectOption>{t('reasonNamespace')}</NativeSelectOption>
+                  <NativeSelectOption>{t('reasonChannel')}</NativeSelectOption>
+                  <NativeSelectOption>{t('reasonOther')}</NativeSelectOption>
                 </NativeSelect>
               </div>
               <Textarea
-                placeholder="Ghi chú cho App Owner"
+                placeholder={t('notePlaceholder')}
                 required
                 className="min-h-24"
                 value={rejectNote}
                 onChange={(e) => setRejectNote(e.target.value)}
               />
-              <p className="text-xs text-[var(--text-muted)]">Hồ sơ trở về draft, dữ liệu giữ nguyên.</p>
+              <p className="text-xs text-[var(--text-muted)]">{t('backToDraft')}</p>
               <Button type="submit" variant="destructive" className="w-full" disabled={!rejectNote.trim()}>
-                Từ chối hồ sơ
+                {t('rejectSubmit')}
               </Button>
             </form>
           )}
           {rejected && (
             <Alert className="mt-4 border-[var(--orbit)] bg-transparent">
               <AlertDescription className="text-[var(--text-secondary)]">
-                Đã từ chối. Hồ sơ trở về <span className="font-mono">draft</span>, App Owner nhận ghi chú và có thể gửi lại.
+                {t.rich('rejected', { mono: (chunks) => <span className="font-mono">{chunks}</span> })}
               </AlertDescription>
             </Alert>
           )}
           {issued && credentialClosed && (
             <Alert className="mt-4 border-[var(--aurora)]/30 bg-[var(--aurora)]/[.06]">
               <AlertDescription className="text-[var(--aurora)]">
-                Hồ sơ đã được duyệt. Credential đã cấp một lần — không hiện lại.
+                {t('approved')}
               </AlertDescription>
             </Alert>
           )}

@@ -1,5 +1,6 @@
 'use server'
 
+import { getTranslations } from 'next-intl/server'
 import { approveApp, issueSecret, toApp, transitionApp, type ApproveAppInput, type AppTransition } from '@/lib/api/apps'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
 import type { IssuedAppSecretDto } from '@/lib/api/types'
@@ -41,7 +42,7 @@ export async function approveAndIssueKeyAction(
         data: {
           app,
           secret: null,
-          stoppedAt: { step: 'Cấp khoá API', message: issued.message, code: issued.code },
+          stoppedAt: { step: (await getTranslations('wizard'))('stopIssueKey'), message: issued.message, code: issued.code },
         },
       }
 }

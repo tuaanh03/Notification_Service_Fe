@@ -1,5 +1,6 @@
 'use client'
 import { TriangleAlert } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,8 @@ export function GrantFields({
   acknowledged: boolean
   onAcknowledgedChange: (next: boolean) => void
 }) {
+  const t = useTranslations('grant')
+  const b = (chunks: React.ReactNode) => <strong>{chunks}</strong>
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -56,10 +59,7 @@ export function GrantFields({
 
       <Alert className="bg-[var(--solar)]/10">
         <TriangleAlert className="text-[var(--solar)]" />
-        <AlertDescription>
-          Hai con số này hiện được <strong>lưu nhưng chưa ai đối chiếu</strong> — app vượt hạn mức
-          không bị từ chối. Quota theo app nằm ở kế hoạch mục 12.5.
-        </AlertDescription>
+        <AlertDescription>{t.rich('unenforced', { b })}</AlertDescription>
       </Alert>
 
       {/*
@@ -69,10 +69,7 @@ export function GrantFields({
       */}
       <label htmlFor={`${id}-ack`} className="flex cursor-pointer items-start gap-3 text-xs">
         <Checkbox id={`${id}-ack`} checked={acknowledged} onCheckedChange={onAcknowledgedChange} className="mt-0.5" />
-        <span className="text-[var(--text-secondary)]">
-          Đội này đã có màn <strong>&laquo;Cài đặt nhận thông báo&raquo;</strong> cho nhân viên. Không có
-          màn đó thì nhân viên không có cách nào tự tắt.
-        </span>
+        <span className="text-[var(--text-secondary)]">{t.rich('ack', { b })}</span>
       </label>
     </div>
   )

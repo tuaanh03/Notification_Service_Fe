@@ -1,11 +1,13 @@
+import { getTranslations } from 'next-intl/server'
 import { PageHeader } from '@/components/page-header'
 import { AppRegistrationWizard } from '@/components/app-registration-wizard'
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('wizard')
   return (
     <>
       <PageHeader
-        title="Đăng ký App Service"
-        subtitle="Tạo publisher mới cho EWS Notification Service"
+        title={t('pageTitle')}
+        subtitle={t('pageSubtitle')}
       />
       <AppRegistrationWizard />
     </>

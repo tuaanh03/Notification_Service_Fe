@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { AlertTriangle, ArrowRight } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,7 @@ export function AdjustForm({
   requested: ApprovalGrant
   onSubmit: (grant: ApprovalGrant, reason: string) => void
 }) {
+  const t = useTranslations('adjust')
   const [grant, setGrant] = useState<ApprovalGrant>(requested)
   const [reason, setReason] = useState('')
   const valid = reason.trim().length > 0 && grant.granted_channels.length > 0
@@ -75,12 +77,12 @@ export function AdjustForm({
       </div>
       <div className="space-y-1">
         <Label htmlFor="adj-reason" className="text-xs">
-          Lý do điều chỉnh <span className="text-[var(--supernova)]">*</span>
+          {t('reason')} <span className="text-[var(--supernova)]">*</span>
         </Label>
         <Textarea id="adj-reason" required value={reason} onChange={(e) => setReason(e.target.value)} />
       </div>
       <Button type="submit" variant="secondary" className="w-full" disabled={!valid}>
-        Lưu điều chỉnh
+        {t('save')}
       </Button>
     </form>
   )
@@ -98,6 +100,8 @@ export function GrantDiff({
   reason: string
   topicKeys: string[]
 }) {
+  const t = useTranslations('adjust')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const warnings = ungrantedChannelTopics(granted.granted_channels, topicKeys)
   const numeric: Array<{ key: keyof ApprovalGrant; from: number; to: number }> = [
     { key: 'rate_limit_per_minute', from: requested.rate_limit_per_minute, to: granted.rate_limit_per_minute },
@@ -106,9 +110,9 @@ export function GrantDiff({
   return (
     <div className="mt-4 space-y-3" data-testid="grant-diff">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-        <span>đã xin</span>
+        <span>{t('requested')}</span>
         <span />
-        <span>được cấp</span>
+        <span>{t('granted')}</span>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-x-2 gap-y-2 font-mono text-xs tabular-nums">
         <span className="text-[var(--text-muted)]">{requested.granted_channels.join(', ')}</span>
@@ -136,18 +140,16 @@ export function GrantDiff({
         ))}
       </div>
       <p className="text-xs text-[var(--text-secondary)]">
-        Lý do: <span className="text-[var(--text-primary)]">{reason}</span>
+        {t.rich('reasonValue', { reason, b: (chunks) => <span className="text-[var(--text-primary)]">{chunks}</span> })}
       </p>
       {warnings.length > 0 && (
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]">
           <AlertTriangle />
-          <AlertTitle className="text-[var(--solar)]">Kênh sẽ bị bỏ qua khi gửi</AlertTitle>
+          <AlertTitle className="text-[var(--solar)]">{t('ignoredTitle')}</AlertTitle>
           <AlertDescription className="space-y-1 text-[var(--solar)]">
             {warnings.map((w) => (
               <p key={w.topic_key}>
-                Topic <span className="font-mono">{w.topic_key}</span> khai kênh{' '}
-                <span className="font-mono">{w.channels.join(', ')}</span> nhưng app không được cấp — kênh này sẽ bị bỏ
-                qua khi gửi.
+                {t.rich('ignoredBody', { topic: w.topic_key, channels: w.channels.join(', '), mono })}
               </p>
             ))}
           </AlertDescription>

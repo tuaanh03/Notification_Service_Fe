@@ -2,6 +2,7 @@
 import { AppLink, useAppRouter } from '@/components/app-link'
 import { useState, useTransition } from 'react'
 import { Ban, Check, Copy, Database, MoreHorizontal, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
+import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import type { AppDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
@@ -25,10 +26,14 @@ import { AppTransitionDialog, type AppAction } from '@/components/apps/app-trans
 import { CredentialDialog } from '@/components/apps/credential-dialog'
 import { approveAndIssueKeyAction, transitionAppAction, type ApproveResult } from '@/app/admin/apps/actions'
 
-const columns: Column<AppDto>[] = [
+/** Cột của bảng — trong hook vì nhãn và định dạng số theo ngôn ngữ đang chọn. */
+function useColumns(): Column<AppDto>[] {
+  const t = useTranslations('allApps')
+  const format = useFormatter()
+  return [
   {
     key: 'name',
-    label: 'Tên app',
+    label: t('colName'),
     render: (app) => (
       <span className="flex items-center gap-2 font-medium text-[var(--text-primary)]">
         {app.name}
@@ -40,9 +45,9 @@ const columns: Column<AppDto>[] = [
               }
             >
               <ShieldAlert />
-              ngoài mạng
+              {t('external')}
             </TooltipTrigger>
-            <TooltipContent>App nằm ngoài mạng nội bộ — bắt buộc khai ip_allowlist</TooltipContent>
+            <TooltipContent>{t('externalTip')}</TooltipContent>
           </Tooltip>
         )}
       </span>
@@ -54,10 +59,10 @@ const columns: Column<AppDto>[] = [
     label: 'topic_namespace',
     render: (app) => <span className="font-mono text-xs text-[var(--starlight)]">{app.namespace}</span>,
   },
-  { key: 'status', label: 'Trạng thái', render: (app) => <StatusPill status={app.status} /> },
+  { key: 'status', label: t('colStatus'), render: (app) => <StatusPill status={app.status} /> },
   {
     key: 'grantedChannels',
-    label: 'Kênh được cấp',
+    label: t('colChannels'),
     render: (app) => (
       <span className="flex gap-1">
         {app.grantedChannels.map((c) => (
@@ -68,15 +73,16 @@ const columns: Column<AppDto>[] = [
       </span>
     ),
   },
-  { key: 'rateLimitPerMinute', label: 'Quota', numeric: true, render: (app) => <>{app.rateLimitPerMinute}/min</> },
+  { key: 'rateLimitPerMinute', label: t('colQuota'), numeric: true, render: (app) => <>{t('perMin', { count: app.rateLimitPerMinute })}</> },
   {
     key: 'maxRecipientsPerEvent',
-    label: 'Tối đa người nhận',
+    label: t('colMaxRecipients'),
     numeric: true,
-    render: (app) => <>{app.maxRecipientsPerEvent.toLocaleString('vi-VN')}</>,
+    render: (app) => <>{format.number(app.maxRecipientsPerEvent)}</>,
   },
-  { key: 'updatedAt', label: 'Cập nhật', mono: true, render: (app) => <>{fmtDateTime(app.updatedAt)}</> },
+  { key: 'updatedAt', label: t('colUpdated'), mono: true, render: (app) => <>{fmtDateTime(app.updatedAt)}</> },
 ]
+}
 
 /**
  * Hành động cho phép theo trạng thái — SAO ĐÚNG bảng `APP_TRANSITIONS` của backend
@@ -88,11 +94,8 @@ const ACTIONS_BY_STATUS: Record<string, readonly AppAction[]> = {
   suspended: ['resume', 'revoke'],
 }
 
-const ACTION_ITEM: Record<AppAction, { label: string; icon: typeof Pause }> = {
-  suspend: { label: 'Tạm ngưng…', icon: Pause },
-  resume: { label: 'Mở lại…', icon: Play },
-  revoke: { label: 'Thu hồi…', icon: Ban },
-}
+/** Nhãn = khoá cùng tên trong nhóm `allApps` (`suspend` / `resume` / `revoke`). */
+const ACTION_ICON: Record<AppAction, typeof Pause> = { suspend: Pause, resume: Play, revoke: Ban }
 
 /**
  * Cột thao tác (nút ⋯). `Column.key` là `keyof AppDto` nên mượn `id` — field này không hiện ở cột
@@ -103,11 +106,12 @@ const ACTION_ITEM: Record<AppAction, { label: string; icon: typeof Pause }> = {
  * THÚC nên tách riêng và tô đỏ.
  */
 const actionColumn = (
+  t: ReturnType<typeof useTranslations<'allApps'>>,
   onApprove: (app: AppDto) => void,
   onTransition: (app: AppDto, action: AppAction) => void,
 ): Column<AppDto> => ({
   key: 'id',
-  label: 'Thao tác',
+  label: t('colActions'),
   align: 'right',
   render: (app) => {
     const actions = ACTIONS_BY_STATUS[app.status] ?? []
@@ -120,7 +124,7 @@ const actionColumn = (
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={`Thao tác cho ${app.name}`}
+                aria-label={t('actionsFor', { name: app.name })}
                 className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
               >
                 <MoreHorizontal className="size-4" />
@@ -131,16 +135,16 @@ const actionColumn = (
             {app.status === 'pending_approval' && (
               <>
                 <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => onApprove(app)}>
-                  <Check className="size-3.5 mr-1.5" /> Duyệt app…
+                  <Check className="size-3.5 mr-1.5" /> {t('approve')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
             )}
             {reversible.map((action) => {
-              const { label, icon: Icon } = ACTION_ITEM[action]
+              const Icon = ACTION_ICON[action]
               return (
                 <DropdownMenuItem key={action} className="text-xs cursor-pointer" onClick={() => onTransition(app, action)}>
-                  <Icon className="size-3.5 mr-1.5" /> {label}
+                  <Icon className="size-3.5 mr-1.5" /> {t(action)}
                 </DropdownMenuItem>
               )
             })}
@@ -152,7 +156,7 @@ const actionColumn = (
                   className="text-xs cursor-pointer"
                   onClick={() => onTransition(app, 'revoke')}
                 >
-                  <Ban className="size-3.5 mr-1.5" /> {ACTION_ITEM.revoke.label}
+                  <Ban className="size-3.5 mr-1.5" /> {t('revoke')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
@@ -161,10 +165,10 @@ const actionColumn = (
               className="text-xs cursor-pointer"
               onClick={() => {
                 void navigator.clipboard.writeText(app.id)
-                toast.success('Đã sao chép app ID')
+                toast.success(t('copied'))
               }}
             >
-              <Copy className="size-3.5 mr-1.5" /> Sao chép app ID
+              <Copy className="size-3.5 mr-1.5" /> {t('copyId')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -182,6 +186,8 @@ const actionColumn = (
  * lại là mất, nên app `pending_approval` phải duyệt được từ đây.
  */
 export function AppAdminList({ rows }: { rows: AppDto[] }) {
+  const t = useTranslations('allApps')
+  const columns = useColumns()
   const router = useAppRouter()
   const [target, setTarget] = useState<AppDto | null>(null)
   const [transitionTarget, setTransitionTarget] = useState<{ app: AppDto; action: AppAction } | null>(null)
@@ -214,12 +220,12 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
   return (
     <>
       <PageHeader
-        title="Tất cả app"
-        subtitle="Quản lý đăng ký publisher và quyền gửi trong EWS Tổng"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <Button render={<AppLink href="/apps/new" />}>
             <Plus />
-            Đăng ký App Service
+            {t('register')}
           </Button>
         }
       />
@@ -227,19 +233,26 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
       {result?.stoppedAt && (
         <Alert variant="destructive" className="mb-5">
           <TriangleAlert />
-          <AlertTitle>Đã duyệt {result.app.name}, nhưng chưa cấp được khoá</AlertTitle>
+          <AlertTitle>{t('noKeyTitle', { name: result.app.name })}</AlertTitle>
           <AlertDescription>
-            {result.stoppedAt.message} App đã <span className="font-mono">active</span> — vào{' '}
-            <AppLink href="/settings/credentials" className="underline">Khoá API</AppLink> cấp lại.
+            {t.rich('noKeyBody', {
+              message: result.stoppedAt.message,
+              mono: (chunks) => <span className="font-mono">{chunks}</span>,
+              link: (chunks) => (
+                <AppLink href="/settings/credentials" className="underline">
+                  {chunks}
+                </AppLink>
+              ),
+            })}
           </AlertDescription>
         </Alert>
       )}
 
       <DataTable<AppDto>
-        columns={[...columns, actionColumn(setTarget, (app, action) => setTransitionTarget({ app, action }))]}
+        columns={[...columns, actionColumn(t, setTarget, (app, action) => setTransitionTarget({ app, action }))]}
         rows={rows}
         filterKey="status"
-        empty={<EmptyState icon={Database} title="Không có app" description="Không app nào ở trạng thái này." />}
+        empty={<EmptyState icon={Database} title={t('emptyTitle')} description={t('emptyBody')} />}
       />
 
       <ApproveAppDialog

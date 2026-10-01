@@ -1,5 +1,6 @@
 'use client'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +11,8 @@ import { APP_SLUG, APP_SLUG_TEXT, type ProfileDraft } from './wizard-types'
 
 /** Bước 1 — hồ sơ app: đúng 4 field của `POST /admin/apps` + allowlist đi kèm. */
 export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange: (next: ProfileDraft) => void }) {
+  const t = useTranslations('wizard')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const { validateIp, validateOrigin } = useNetworkValidators()
   const slugInvalid = draft.slug.length > 0 && !APP_SLUG.test(draft.slug)
   const nsInvalid = draft.namespace.length > 0 && !APP_SLUG.test(draft.namespace)
@@ -18,20 +21,18 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold">Hồ sơ app</h2>
-        <p className="mt-1 text-xs text-[var(--text-secondary)]">
-          App được tạo ở trạng thái <span className="font-mono">draft</span> — chưa gửi được gì cho tới khi duyệt.
-        </p>
+        <h2 className="text-lg font-semibold">{t('stepProfile')}</h2>
+        <p className="mt-1 text-xs text-[var(--text-secondary)]">{t.rich('profileDraftNote', { mono })}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor="wz-name">Tên hiển thị</Label>
+          <Label htmlFor="wz-name">{t('displayName')}</Label>
           <Input
             id="wz-name"
             value={draft.name}
             onChange={(e) => onChange({ ...draft, name: e.target.value })}
-            placeholder="Hệ thống Đơn hàng"
+            placeholder={t('namePlaceholder')}
           />
         </div>
         <div className="space-y-1">
@@ -44,7 +45,7 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
             className="font-mono"
             aria-invalid={slugInvalid}
           />
-          {slugInvalid && <p className="font-mono text-xs text-[var(--supernova)]">Phải khớp /{APP_SLUG_TEXT}/</p>}
+          {slugInvalid && <p className="font-mono text-xs text-[var(--supernova)]">{t('mustMatch', { pattern: APP_SLUG_TEXT })}</p>}
         </div>
       </div>
 
@@ -58,18 +59,15 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
           className="font-mono"
           aria-invalid={nsInvalid}
         />
-        {nsInvalid && <p className="font-mono text-xs text-[var(--supernova)]">Phải khớp /{APP_SLUG_TEXT}/</p>}
+        {nsInvalid && <p className="font-mono text-xs text-[var(--supernova)]">{t('mustMatch', { pattern: APP_SLUG_TEXT })}</p>}
         <Alert className="border-[var(--solar)]/30 bg-[var(--solar)]/[.06]">
           <AlertTriangle />
-          <AlertDescription className="text-[var(--solar)]">
-            Namespace là quyền sở hữu của app trong tổ chức, mỗi tổ chức chỉ một app giữ. Đặt xong nên
-            coi như cố định.
-          </AlertDescription>
+          <AlertDescription className="text-[var(--solar)]">{t('namespaceNote')}</AlertDescription>
         </Alert>
       </div>
 
       <div className="space-y-1">
-        <Label>Nguồn gọi</Label>
+        <Label>{t('callerSource')}</Label>
         <ToggleGroup
           variant="outline"
           size="sm"
@@ -82,10 +80,7 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
           <ToggleGroupItem value="internal" className="font-mono">internal</ToggleGroupItem>
           <ToggleGroupItem value="external" className="font-mono">external</ToggleGroupItem>
         </ToggleGroup>
-        <p className="text-xs text-[var(--text-secondary)]">
-          <span className="font-mono">internal</span> = dịch vụ chạy trong mạng công ty.{' '}
-          <span className="font-mono">external</span> = gọi từ ngoài, bắt buộc khai IP của máy gọi.
-        </p>
+        <p className="text-xs text-[var(--text-secondary)]">{t.rich('originNote', { mono })}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -112,18 +107,14 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
             invalid={external && draft.ipAllowlist.length === 0}
           />
           {external && draft.ipAllowlist.length === 0 && (
-            <p className="text-xs text-[var(--supernova)]">
-              App ngoài mạng bắt buộc ≥ 1 IP — nếu không, ai cầm được khoá cũng gọi được.
-            </p>
+            <p className="text-xs text-[var(--supernova)]">{t('externalNeedsIp')}</p>
           )}
-          <p className="text-xs text-[var(--text-muted)]">
-            Từng địa chỉ một, chưa hỗ trợ dải. Sửa sau ở Cài đặt App → IP & Origin.
-          </p>
+          <p className="text-xs text-[var(--text-muted)]">{t('ipNote')}</p>
         </div>
       </div>
 
       <p className="text-xs text-[var(--text-muted)]">
-        Kênh được dùng và hạn mức không khai ở đây — chúng là <strong>quyền cấp lúc duyệt</strong>, hỏi ở bước 4.
+        {t.rich('grantLater', { b: (chunks) => <strong>{chunks}</strong> })}
       </p>
     </div>
   )

@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { useAppRouter } from '@/components/app-link'
 import { Panel } from '@/components/panel'
 import { Button } from '@/components/ui/button'
@@ -24,8 +25,6 @@ import {
 import { registerAppAction, type RegisterResult } from '@/app/apps/new/actions'
 import { approveAndIssueKeyAction, type ApproveResult } from '@/app/admin/apps/actions'
 
-const steps = ['Hồ sơ app', 'Chủ đề đầu tiên', 'Rà soát', 'Chờ duyệt']
-
 /**
  * Wizard đăng ký app (UC-001) — state ở đây, từng bước ở `components/apps/step-*.tsx`.
  *
@@ -33,6 +32,8 @@ const steps = ['Hồ sơ app', 'Chủ đề đầu tiên', 'Rà soát', 'Chờ d
  * và từ đó KHÔNG quay lại được: app đã tồn tại, bấm lại chỉ dính trùng slug.
  */
 export function AppRegistrationWizard() {
+  const t = useTranslations('wizard')
+  const steps = [t('stepProfile'), t('stepTopics'), t('stepReview'), t('stepWaiting')]
   const reduced = useReducedMotion()
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState<ProfileDraft>(EMPTY_PROFILE)
@@ -122,20 +123,20 @@ export function AppRegistrationWizard() {
             <div className="mt-7 flex justify-between border-t border-[var(--orbit)] pt-5">
               {step > 0 ? (
                 <Button variant="ghost" onClick={() => setStep((v) => v - 1)}>
-                  <ChevronLeft /> Quay lại
+                  <ChevronLeft /> {t('back')}
                 </Button>
               ) : (
                 <span />
               )}
               <Button onClick={next} disabled={step === 0 ? !profileValid : !topicsValid}>
-                Tiếp tục <ChevronRight data-icon="inline-end" />
+                {t('next')} <ChevronRight data-icon="inline-end" />
               </Button>
             </div>
           )}
           {step === 2 && (
             <div className="mt-7 border-t border-[var(--orbit)] pt-5">
               <Button variant="ghost" disabled={pending} onClick={() => setStep(1)}>
-                <ChevronLeft /> Quay lại
+                <ChevronLeft /> {t('back')}
               </Button>
             </div>
           )}

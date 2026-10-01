@@ -1,5 +1,6 @@
 'use client'
 import { LockKeyhole, TriangleAlert } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { AppLink } from '@/components/app-link'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -46,6 +47,9 @@ export function StepWaiting({
   onApprove: () => void
   onCloseSecret: () => void
 }) {
+  const t = useTranslations('wizard')
+  const ta = useTranslations('approveApp')
+  const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const active = app.status === 'active'
 
   return (
@@ -58,18 +62,25 @@ export function StepWaiting({
         <h2 className="mt-4 text-2xl font-semibold">{app.name}</h2>
         <p className="mt-2 font-mono text-xs text-[var(--text-muted)]">{app.app_id}</p>
         <p className="mx-auto mt-3 max-w-md text-xs text-[var(--text-secondary)]">
-          Đã tạo {created.topicsCreated} chủ đề và {created.rulesAdded} dòng allowlist.
+          {t('createdSummary', { topics: created.topicsCreated, rules: created.rulesAdded })}
         </p>
       </div>
 
       {created.stoppedAt && (
         <Alert variant="destructive" className="mt-6">
           <TriangleAlert />
-          <AlertTitle>App đã tạo, nhưng dừng ở bước «{created.stoppedAt.step}»</AlertTitle>
+          <AlertTitle>{t('stoppedTitle', { step: created.stoppedAt.step })}</AlertTitle>
           <AlertDescription>
-            {created.stoppedAt.message} App đang ở trạng thái{' '}
-            <span className="font-mono">{app.status}</span> — đừng bấm tạo lại (sẽ trùng slug), vào{' '}
-            <AppLink href="/admin/apps" className="underline">Danh sách app</AppLink> làm nốt.
+            {t.rich('stoppedBody', {
+              message: created.stoppedAt.message,
+              status: app.status,
+              mono,
+              link: (chunks) => (
+                <AppLink href="/admin/apps" className="underline">
+                  {chunks}
+                </AppLink>
+              ),
+            })}
           </AlertDescription>
         </Alert>
       )}
@@ -77,11 +88,8 @@ export function StepWaiting({
       {!active && !created.stoppedAt && (
         <div className="mx-auto mt-8 max-w-lg space-y-4 rounded-xl border border-[var(--orbit)] p-5">
           <div>
-            <h3 className="text-sm font-semibold">Duyệt và cấp khoá</h3>
-            <p className="mt-1 text-xs text-[var(--text-secondary)]">
-              Duyệt là lúc app nhận quyền. MVP chỉ gửi được email nên kênh cố định là{' '}
-              <span className="font-mono">email</span>.
-            </p>
+            <h3 className="text-sm font-semibold">{t('approveTitle')}</h3>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">{t.rich('approveBody', { mono })}</p>
           </div>
           <GrantFields
             id="wz"
@@ -97,7 +105,7 @@ export function StepWaiting({
             </Alert>
           )}
           <Button className="w-full" disabled={pending || !acknowledged} onClick={onApprove}>
-            {pending ? 'Đang duyệt…' : 'Duyệt và cấp khoá đầu tiên'}
+            {pending ? ta('approving') : ta('confirm')}
           </Button>
         </div>
       )}
@@ -107,16 +115,29 @@ export function StepWaiting({
           {stop ? (
             <Alert variant="destructive">
               <TriangleAlert />
-              <AlertTitle>Đã duyệt, nhưng chưa cấp được khoá</AlertTitle>
+              <AlertTitle>{t('noKeyTitle')}</AlertTitle>
               <AlertDescription>
-                {stop.message} App đã <span className="font-mono">active</span> — vào{' '}
-                <AppLink href="/settings/credentials" app={app.slug} className="underline">Khoá API</AppLink> cấp lại.
+                {t.rich('noKeyBody', {
+                  message: stop.message,
+                  mono,
+                  link: (chunks) => (
+                    <AppLink href="/settings/credentials" app={app.slug} className="underline">
+                      {chunks}
+                    </AppLink>
+                  ),
+                })}
               </AlertDescription>
             </Alert>
           ) : (
             <p className="text-sm text-[var(--text-secondary)]">
-              App đã hoạt động. Chủ đề vừa tạo còn ở <span className="font-mono">draft</span> — sang{' '}
-              <AppLink href="/topics" app={app.slug} className="underline">Chủ đề</AppLink> kích hoạt trước khi app gửi được thư.
+              {t.rich('activeNote', {
+                mono,
+                link: (chunks) => (
+                  <AppLink href="/topics" app={app.slug} className="underline">
+                    {chunks}
+                  </AppLink>
+                ),
+              })}
             </p>
           )}
         </div>

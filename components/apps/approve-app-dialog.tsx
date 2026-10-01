@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import type { AppDto } from '@/lib/api/types'
@@ -26,6 +27,7 @@ export function ApproveAppDialog({
   onCancel: () => void
   onConfirm: (grant: ReturnType<typeof toGrant>) => void
 }) {
+  const t = useTranslations('approveApp')
   const [grant, setGrant] = useState<GrantDraft>(DEFAULT_GRANT)
   const [acknowledged, setAcknowledged] = useState(false)
 
@@ -38,8 +40,8 @@ export function ApproveAppDialog({
   return (
     <ConfirmDialog
       open={app !== null}
-      title="Duyệt app này?"
-      description="Duyệt xong app gửi được thư thật, và khoá API đầu tiên chỉ hiển thị đúng một lần."
+      title={t('title')}
+      description={t('body')}
       facts={
         app
           ? [
@@ -49,7 +51,7 @@ export function ApproveAppDialog({
             ]
           : undefined
       }
-      confirmLabel={pending ? 'Đang duyệt…' : 'Duyệt và cấp khoá đầu tiên'}
+      confirmLabel={pending ? t('approving') : t('confirm')}
       confirmDisabled={!acknowledged || pending}
       onConfirm={() => onConfirm(toGrant(grant))}
       onCancel={close}

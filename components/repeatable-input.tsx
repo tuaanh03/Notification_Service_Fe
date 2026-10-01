@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,12 +29,14 @@ export function RepeatableInput({
   invalid?: boolean
   className?: string
 }) {
+  const t = useTranslations('repeatable')
+  const tv = useTranslations('validation')
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const add = () => {
     const v = draft.trim()
     if (!v) return
-    const err = validate?.(v) ?? (values.includes(v) ? 'Đã có trong danh sách' : null)
+    const err = validate?.(v) ?? (values.includes(v) ? tv('duplicate') : null)
     if (err) {
       setError(err)
       return
@@ -62,7 +65,7 @@ export function RepeatableInput({
           }}
           className="font-mono"
         />
-        <Button type="button" variant="outline" size="icon" onClick={add} aria-label="Thêm" disabled={!draft.trim()}>
+        <Button type="button" variant="outline" size="icon" onClick={add} aria-label={t('add')} disabled={!draft.trim()}>
           <Plus />
         </Button>
       </div>
@@ -78,7 +81,7 @@ export function RepeatableInput({
                   variant="ghost"
                   size="icon-xs"
                   className="-mr-1 size-4"
-                  aria-label={`Bỏ ${v}`}
+                  aria-label={t('remove', { value: v })}
                   onClick={() => onChange(values.filter((x) => x !== v))}
                 >
                   <X className="size-3" />

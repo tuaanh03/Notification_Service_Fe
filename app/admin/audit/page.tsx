@@ -1,11 +1,13 @@
 import { ScrollText } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
 import { EmptyState } from '@/components/empty-state'
-export default function Page() {
+export default async function Page() {
+  const t = await getTranslations('common')
   return (
     <EmptyState
       icon={ScrollText}
-      title="Đang xây dựng"
-      description="Tính năng này đang được hoàn thiện."
+      title={t('underConstruction')}
+      description={t('underConstructionBody')}
       action={<span className="font-mono text-xs text-[var(--text-muted)]">/admin/audit</span>}
     />
   )
