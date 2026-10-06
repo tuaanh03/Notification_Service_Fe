@@ -4,11 +4,11 @@ import vi from '@/messages/vi.json'
 import { ApiError } from './problem'
 
 /**
- * Mã lỗi backend có câu dịch. Chỉ nhận mã viết HOA (`INVALID_CREDENTIALS`…) để mã lạ từ backend
+ * Mã lỗi backend có câu dịch. Chỉ nhận mã viết HOA (`INVALID_CREDENTIALS`, `M365_…`) để mã lạ từ backend
  * không trùng nhầm khoá nội bộ của nhóm `errors` (`unknown`, `withCode`…).
  */
 type ErrorCode = Extract<keyof (typeof vi)['errors'], Uppercase<string>>
-const isKnownCode = (code: string): code is ErrorCode => /^[A-Z_]+$/.test(code) && code in vi.errors
+const isKnownCode = (code: string): code is ErrorCode => /^[A-Z][A-Z0-9_]*$/.test(code) && code in vi.errors
 
 /**
  * Câu hiển thị cho người vận hành, theo ngôn ngữ đang chọn. Chạy ở server (Server Action /

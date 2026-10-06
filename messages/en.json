@@ -13,7 +13,10 @@
     "password": "Password",
     "submit": "Sign in",
     "submitting": "Checking…",
-    "forgot": "Forgot your password? Ask the server administrator to reset it with <code>admin-cli</code> — there is no self-service reset by email."
+    "forgot": "Forgot your password? Ask the server administrator to reset it with <code>admin-cli</code> — there is no self-service reset by email.",
+    "microsoft": "Sign in with Microsoft",
+    "microsoftRedirecting": "Redirecting to Microsoft…",
+    "or": "or use a password"
   },
   "nav": {
     "ews": "EWS",
@@ -106,7 +109,15 @@
     "VERSION_NOT_DRAFT": "This version is published and cannot be edited in place. Click Edit to create a new draft.",
     "AI_NOT_CONFIGURED": "AI is not enabled: the server administrator must set AI_API_URL, AI_API_KEY and AI_MODEL for the api.",
     "AI_RATE_LIMITED": "AI was called more than 10 times in one minute. Wait a moment and try again.",
-    "AI_PROVIDER_ERROR": "The AI provider did not respond properly (error, timeout or wrong format). Try again later."
+    "AI_PROVIDER_ERROR": "The AI provider did not respond properly (error, timeout or wrong format). Try again later.",
+    "M365_NOT_CONFIGURED": "Sign-in with Microsoft is not enabled on the server.",
+    "M365_CANCELLED": "You cancelled the Microsoft sign-in.",
+    "M365_STATE_INVALID": "The Microsoft sign-in attempt expired or is invalid. Please sign in again.",
+    "M365_SIGN_IN_FAILED": "Microsoft sign-in failed. Please sign in again.",
+    "M365_TOKEN_INVALID": "Could not verify your Microsoft identity. Try again; if it keeps happening, contact an administrator.",
+    "M365_PROVIDER_ERROR": "Could not reach Microsoft, or the EWS sign-in configuration is wrong. Contact an administrator.",
+    "M365_ACCOUNT_NOT_REGISTERED": "This Microsoft account has no access to EWS yet. Ask an administrator to add your email.",
+    "M365_ACCOUNT_MISMATCH": "This email is already linked to a different Microsoft account. Contact an administrator."
   },
   "common": {
     "loadErrorTitle": "Could not read data from the API",

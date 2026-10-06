@@ -13,7 +13,10 @@
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
     "submitting": "Đang kiểm tra…",
-    "forgot": "Quên mật khẩu thì nhờ người quản trị máy chủ đặt lại bằng <code>admin-cli</code> — không có đường tự đặt lại qua email."
+    "forgot": "Quên mật khẩu thì nhờ người quản trị máy chủ đặt lại bằng <code>admin-cli</code> — không có đường tự đặt lại qua email.",
+    "microsoft": "Đăng nhập bằng Microsoft",
+    "microsoftRedirecting": "Đang chuyển sang Microsoft…",
+    "or": "hoặc dùng mật khẩu"
   },
   "nav": {
     "ews": "EWS",
@@ -106,7 +109,15 @@
     "VERSION_NOT_DRAFT": "Bản này đã xuất bản, không sửa tại chỗ được. Bấm Sửa để tạo bản nháp mới.",
     "AI_NOT_CONFIGURED": "Chưa bật AI: người quản trị máy chủ cần điền AI_API_URL, AI_API_KEY, AI_MODEL cho api.",
     "AI_RATE_LIMITED": "Đã gọi AI quá 10 lần trong một phút. Chờ một chút rồi thử lại.",
-    "AI_PROVIDER_ERROR": "Nhà cung cấp AI không trả lời được (lỗi, quá giờ hoặc trả sai định dạng). Thử lại sau."
+    "AI_PROVIDER_ERROR": "Nhà cung cấp AI không trả lời được (lỗi, quá giờ hoặc trả sai định dạng). Thử lại sau.",
+    "M365_NOT_CONFIGURED": "Đăng nhập bằng Microsoft chưa được bật trên máy chủ.",
+    "M365_CANCELLED": "Bạn đã huỷ đăng nhập ở Microsoft.",
+    "M365_STATE_INVALID": "Lượt đăng nhập Microsoft đã hết hạn hoặc không hợp lệ. Bấm đăng nhập lại.",
+    "M365_SIGN_IN_FAILED": "Đăng nhập Microsoft không thành công. Bấm đăng nhập lại.",
+    "M365_TOKEN_INVALID": "Không xác minh được danh tính Microsoft. Bấm đăng nhập lại; lặp lại thì báo người quản trị.",
+    "M365_PROVIDER_ERROR": "Không kết nối được tới Microsoft hoặc cấu hình đăng nhập phía EWS có lỗi. Báo người quản trị.",
+    "M365_ACCOUNT_NOT_REGISTERED": "Tài khoản Microsoft này chưa được cấp quyền vào EWS. Nhờ người quản trị thêm email của bạn.",
+    "M365_ACCOUNT_MISMATCH": "Email này đã gắn với một tài khoản Microsoft khác. Báo người quản trị."
   },
   "common": {
     "loadErrorTitle": "Không đọc được dữ liệu từ API",
