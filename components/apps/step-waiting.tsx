@@ -1,7 +1,9 @@
 'use client'
 import { LockKeyhole, TriangleAlert } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useAppSelection } from '@/components/app-context'
 import { AppLink } from '@/components/app-link'
+import { appKey } from '@/lib/app-routes'
 import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -16,9 +18,8 @@ import type { GrantDraft } from './wizard-types'
  * Bước 4 — app đã nằm trong hệ thống, đang chờ duyệt.
  *
  * Duyệt là hành động RIÊNG, không phải phần đuôi của việc tạo: đây mới là chỗ quyết định app
- * được gửi kênh nào và trần bao nhiêu. Console hiện chỉ có một `ADMIN_TOKEN` duy nhất nên người
- * tạo cũng chính là người duyệt — phân vai thật sự phải đợi đăng nhập + phân quyền
- * (`implementation_plan.md` mục 12.4).
+ * được gửi kênh nào và trần bao nhiêu. Chỉ Super Admin duyệt được (ADR-0022): người khác thấy
+ * "đã gửi duyệt, chờ Super Admin" thay cho ô cấp quyền.
  */
 export function StepWaiting({
   app,
@@ -31,6 +32,7 @@ export function StepWaiting({
   error,
   stop,
   secret,
+  canApprove,
   onApprove,
   onCloseSecret,
 }: {
@@ -44,6 +46,7 @@ export function StepWaiting({
   error: string | null
   stop: ActionStop | null
   secret: IssuedAppSecretDto | null
+  canApprove: boolean
   onApprove: () => void
   onCloseSecret: () => void
 }) {
@@ -51,6 +54,9 @@ export function StepWaiting({
   const ta = useTranslations('approveApp')
   const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const active = app.status === 'active'
+  // App mới tạo: lấy giá trị `?app=` từ danh sách đã nạp lại (có thể kèm đuôi khi trùng slug).
+  const { apps } = useAppSelection()
+  const key = appKey(apps.find((a) => a.app_id === app.app_id) ?? app)
 
   return (
     <div className="py-6">
@@ -85,7 +91,14 @@ export function StepWaiting({
         </Alert>
       )}
 
-      {!active && !created.stoppedAt && (
+      {!active && !created.stoppedAt && !canApprove && (
+        <Alert className="mx-auto mt-8 max-w-lg">
+          <AlertTitle>{t('waitingReviewTitle')}</AlertTitle>
+          <AlertDescription>{t('waitingReviewBody')}</AlertDescription>
+        </Alert>
+      )}
+
+      {!active && !created.stoppedAt && canApprove && (
         <div className="mx-auto mt-8 max-w-lg space-y-4 rounded-xl border border-[var(--orbit)] p-5">
           <div>
             <h3 className="text-sm font-semibold">{t('approveTitle')}</h3>
@@ -121,7 +134,7 @@ export function StepWaiting({
                   message: stop.message,
                   mono,
                   link: (chunks) => (
-                    <AppLink href="/settings/credentials" app={app.slug} className="underline">
+                    <AppLink href="/settings/credentials" app={key} className="underline">
                       {chunks}
                     </AppLink>
                   ),
@@ -133,7 +146,7 @@ export function StepWaiting({
               {t.rich('activeNote', {
                 mono,
                 link: (chunks) => (
-                  <AppLink href="/topics" app={app.slug} className="underline">
+                  <AppLink href="/topics" app={key} className="underline">
                     {chunks}
                   </AppLink>
                 ),

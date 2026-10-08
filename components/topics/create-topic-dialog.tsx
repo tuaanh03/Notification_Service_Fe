@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
+import { useRole } from '@/components/role-context'
 import type { CreateTopicInput } from '@/lib/api/topics'
 
 /** Sao đúng `TOPIC_KEY` của backend (`admin-topics.routes.ts`) để báo lỗi tại chỗ, không đợi 422. */
@@ -32,6 +33,8 @@ export function CreateTopicDialog({
   onSubmit: (input: CreateTopicInput) => void
 }) {
   const t = useTranslations('createTopic')
+  // Topic bắt buộc chỉ Super Admin đặt được (ADR-0022) — người khác thấy ô khoá kèm lý do.
+  const { isSuperAdmin } = useRole()
   const [form, setForm] = useState<CreateTopicInput>(EMPTY)
   const keyValid = TOPIC_KEY.test(form.key)
   const valid = keyValid && form.name.trim().length > 0
@@ -95,12 +98,15 @@ export function CreateTopicDialog({
         <div className="flex items-start justify-between gap-4 rounded-lg border border-[var(--orbit)] p-3">
           <div>
             <Label htmlFor="topic-mandatory">{t('mandatory')}</Label>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">{t('mandatoryHint')}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              {isSuperAdmin ? t('mandatoryHint') : t('mandatorySuperAdminOnly')}
+            </p>
           </div>
           <Switch
             id="topic-mandatory"
             checked={form.mandatory}
             onCheckedChange={(v) => setForm((f) => ({ ...f, mandatory: v }))}
+            disabled={!isSuperAdmin}
           />
         </div>
       </div>

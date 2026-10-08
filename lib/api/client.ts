@@ -21,23 +21,16 @@ const TIMEOUT_MS = 10_000
 /** Tên cookie giữ token phiên. Đặt ở đây vì đây là nơi duy nhất đọc nó khi gọi backend. */
 export const SESSION_COOKIE = 'ews_session'
 
-function config(): { baseUrl: string; orgId: string } {
+/**
+ * Không còn `EWS_ORG_ID`: org nào xem được do backend trả theo vai của người đăng nhập
+ * (`GET /admin/me`, ADR-0022) — một console phục vụ mọi org.
+ */
+function config(): { baseUrl: string } {
   const baseUrl = process.env.EWS_API_URL
-  const orgId = process.env.EWS_ORG_ID
-  if (!baseUrl || !orgId) {
-    const missing = [!baseUrl && 'EWS_API_URL', !orgId && 'EWS_ORG_ID'].filter(Boolean)
-    throw new ApiError({
-      status: 0,
-      code: 'API_NOT_CONFIGURED',
-      detail: `thiếu biến môi trường: ${missing.join(', ')}`,
-    })
+  if (!baseUrl) {
+    throw new ApiError({ status: 0, code: 'API_NOT_CONFIGURED', detail: 'thiếu biến môi trường: EWS_API_URL' })
   }
-  return { baseUrl: baseUrl.replace(/\/+$/, ''), orgId }
-}
-
-/** Org mà console đang quản trị — `GET /admin/apps` bắt buộc query `orgId`. */
-export function orgId(): string {
-  return config().orgId
+  return { baseUrl: baseUrl.replace(/\/+$/, '') }
 }
 
 /** Token phiên của người đang xem, hoặc `null` nếu chưa đăng nhập. */

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApp } from '@/components/app-context'
+import { useRole } from '@/components/role-context'
 import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
 import { MAX_ACTIVE_SECRETS } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
@@ -39,6 +40,8 @@ export function CredentialsPanel() {
   const t = useTranslations('credentials')
   const te = useTranslations('errors')
   const { app } = useApp()
+  // App Viewer chỉ xem khoá (đã che) — không cấp / thu hồi.
+  const writable = useRole().canManage(app)
   const [view, setView] = useState<CredentialsView | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -155,7 +158,7 @@ export function CredentialsPanel() {
               {t('activeCount', { active: activeCount, max: MAX_ACTIVE_SECRETS })}
             </p>
           </div>
-          {atLimit ? (
+          {!writable ? null : atLimit ? (
             <Tooltip>
               <TooltipTrigger render={<span className="inline-flex" />}>{issueButton}</TooltipTrigger>
               <TooltipContent>
@@ -192,7 +195,7 @@ export function CredentialsPanel() {
                     {s.revokedAt ? fmtDateTime(s.revokedAt) : '—'}
                   </TableCell>
                   <TableCell className="px-3 text-right">
-                    {s.status === 'active' && (
+                    {writable && s.status === 'active' && (
                       <Button
                         variant="ghost"
                         size="xs"

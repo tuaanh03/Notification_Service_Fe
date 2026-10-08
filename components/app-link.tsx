@@ -3,7 +3,7 @@
 import { useMemo, type ComponentProps } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { withApp } from '@/lib/app-routes'
+import { appKey, withApp } from '@/lib/app-routes'
 import { useAppSelection } from './app-context'
 
 /**
@@ -15,7 +15,7 @@ import { useAppSelection } from './app-context'
  */
 export function AppLink({ href, app, ...props }: Omit<ComponentProps<typeof Link>, 'href'> & { href: string; app?: string }) {
   const { app: current } = useAppSelection()
-  return <Link href={withApp(href, app ?? current?.slug ?? null)} {...props} />
+  return <Link href={withApp(href, app ?? (current ? appKey(current) : null))} {...props} />
 }
 
 type Options = { app?: string }
@@ -24,7 +24,7 @@ type Options = { app?: string }
 export function useAppRouter() {
   const router = useRouter()
   const { app } = useAppSelection()
-  const current = app?.slug ?? null
+  const current = app ? appKey(app) : null
   return useMemo(
     () => ({
       push: (href: string, options?: Options) => router.push(withApp(href, options?.app ?? current)),

@@ -22,8 +22,10 @@ export type EditorError = { message: string; code: string; issues: readonly Issu
  *
  * Bản đang sửa = bản NHÁP nếu có. Không có nháp thì hiện bản đang xuất bản ở chế độ chỉ đọc; bấm "Sửa"
  * là tạo nháp mới chép từ bản đó (backend không cho sửa tại chỗ bản đã xuất bản).
+ *
+ * `readOnly` = người xem không cấu hình được app (App Viewer, ADR-0022): mọi bản đều chỉ đọc.
  */
-export function useTemplateEditor(appId: string, templateId: string) {
+export function useTemplateEditor(appId: string, templateId: string, readOnly = false) {
   const [detail, setDetail] = useState<TemplateDetailDto | null>(null)
   const [loadError, setLoadError] = useState<{ message: string; code: string } | null>(null)
   const [error, setError] = useState<EditorError | null>(null)
@@ -41,7 +43,7 @@ export function useTemplateEditor(appId: string, templateId: string) {
   /** Bản đang hiện trong khung soạn. */
   const shown: TemplateVersionDto | null = draft ?? published ?? detail?.versions[0] ?? null
   const archived = detail?.status === 'archived'
-  const locked = !draft || archived
+  const locked = !draft || archived || readOnly
 
   /** Nạp bản đang hiện vào ô soạn — sau mỗi lần backend trả chi tiết mới. */
   const adopt = useCallback((next: TemplateDetailDto) => {
@@ -142,6 +144,7 @@ export function useTemplateEditor(appId: string, templateId: string) {
     shown,
     archived,
     locked,
+    readOnly,
     dirty,
     subject,
     setSubject: edit(setSubject),

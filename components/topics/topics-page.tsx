@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
+import { useRole } from '@/components/role-context'
 import { CreateTopicDialog } from '@/components/topics/create-topic-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +50,8 @@ export function TopicsPage() {
   const t = useTranslations('topics')
   const te = useTranslations('errors')
   const { app } = useApp()
+  // App Viewer chỉ xem — ẩn nút ghi (backend vẫn chặn bằng 403, đây chỉ để giao diện gọn).
+  const writable = useRole().canManage(app)
   const [rows, setRows] = useState<TopicDto[] | null>(null)
   /** Lỗi lúc NẠP danh sách — màn hình không có dữ liệu để vẽ. */
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -170,7 +173,7 @@ export function TopicsPage() {
                 }
               />
               <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 bg-popover border border-border shadow-md">
-                {next && Icon && (
+                {writable && next && Icon && (
                   <>
                     <DropdownMenuItem
                       variant={next.action === 'suspend' ? 'destructive' : 'default'}
@@ -209,10 +212,12 @@ export function TopicsPage() {
       title={t('title')}
       subtitle={t('subtitle', { app: app.name })}
       actions={
-        <Button className="gap-1.5 text-xs" onClick={() => setCreating(true)}>
-          <Plus className="size-3.5" />
-          {t('add')}
-        </Button>
+        writable ? (
+          <Button className="gap-1.5 text-xs" onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" />
+            {t('add')}
+          </Button>
+        ) : undefined
       }
     />
   )

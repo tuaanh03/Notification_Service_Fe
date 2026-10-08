@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
+import { useRole } from '@/components/role-context'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,7 +36,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const tc = useTranslations('common')
   const te = useTranslations('errors')
   const { app } = useApp()
-  const ed = useTemplateEditor(app.app_id, templateId)
+  // App Viewer chỉ xem: khoá khung soạn, ẩn mọi nút ghi (backend vẫn chặn bằng 403).
+  const writable = useRole().canManage(app)
+  const ed = useTemplateEditor(app.app_id, templateId, !writable)
   const [name, setName] = useState('')
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
@@ -94,7 +97,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         actions={
           <>
             <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
-            {!ed.archived && ed.draft && (
+            {writable && !ed.archived && ed.draft && (
               <>
                 <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()}>
                   <Save /> {t('saveDraft')}
@@ -104,12 +107,12 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 </Button>
               </>
             )}
-            {!ed.archived && !ed.draft && ed.published && (
+            {writable && !ed.archived && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
                 <Pencil /> {t('edit', { version: nextVersion })}
               </Button>
             )}
-            {!ed.archived && (
+            {writable && !ed.archived && (
               <Button variant="outline" disabled={ed.pending} onClick={() => setArchiveConfirm(true)}>
                 <Archive /> {t('archive')}
               </Button>
@@ -134,7 +137,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             </AlertDescription>
           </Alert>
         )}
-        {!ed.archived && ed.locked && ed.published && (
+        {writable && !ed.archived && ed.locked && ed.published && (
           <Alert data-testid="locked-notice">
             <AlertDescription className="text-[var(--text-secondary)]">
               {t.rich('lockedNotice', { version: ed.published.version, em: (chunks) => <em>{chunks}</em> })}
@@ -147,10 +150,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             <div className="space-y-1.5">
               <Label htmlFor="tpl-name" className="text-xs font-semibold">{t('name')}</Label>
               <div className="flex gap-2">
-                <Input id="tpl-name" value={name} onChange={(e) => setName(e.target.value)} disabled={ed.archived} className="text-sm" />
+                <Input id="tpl-name" value={name} onChange={(e) => setName(e.target.value)} disabled={ed.archived || !writable} className="text-sm" />
                 <Button
                   variant="outline"
-                  disabled={ed.archived || ed.pending || !name.trim() || name.trim() === savedName}
+                  disabled={!writable || ed.archived || ed.pending || !name.trim() || name.trim() === savedName}
                   onClick={() => void ed.rename(name.trim()).then((ok) => ok && toast.success(t('renamed')))}
                 >
                   {t('rename')}

@@ -10,6 +10,7 @@ import {
   type NetworkRulesView,
 } from '@/app/settings/origins/actions'
 import { useApp } from '@/components/app-context'
+import { useRole } from '@/components/role-context'
 import { useNetworkValidators } from '@/components/apps/use-network-validators'
 import { AuditTrail } from '@/components/audit-trail'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -42,12 +43,15 @@ function RuleSection({
   kind,
   rules,
   busy,
+  writable,
   onAdd,
   onRemove,
 }: {
   kind: Kind
   rules: NetworkRuleDto[]
   busy: boolean
+  /** `false` = chỉ xem (App Viewer): ẩn ô thêm và nút gỡ. */
+  writable: boolean
   onAdd: (value: string) => void
   onRemove: (rule: NetworkRuleDto) => void
 }) {
@@ -85,31 +89,35 @@ function RuleSection({
             className="flex items-center justify-between gap-2 rounded-lg border border-[var(--orbit)] px-3 py-1.5"
           >
             <span className="min-w-0 break-all font-mono text-xs">{rule.value}</span>
-            <Button variant="ghost" size="icon-sm" disabled={busy} aria-label={t('remove', { value: rule.value })} onClick={() => onRemove(rule)}>
-              <X />
-            </Button>
+            {writable && (
+              <Button variant="ghost" size="icon-sm" disabled={busy} aria-label={t('remove', { value: rule.value })} onClick={() => onRemove(rule)}>
+                <X />
+              </Button>
+            )}
           </li>
         ))}
         {rules.length === 0 && <li className="py-2 text-xs text-[var(--text-muted)]">{t(meta.empty)}</li>}
       </ul>
 
-      <div className="mt-4 flex gap-2">
-        <Input
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            setError(null)
-          }}
-          onKeyDown={(e) => e.key === 'Enter' && add()}
-          placeholder={meta.placeholder}
-          aria-label={t('addAria', { title })}
-          aria-invalid={error !== null}
-          className="min-w-0 font-mono"
-        />
-        <Button variant="outline" size="sm" disabled={busy || !draft.trim()} onClick={add}>
-          <Plus /> {t('add')}
-        </Button>
-      </div>
+      {writable && (
+        <div className="mt-4 flex gap-2">
+          <Input
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              setError(null)
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && add()}
+            placeholder={meta.placeholder}
+            aria-label={t('addAria', { title })}
+            aria-invalid={error !== null}
+            className="min-w-0 font-mono"
+          />
+          <Button variant="outline" size="sm" disabled={busy || !draft.trim()} onClick={add}>
+            <Plus /> {t('add')}
+          </Button>
+        </div>
+      )}
       {error && <p className="mt-1.5 text-xs text-[var(--supernova)]">{error}</p>}
     </Panel>
   )
@@ -128,6 +136,7 @@ export function NetworkRulesPanel() {
   const t = useTranslations('network')
   const te = useTranslations('errors')
   const { app } = useApp()
+  const writable = useRole().canManage(app)
   const appId = app.app_id
   const [view, setView] = useState<NetworkRulesView | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -270,6 +279,7 @@ export function NetworkRulesPanel() {
               kind={kind}
               rules={ofKind(kind)}
               busy={pending}
+              writable={writable}
               onAdd={(value) => add(kind, value)}
               onRemove={(rule) => setConfirming({ action: 'remove', rule })}
             />

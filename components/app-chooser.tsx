@@ -7,12 +7,14 @@ import { readLastApp } from './app-context'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { Panel } from './panel'
+import { useRole } from './role-context'
 import { StatusPill } from './status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
+import { appKey } from '@/lib/app-routes'
 import type { App, AppStatus } from '@/lib/mock-data'
 
 /** App đang chạy lên đầu; app đã thu hồi gom riêng ở cuối. */
@@ -29,7 +31,7 @@ function AppCard({ app, here, last }: { app: App; here: string; last: boolean })
   return (
     <AppLink
       href={here}
-      app={app.slug}
+      app={appKey(app)}
       className="block rounded-xl border border-[var(--orbit)] bg-[var(--void)]/60 p-4 transition-colors hover:border-[var(--starlight)]/50 hover:bg-[var(--void)]/90"
     >
       <div className="flex items-start justify-between gap-3">
@@ -51,17 +53,29 @@ function AppCard({ app, here, last }: { app: App; here: string; last: boolean })
   )
 }
 
+/** Gom app theo org, giữ thứ tự đã sắp bên trong mỗi nhóm; nhóm theo tên org. */
+function groupByOrg(apps: App[]): { orgId: string | undefined; orgName: string | undefined; apps: App[] }[] {
+  const groups = new Map<string | undefined, { orgId: string | undefined; orgName: string | undefined; apps: App[] }>()
+  for (const a of apps) {
+    const group = groups.get(a.org_id) ?? { orgId: a.org_id, orgName: a.org_name, apps: [] }
+    group.apps.push(a)
+    groups.set(a.org_id, group)
+  }
+  return [...groups.values()].sort((x, y) => (x.orgName ?? '').localeCompare(y.orgName ?? ''))
+}
+
 /**
  * Trang chọn app — hiện TẠI đường dẫn đang mở khi đường dẫn thiếu hoặc sai `?app=` (`<AppGate>`).
  * Chọn xong là tới đúng màn đã định mở (`here` + `?app=`), không về trang đầu.
  *
- * Không đoán thay người dùng: "dùng gần nhất" chỉ là nhãn. Chưa có đăng nhập nên liệt kê mọi app
- * của tổ chức; lọc theo vai trò làm ở đây khi có RBAC (plan §12.4 của backend).
+ * Không đoán thay người dùng: "dùng gần nhất" chỉ là nhãn. Danh sách đã lọc theo vai ở backend
+ * (ADR-0022): chỉ app người này được xem, của mọi org họ thuộc về — nhiều org thì chia nhóm theo org.
  * Chỉ hiện trường backend đang trả — không có số người nhận / số thư tự chế.
  */
 export function AppChooser({ apps, requested, here }: { apps: App[]; requested: string | null; here: string }) {
   const t = useTranslations('chooser')
   const locale = useLocale()
+  const { isSuperAdmin } = useRole()
   const [query, setQuery] = useState('')
   // Đọc sau khi mount: server không có localStorage, đọc lúc render là lệch hydrate.
   const [last, setLast] = useState<string | null>(null)
@@ -72,6 +86,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
     .filter((a) => !q || a.name.toLowerCase().includes(q) || a.slug.includes(q))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name, locale))
   const live = shown.filter((a) => a.status !== 'revoked')
+  const multiOrg = new Set(apps.map((a) => a.org_id)).size > 1
   const revoked = shown.filter((a) => a.status === 'revoked')
 
   return (
@@ -113,9 +128,16 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
           {live.length === 0 && revoked.length === 0 ? (
             <p className="py-6 text-center text-xs text-[var(--text-muted)]">{t('noMatch', { query })}</p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {live.map((a) => (
-                <AppCard key={a.slug} app={a} here={here} last={a.slug === last} />
+            <div className="space-y-4">
+              {groupByOrg(live).map((group) => (
+                <section key={group.orgId ?? '-'} className="space-y-2">
+                  {multiOrg && <h2 className="text-xs font-semibold text-[var(--text-secondary)]">{group.orgName}</h2>}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {group.apps.map((a) => (
+                      <AppCard key={a.app_id} app={a} here={here} last={appKey(a) === last} />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}
@@ -129,7 +151,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
               <CollapsibleContent>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {revoked.map((a) => (
-                    <AppCard key={a.slug} app={a} here={here} last={a.slug === last} />
+                    <AppCard key={a.app_id} app={a} here={here} last={appKey(a) === last} />
                   ))}
                 </div>
               </CollapsibleContent>
@@ -137,13 +159,16 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
           )}
         </Panel>
 
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-          <ShieldCheck className="size-3.5" />
-          {t('adminHint')}{' '}
-          <AppLink href="/admin/apps" className="text-[var(--starlight)] underline-offset-2 hover:underline">
-            {t('adminLink')}
-          </AppLink>
-        </p>
+        {/* Duyệt / tạm ngưng / thu hồi app là việc của Super Admin (ADR-0022). */}
+        {isSuperAdmin && (
+          <p className="mt-4 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+            <ShieldCheck className="size-3.5" />
+            {t('adminHint')}{' '}
+            <AppLink href="/admin/apps" className="text-[var(--starlight)] underline-offset-2 hover:underline">
+              {t('adminLink')}
+            </AppLink>
+          </p>
+        )}
       </div>
     </>
   )

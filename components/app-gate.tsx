@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { isBootstrapRoute, isOrgRoute } from '@/lib/app-routes'
+import { appKey, isBootstrapRoute, isOrgRoute } from '@/lib/app-routes'
 import { AppChooser } from './app-chooser'
 import { useAppSelection } from './app-context'
 import { AppShell } from './app-shell'
@@ -43,7 +43,7 @@ export function AppGate({
   const { app, apps, requested } = useAppSelection()
 
   const open = isOrgRoute(pathname) || app !== null
-  const only = !open && requested === null && apps.length === 1 ? apps[0].slug : null
+  const only = !open && requested === null && apps.length === 1 ? appKey(apps[0]) : null
   const here = search ? `${pathname}?${search}` : pathname
 
   /**

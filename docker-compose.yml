@@ -25,8 +25,6 @@ services:
     environment:
       # DNS nội bộ của service api trên ews-net — không đi qua host, không qua domain public.
       EWS_API_URL: ${EWS_API_URL:-http://ews-astrolink-api:3000}
-      # Org mà console đang quản trị — GET /admin/apps bắt buộc query `orgId`.
-      EWS_ORG_ID: ${EWS_ORG_ID:-}
     networks:
       - ews-net
     healthcheck:

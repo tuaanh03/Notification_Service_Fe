@@ -1,7 +1,7 @@
 'use client'
 import { createContext, useContext, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { APP_PARAM } from '@/lib/app-routes'
+import { APP_PARAM, appKey } from '@/lib/app-routes'
 import type { App } from '@/lib/mock-data'
 
 /**
@@ -37,11 +37,11 @@ export function readLastApp(): string | null {
 export function AppProvider({ apps, children }: { apps: App[]; children: React.ReactNode }) {
   const requested = useSearchParams().get(APP_PARAM)
   const value = useMemo<AppSelection>(
-    () => ({ app: apps.find((a) => a.slug === requested) ?? null, apps, requested }),
+    () => ({ app: apps.find((a) => appKey(a) === requested) ?? null, apps, requested }),
     [apps, requested],
   )
 
-  const slug = value.app?.slug
+  const slug = value.app ? appKey(value.app) : undefined
   useEffect(() => {
     if (!slug) return
     try {

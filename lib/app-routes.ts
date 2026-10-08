@@ -46,6 +46,22 @@ export const APP_DETAIL_ROUTES: ReadonlyArray<{ base: string; static: readonly s
   { base: '/notifications', static: ['/notifications/errors'] },
 ]
 
+/** Giá trị `?app=` của một app — LUÔN đi qua hàm này, không đọc thẳng `slug`. */
+export function appKey(app: { slug: string; route_key?: string | undefined }): string {
+  return app.route_key ?? app.slug
+}
+
+/**
+ * Slug chỉ duy nhất trong MỘT org (`uq_apps_org_slug` của backend). Một người thấy app của nhiều
+ * org thì hai app có thể trùng slug — khi đó `?app=` thêm 8 ký tự đầu của id để không mở nhầm app.
+ * App không trùng giữ slug trơn: link cũ vẫn chạy.
+ */
+export function appRouteKeys(apps: readonly { app_id: string; slug: string }[]): Map<string, string> {
+  const count = new Map<string, number>()
+  for (const a of apps) count.set(a.slug, (count.get(a.slug) ?? 0) + 1)
+  return new Map(apps.map((a) => [a.app_id, (count.get(a.slug) ?? 0) > 1 ? `${a.slug}~${a.app_id.slice(0, 8)}` : a.slug]))
+}
+
 /** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `slug = null` hoặc link ngoài -> để nguyên. */
 export function withApp(href: string, slug: string | null): string {
   if (slug === null || !href.startsWith('/')) return href

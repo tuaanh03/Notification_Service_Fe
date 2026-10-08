@@ -6,6 +6,19 @@
  * `<DataTable>` yêu cầu — interface không có index signature ngầm.
  */
 
+/** Vai trong org / trên app — sao đúng `ORG_ROLES` / `APP_ROLES` của backend (ADR-0022). */
+export type OrgRole = 'owner' | 'org_admin' | 'member'
+export type AppRole = 'app_admin' | 'app_viewer'
+
+/** `GET /admin/me` — sao đúng `AdminProfileDto` của backend (`apps/application/queries/get-admin-profile.ts`). */
+export type AdminProfileDto = {
+  isSuperAdmin: boolean
+  /** Super Admin: mọi org, `role: null`. Người khác: org mình là thành viên. */
+  orgs: { id: string; name: string; role: OrgRole | null }[]
+  /** Vai cấp TRỰC TIẾP trên app. Owner / Org Admin còn có quyền ngầm trên mọi app của org. */
+  appRoles: Record<string, AppRole>
+}
+
 /** Sao đúng `AppDto` của backend (`src/modules/apps/application/dto.ts`). */
 export type AppDto = {
   id: string

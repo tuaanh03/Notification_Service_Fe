@@ -4,6 +4,8 @@ import { useTranslations } from 'next-intl'
 import { useAppRouter } from '@/components/app-link'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
+import { useRole } from '@/components/role-context'
+import { useApp } from '@/components/app-context'
 import { TemplatesTable } from './templates-table'
 
 /**
@@ -14,15 +16,19 @@ import { TemplatesTable } from './templates-table'
 export function TemplatesPage() {
   const tt = useTranslations('templates')
   const router = useAppRouter()
+  const { app } = useApp()
+  const writable = useRole().canManage(app)
   return (
     <>
       <PageHeader
         title={tt('title')}
         subtitle={tt('subtitle')}
         actions={
-          <Button onClick={() => router.push('/templates/new')}>
-            <FilePlus2 /> {tt('create')}
-          </Button>
+          writable ? (
+            <Button onClick={() => router.push('/templates/new')}>
+              <FilePlus2 /> {tt('create')}
+            </Button>
+          ) : undefined
         }
       />
       <TemplatesTable />

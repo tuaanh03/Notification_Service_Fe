@@ -22,7 +22,8 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
   const [copyFrom, setCopyFrom] = useState<TemplateVersionDto | null>(null)
   const versions = ed.detail?.versions ?? []
   const prevOf = (v: TemplateVersionDto) => versions.find((x) => x.version < v.version)
-  const canCopy = !ed.draft && !ed.archived
+  // Người chỉ xem (App Viewer) không tạo nháp từ bản cũ.
+  const canCopy = !ed.draft && !ed.archived && !ed.readOnly
 
   return (
     <div className="space-y-3" data-testid="versions-panel">

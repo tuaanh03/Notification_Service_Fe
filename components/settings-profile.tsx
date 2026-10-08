@@ -9,12 +9,14 @@ import { StatusPill } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useApp } from '@/components/app-context'
+import { useRole } from '@/components/role-context'
 
 const testSendResponse = `202 Accepted
 { "notification_id": "ntf_01HZ...", "recipients": 0, "status": "no_recipient" }`
 
 /** UC-001 §A (App Owner view) + §G Gửi thử. */
 export function SettingsProfile() {
+  const { creatableOrgs } = useRole()
   const t = useTranslations('profile')
   const { app } = useApp()
   return (
@@ -23,9 +25,12 @@ export function SettingsProfile() {
         title={t('title')}
         subtitle={t('subtitle', { app: app.slug })}
         actions={
-          <Button variant="outline" render={<AppLink href="/apps/new" />}>
-            {t('registerAnother')}
-          </Button>
+          // Chỉ ai được tạo app (Owner / Org Admin / Super Admin) mới thấy lối vào wizard.
+          creatableOrgs.length > 0 ? (
+            <Button variant="outline" render={<AppLink href="/apps/new" />}>
+              {t('registerAnother')}
+            </Button>
+          ) : undefined
         }
       />
       <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">

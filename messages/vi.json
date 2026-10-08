@@ -50,7 +50,6 @@
     "expandSidebar": "Mở rộng sidebar (Ctrl + B)",
     "chooseApp": "Chọn app",
     "switchApp": "Chuyển App Service",
-    "demoRole": "Chế độ xem demo (Role)",
     "signOut": "Đăng xuất",
     "search": "Tìm kiếm",
     "quotaTitle": "Quota phút: {used}/{max}",
@@ -79,7 +78,9 @@
     "errorTitle": "Không đọc được danh sách app",
     "emptyTitle": "Chưa có app nào",
     "emptyBody": "Org này chưa có app service nào. Đăng ký app đầu tiên để bắt đầu quản trị EWS Notification Service.",
-    "registerFirst": "Đăng ký app đầu tiên"
+    "registerFirst": "Đăng ký app đầu tiên",
+    "noAccessTitle": "Chưa có quyền vào org nào",
+    "noAccessBody": "Tài khoản của bạn chưa được gán vào org hay app nào. Nhờ Owner của org hoặc Super Admin thêm bạn."
   },
   "errors": {
     "withCode": "{message} (mã: {code})",
@@ -730,7 +731,8 @@
     "optOut": "Có nhận (opt_out) — người dùng phải tự tắt",
     "optIn": "Không nhận (opt_in) — người dùng phải tự bật",
     "mandatory": "Bắt buộc",
-    "mandatoryHint": "Người dùng không tắt được chủ đề này. Chỉ dành cho thông báo giao dịch bắt buộc."
+    "mandatoryHint": "Người dùng không tắt được chủ đề này. Chỉ dành cho thông báo giao dịch bắt buộc.",
+    "mandatorySuperAdminOnly": "Chỉ Super Admin bật được chủ đề bắt buộc — vì nó bỏ qua quyền tắt thư của người nhận."
   },
   "suppressed": {
     "user_unsubscribe": "người dùng tự ngắt",
@@ -1099,7 +1101,14 @@
     "approveBody": "Duyệt là lúc app nhận quyền. MVP chỉ gửi được email nên kênh cố định là <mono>email</mono>.",
     "noKeyTitle": "Đã duyệt, nhưng chưa cấp được khoá",
     "noKeyBody": "{message} App đã <mono>active</mono> — vào <link>Khoá API</link> cấp lại.",
-    "activeNote": "App đã hoạt động. Chủ đề vừa tạo còn ở <mono>draft</mono> — sang <link>Chủ đề</link> kích hoạt trước khi app gửi được thư."
+    "activeNote": "App đã hoạt động. Chủ đề vừa tạo còn ở <mono>draft</mono> — sang <link>Chủ đề</link> kích hoạt trước khi app gửi được thư.",
+    "org": "Tổ chức (org)",
+    "orgPlaceholder": "Chọn org sở hữu app…",
+    "mandatorySuperAdminOnly": "Chỉ Super Admin bật được chủ đề bắt buộc — vì nó bỏ qua quyền tắt thư của người nhận.",
+    "waitingReviewTitle": "Đã gửi duyệt",
+    "waitingReviewBody": "App đang chờ Super Admin duyệt và cấp kênh gửi. Duyệt xong bạn cấp khoá API ở Cài đặt App → Credentials.",
+    "noOrgTitle": "Bạn chưa được tạo app",
+    "noOrgBody": "Chỉ Owner / Org Admin của một org (hoặc Super Admin) mới đăng ký app được. Nhờ Owner của org nâng vai cho bạn."
   },
   "repeatable": {
     "add": "Thêm",
@@ -1166,5 +1175,12 @@
     "reasonValue": "Lý do: <b>{reason}</b>",
     "ignoredTitle": "Kênh sẽ bị bỏ qua khi gửi",
     "ignoredBody": "Topic <mono>{topic}</mono> khai kênh <mono>{channels}</mono> nhưng app không được cấp — kênh này sẽ bị bỏ qua khi gửi."
+  },
+  "roles": {
+    "superAdmin": "Super Admin",
+    "owner": "Owner",
+    "org_admin": "Org Admin",
+    "member": "Thành viên",
+    "user": "Chưa thuộc org nào"
   }
 }

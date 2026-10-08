@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { useRole } from '@/components/role-context'
 import type { ProfileDraft, TopicDraft } from './wizard-types'
 
 /** Một dòng `dt/dd` — giá trị rỗng hiện `—`, không đoán hộ. */
@@ -33,6 +34,7 @@ export function StepReview({
   onSubmit: () => void
 }) {
   const t = useTranslations('wizard')
+  const { creatableOrgs } = useRole()
   return (
     <div className="space-y-6">
       <div>
@@ -44,6 +46,7 @@ export function StepReview({
         <Panel className="p-4">
           <h3 className="mb-4 text-xs font-semibold text-[var(--starlight)]">{t('stepProfile')}</h3>
           <dl className="space-y-3 text-xs">
+            <Fact label="org" value={creatableOrgs.find((o) => o.id === profile.orgId)?.name ?? profile.orgId} />
             <Fact label="name" value={profile.name.trim()} />
             <Fact label="slug" value={profile.slug} />
             <Fact label="namespace" value={profile.namespace} />

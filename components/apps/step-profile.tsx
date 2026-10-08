@@ -4,13 +4,25 @@ import { useTranslations } from 'next-intl'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { RepeatableInput } from '@/components/repeatable-input'
 import { useNetworkValidators } from './use-network-validators'
 import { APP_SLUG, APP_SLUG_TEXT, type ProfileDraft } from './wizard-types'
 
-/** Bước 1 — hồ sơ app: đúng 4 field của `POST /admin/apps` + allowlist đi kèm. */
-export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange: (next: ProfileDraft) => void }) {
+/**
+ * Bước 1 — hồ sơ app: các field của `POST /admin/apps` + allowlist đi kèm. `orgs` = org người này được
+ * tạo app (ADR-0022); một org thì chỉ hiện tên, nhiều org thì bắt chọn.
+ */
+export function StepProfile({
+  draft,
+  orgs,
+  onChange,
+}: {
+  draft: ProfileDraft
+  orgs: { id: string; name: string }[]
+  onChange: (next: ProfileDraft) => void
+}) {
   const t = useTranslations('wizard')
   const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const { validateIp, validateOrigin } = useNetworkValidators()
@@ -23,6 +35,27 @@ export function StepProfile({ draft, onChange }: { draft: ProfileDraft; onChange
       <div>
         <h2 className="text-lg font-semibold">{t('stepProfile')}</h2>
         <p className="mt-1 text-xs text-[var(--text-secondary)]">{t.rich('profileDraftNote', { mono })}</p>
+      </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="wz-org">{t('org')}</Label>
+        {orgs.length > 1 ? (
+          <NativeSelect
+            id="wz-org"
+            value={draft.orgId}
+            onChange={(e) => onChange({ ...draft, orgId: e.target.value })}
+            className="w-full"
+          >
+            <NativeSelectOption value="">{t('orgPlaceholder')}</NativeSelectOption>
+            {orgs.map((o) => (
+              <NativeSelectOption key={o.id} value={o.id}>
+                {o.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        ) : (
+          <p id="wz-org" className="text-sm">{orgs[0]?.name ?? '—'}</p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

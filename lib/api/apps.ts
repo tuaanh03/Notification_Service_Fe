@@ -1,14 +1,29 @@
 import 'server-only'
 import { type App, type Channel } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
-import { adminFetch, orgId } from './client'
-import type { AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto } from './types'
+import { appRouteKeys } from '@/lib/app-routes'
+import { adminFetch } from './client'
+import type { AdminProfileDto, AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto } from './types'
 
 export type { AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto }
 
-/** GET /admin/apps?orgId= — org lấy từ EWS_ORG_ID. */
-export async function listApps(): Promise<AppDto[]> {
-  return adminFetch<AppDto[]>('/apps', { query: { orgId: orgId() } })
+/** GET /admin/apps?orgId= — backend chỉ trả app mà người gọi được xem (Member: app được cấp vai). */
+export async function listApps(orgId: string): Promise<AppDto[]> {
+  return adminFetch<AppDto[]>('/apps', { query: { orgId } })
+}
+
+/**
+ * Mọi app người đăng nhập được xem, của MỌI org họ thuộc về (`GET /admin/me` -> từng org).
+ * Mỗi org một lời gọi, chạy song song — số org của một người nhỏ.
+ */
+export async function listVisibleApps(me: AdminProfileDto): Promise<App[]> {
+  const perOrg = await Promise.all(
+    me.orgs.map(async (org) => (await listApps(org.id)).map((dto) => ({ ...toApp(dto), org_id: org.id, org_name: org.name }))),
+  )
+  const apps = perOrg.flat()
+  // Slug chỉ duy nhất TRONG một org: hai org trùng slug thì `?app=` phải phân biệt được.
+  const keys = appRouteKeys(apps)
+  return apps.map((a) => ({ ...a, route_key: keys.get(a.app_id) ?? a.slug }))
 }
 
 /** GET /admin/apps/:appId */
@@ -67,8 +82,10 @@ export async function revokeSecret(appId: string, secretId: string): Promise<App
 
 // --- Đăng ký app mới (UC-001). Backend KHÔNG có lệnh gộp: mỗi bước một lời gọi. ---
 
-/** Body của `POST /admin/apps`. `orgId` do `lib/api/client.ts` điền từ `EWS_ORG_ID`. */
+/** Body của `POST /admin/apps`. */
 export type CreateAppInput = {
+  /** Org sở hữu app — chỉ org mà người tạo là Owner / Org Admin (hoặc Super Admin). */
+  orgId: string
   /** `^[a-z0-9][a-z0-9-]{1,62}$` — định danh app trong tổ chức. */
   slug: string
   name: string
@@ -79,7 +96,7 @@ export type CreateAppInput = {
 
 /** POST /admin/apps -> app ở trạng thái `draft`. Chưa gửi được gì cho tới khi duyệt. */
 export async function createApp(input: CreateAppInput): Promise<AppDto> {
-  return adminFetch<AppDto>('/apps', { method: 'POST', body: { ...input, orgId: orgId() } })
+  return adminFetch<AppDto>('/apps', { method: 'POST', body: input })
 }
 
 /** POST /admin/apps/:appId/network-rules — thêm MỘT dòng allowlist. */

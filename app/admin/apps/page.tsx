@@ -5,18 +5,20 @@ import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { listApps } from '@/lib/api/apps'
+import { getMe } from '@/lib/api/me'
 import { describeError } from '@/lib/api/error-message'
 import { ApiError } from '@/lib/api/problem'
 
 /**
- * Server Component: đọc `/admin/apps` bằng ADMIN_TOKEN phía server rồi truyền
- * dữ liệu xuống bảng. Browser không thấy token, cũng không biết địa chỉ backend.
+ * Server Component: đọc `/admin/apps` của MỌI org mà người đăng nhập thấy (`/admin/me`) bằng phiên
+ * phía server rồi truyền xuống bảng. Browser không thấy token, cũng không biết địa chỉ backend.
  */
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   try {
-    const apps = await listApps()
+    const me = await getMe()
+    const apps = (await Promise.all(me.orgs.map((o) => listApps(o.id)))).flat()
     return <AppAdminList rows={apps} />
   } catch (err) {
     if (!(err instanceof ApiError)) throw err

@@ -4,6 +4,7 @@ import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { EmptyState } from './empty-state'
 import { Panel } from './panel'
+import { useRole } from './role-context'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -16,9 +17,14 @@ import { Button } from '@/components/ui/button'
  * Nút "Đăng ký app đầu tiên" CHỈ hiện khi `error === null`. Đang lỗi mà vẫn mời tạo app là mời
  * tạo trùng: danh sách rỗng lúc đó không có nghĩa là tổ chức chưa có app, chỉ nghĩa là chưa đọc
  * được. Đây cũng là lý do `error` quyết định màn hình chứ không chỉ quyết định dòng chữ.
+ *
+ * Người không được tạo app ở org nào (chưa thuộc org nào, hoặc chỉ là Member — ADR-0022) thì
+ * không mời tạo app: nói rõ là chưa có quyền và cần ai thêm vào.
  */
 export function NoAppsScreen({ error }: { error: string | null }) {
   const t = useTranslations('noApps')
+  const { creatableOrgs } = useRole()
+  const noAccess = error === null && creatableOrgs.length === 0
   return (
     <>
       <CosmicBackground />
@@ -26,12 +32,10 @@ export function NoAppsScreen({ error }: { error: string | null }) {
         <Panel className="w-full max-w-md px-6">
           <EmptyState
             icon={PlugZap}
-            title={error ? t('errorTitle') : t('emptyTitle')}
-            description={
-error ?? t('emptyBody')
-            }
+            title={error ? t('errorTitle') : noAccess ? t('noAccessTitle') : t('emptyTitle')}
+            description={error ?? (noAccess ? t('noAccessBody') : t('emptyBody'))}
             action={
-              error ? undefined : (
+              error || noAccess ? undefined : (
                 <Button render={<AppLink href="/apps/new" />}>{t('registerFirst')}</Button>
               )
             }

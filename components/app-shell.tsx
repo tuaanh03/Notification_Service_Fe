@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -31,7 +32,7 @@ import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
 import { AppLink, useAppRouter } from './app-link'
-import { switchAppPath } from '@/lib/app-routes'
+import { appKey, switchAppPath } from '@/lib/app-routes'
 import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
@@ -39,7 +40,7 @@ import { statusColors } from '@/lib/theme'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
 import { LOCALES } from '@/i18n/locales'
 import { useLocaleSwitch } from './locale-switcher'
-import { useRole, type DemoRole } from './role-context'
+import { useRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
 import { cn } from '@/lib/utils'
@@ -140,14 +141,21 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
   const tn = useTranslations('nav')
   const tl = useTranslations('locale')
   const { locale, change: changeLocale, pending: localePending } = useLocaleSwitch()
-  const { role, setRole } = useRole()
+  const tr = useTranslations('roles')
+  const { me, isSuperAdmin } = useRole()
   // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock. `app` đọc từ `?app=`
   // trên đường dẫn — null ở màn `/admin` mở chưa kèm app (lib/app-routes.ts).
   const { app, apps } = useAppSelection()
   const router = useAppRouter()
   // Số thật từ danh sách app của AppProvider. Trước đây lấy `pendingApprovalCount()` của mock:
   // một con số bịa nằm trên khung luôn hiển thị, ngoài vùng <PreviewBanner> che phủ (mục 2.4).
-  const pending = apps.filter((a) => a.status === 'pending_approval').length
+  // Chỉ Super Admin duyệt app -> chỉ họ cần con số chờ duyệt (ADR-0022).
+  const pending = isSuperAdmin ? apps.filter((a) => a.status === 'pending_approval').length : 0
+  // Thấy app của nhiều org thì ô chọn app chia nhóm theo org (danh sách đã xếp theo org ở layout).
+  const multiOrg = new Set(apps.map((a) => a.org_id)).size > 1
+  // Vai THẬT: Super Admin, hoặc vai trong org của app đang xem.
+  const orgRole = me.orgs.find((o) => o.id === app?.org_id)?.role ?? null
+  const roleLabel = isSuperAdmin ? tr('superAdmin') : orgRole ? tr(orgRole) : tr('user')
   const appDot = app ? (statusColors[app.status] ?? statusColors.draft) : statusColors.draft
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
@@ -244,14 +252,18 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                       <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
                         {t('switchApp')}
                       </DropdownMenuLabel>
-                      {apps.map((a) => (
+                      {apps.map((a, i) => (
+                        <Fragment key={a.app_id}>
+                        {/* Nhiều org: tên org làm tiêu đề mỗi nhóm (danh sách đã xếp theo org). */}
+                        {multiOrg && a.org_id !== apps[i - 1]?.org_id && (
+                          <div className="px-2 pt-2 pb-1 text-[10px] text-muted-foreground truncate">{a.org_name}</div>
+                        )}
                         <DropdownMenuItem
-                          key={a.slug}
                           // Đổi app = đổi `?app=`: ở lại màn này, hoặc về danh sách nếu đang ở trang chi tiết.
-                          onClick={() => router.push(switchAppPath(path), { app: a.slug })}
+                          onClick={() => router.push(switchAppPath(path), { app: appKey(a) })}
                           className={cn(
                             'flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs',
-                            a.slug === app?.slug && 'bg-sidebar-accent font-medium',
+                            a.app_id === app?.app_id && 'bg-sidebar-accent font-medium',
                           )}
                         >
                           <div className="flex flex-col min-w-0">
@@ -260,9 +272,10 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <StatusPill status={a.status} />
-                            {a.slug === app?.slug && <Check className="size-3.5 text-[var(--starlight)]" />}
+                            {a.app_id === app?.app_id && <Check className="size-3.5 text-[var(--starlight)]" />}
                           </div>
                         </DropdownMenuItem>
+                        </Fragment>
                       ))}
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -447,7 +460,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
             </SidebarGroup>
 
             {/* Nhóm EWS Tổng (Super Admin Only) */}
-            {role === 'Super Admin' && (
+            {isSuperAdmin && (
               <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
                 <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
                   {tn('groupEws')}
@@ -509,7 +522,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
             </div>
           </SidebarContent>
 
-          {/* Footer: User Profile & Role Switcher */}
+          {/* Footer: tài khoản, vai thật, ngôn ngữ, đăng xuất */}
           <SidebarFooter className="p-2 border-t border-[var(--orbit)] group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
             <SidebarMenu className="group-data-[collapsible=icon]:items-center">
               <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
@@ -531,7 +544,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                           </span>
                           <span className="truncate text-[10px] text-muted-foreground flex items-center gap-1.5">
                             <span className="inline-block size-1.5 rounded-full bg-[var(--aurora)] shadow-[0_0_5px_var(--aurora)]" />
-                            {role}
+                            {roleLabel}
                           </span>
                         </div>
                         <ChevronsUpDown className="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden shrink-0" />
@@ -556,46 +569,10 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                           {admin.email}
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground truncate">
-                          {admin.role}
+                          {roleLabel}
                         </span>
                       </div>
                     </div>
-
-                    <DropdownMenuSeparator className="my-1 bg-border/60" />
-
-                    {/* GroupLabel phải nằm trong Group — xem ghi chú ở app switcher bên trên. */}
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
-                        {t('demoRole')}
-                      </DropdownMenuLabel>
-                      {(['App Owner', 'App Admin', 'Super Admin', 'End User'] as DemoRole[]).map((r) => (
-                        <DropdownMenuItem
-                          key={r}
-                          onClick={() => setRole(r)}
-                          className={cn(
-                            'flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer text-xs',
-                            r === role && 'bg-sidebar-accent font-medium text-foreground',
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn(
-                                'size-1.5 rounded-full',
-                                r === 'Super Admin'
-                                  ? 'bg-[var(--solar)] shadow-[0_0_5px_var(--solar)]'
-                                  : r === 'App Owner'
-                                  ? 'bg-[var(--starlight)] shadow-[0_0_5px_var(--starlight)]'
-                                  : r === 'App Admin'
-                                  ? 'bg-[var(--aurora)] shadow-[0_0_5px_var(--aurora)]'
-                                  : 'bg-muted-foreground'
-                              )}
-                            />
-                            <span>{r}</span>
-                          </div>
-                          {r === role && <Check className="size-3.5 text-[var(--starlight)]" />}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuGroup>
 
                     <DropdownMenuSeparator className="my-1 bg-border/60" />
 

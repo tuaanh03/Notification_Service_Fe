@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
+import { useRole } from '@/components/role-context'
 import { EMPTY_TOPIC, TOPIC_KEY, type TopicDraft } from './wizard-types'
 
 /**
@@ -15,6 +16,8 @@ import { EMPTY_TOPIC, TOPIC_KEY, type TopicDraft } from './wizard-types'
  */
 export function StepTopics({ topics, onChange }: { topics: TopicDraft[]; onChange: (next: TopicDraft[]) => void }) {
   const t = useTranslations('wizard')
+  // Topic bắt buộc bỏ qua quyền tắt thư của người nhận -> chỉ Super Admin đặt được (ADR-0022).
+  const { isSuperAdmin } = useRole()
   const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
   const update = (index: number, patch: Partial<TopicDraft>) =>
     onChange(topics.map((t, i) => (i === index ? { ...t, ...patch } : t)))
@@ -98,10 +101,13 @@ export function StepTopics({ topics, onChange }: { topics: TopicDraft[]; onChang
                   id={`wz-topic-mandatory-${index}`}
                   checked={topic.mandatory}
                   onCheckedChange={(v) => update(index, { mandatory: v })}
+                  disabled={!isSuperAdmin}
                 />
                 <div>
                   <Label htmlFor={`wz-topic-mandatory-${index}`}>{t('mandatory')}</Label>
-                  <p className="mt-1 text-xs text-[var(--text-secondary)]">{t('mandatoryHint')}</p>
+                  <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                    {isSuperAdmin ? t('mandatoryHint') : t('mandatorySuperAdminOnly')}
+                  </p>
                 </div>
               </div>
             </div>

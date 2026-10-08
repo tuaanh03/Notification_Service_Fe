@@ -1,10 +1,11 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import { useAppRouter } from '@/components/app-link'
 import { Panel } from '@/components/panel'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { OrbitStepper } from './apps/orbit-stepper'
 import { StepProfile } from './apps/step-profile'
@@ -23,6 +24,7 @@ import {
   type TopicDraft,
 } from './apps/wizard-types'
 import { registerAppAction, type RegisterResult } from '@/app/apps/new/actions'
+import { useRole } from './role-context'
 import { approveAndIssueKeyAction, type ApproveResult } from '@/app/admin/apps/actions'
 
 /**
@@ -36,7 +38,12 @@ export function AppRegistrationWizard() {
   const steps = [t('stepProfile'), t('stepTopics'), t('stepReview'), t('stepWaiting')]
   const reduced = useReducedMotion()
   const [step, setStep] = useState(0)
-  const [profile, setProfile] = useState<ProfileDraft>(EMPTY_PROFILE)
+  const { isSuperAdmin, creatableOrgs } = useRole()
+  // Chỉ một org được tạo app thì chọn sẵn; nhiều org thì bắt chọn ở bước 1.
+  const [profile, setProfile] = useState<ProfileDraft>(() => ({
+    ...EMPTY_PROFILE,
+    orgId: creatableOrgs.length === 1 ? creatableOrgs[0]!.id : '',
+  }))
   const [topics, setTopics] = useState<TopicDraft[]>([{ ...EMPTY_TOPIC }])
   const [grant, setGrant] = useState<GrantDraft>(DEFAULT_GRANT)
   const [acknowledged, setAcknowledged] = useState(false)
@@ -56,7 +63,13 @@ export function AppRegistrationWizard() {
     startTransition(async () => {
       setError(null)
       const result = await registerAppAction({
-        profile: { slug: profile.slug, name: profile.name.trim(), namespace: profile.namespace, origin: profile.origin },
+        profile: {
+          orgId: profile.orgId,
+          slug: profile.slug,
+          name: profile.name.trim(),
+          namespace: profile.namespace,
+          origin: profile.origin,
+        },
         rules: [
           ...profile.origins.map((value) => ({ kind: 'origin', value })),
           ...profile.ipAllowlist.map((value) => ({ kind: 'ip', value })),
@@ -88,6 +101,17 @@ export function AppRegistrationWizard() {
 
   const current = approved?.app ?? registered?.app ?? null
 
+  // Không phải Owner / Org Admin của org nào: nói rõ thay vì để điền xong rồi mới bị 403.
+  if (creatableOrgs.length === 0) {
+    return (
+      <Alert className="mx-auto max-w-xl">
+        <TriangleAlert />
+        <AlertTitle>{t('noOrgTitle')}</AlertTitle>
+        <AlertDescription>{t('noOrgBody')}</AlertDescription>
+      </Alert>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-5xl">
       <OrbitStepper steps={steps} step={step} />
@@ -98,7 +122,7 @@ export function AppRegistrationWizard() {
         transition={{ duration: 0.2 }}
       >
         <Panel className="p-5 sm:p-7" glow={step === 3} ring={step === 3}>
-          {step === 0 && <StepProfile draft={profile} onChange={setProfile} />}
+          {step === 0 && <StepProfile draft={profile} orgs={creatableOrgs} onChange={setProfile} />}
           {step === 1 && <StepTopics topics={topics} onChange={setTopics} />}
           {step === 2 && (
             <StepReview profile={profile} topics={topics} pending={pending} error={error} onSubmit={submit} />
@@ -115,6 +139,7 @@ export function AppRegistrationWizard() {
               error={error}
               stop={approved?.stoppedAt ?? null}
               secret={secretOpen ? (approved?.secret ?? null) : null}
+              canApprove={isSuperAdmin}
               onApprove={approve}
               onCloseSecret={() => setSecretOpen(false)}
             />

@@ -4,6 +4,7 @@ import { FileWarning, Files } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { loadTemplatesAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
+import { useRole } from '@/components/role-context'
 import { useAppRouter } from '@/components/app-link'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -50,6 +51,7 @@ export function TemplatesTable() {
   const te = useTranslations('errors')
   const columns = useColumns()
   const { app } = useApp()
+  const writable = useRole().canManage(app)
   const router = useAppRouter()
   const [rows, setRows] = useState<TemplateSummaryDto[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -107,7 +109,7 @@ export function TemplatesTable() {
               icon={Files}
               title={tt('emptyTitle')}
               description={tt('emptyBody')}
-              action={<Button onClick={() => router.push('/templates/new')}>{tt('create')}</Button>}
+              action={writable ? <Button onClick={() => router.push('/templates/new')}>{tt('create')}</Button> : undefined}
             />
           ) : (
             <EmptyState icon={Files} title={tt('noMatchTitle')} description={tt('noMatchBody')} />

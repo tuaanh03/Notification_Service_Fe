@@ -9,7 +9,9 @@ import { RoleProvider } from '@/components/role-context'
 import { AppProvider } from '@/components/app-context'
 import { AppGate } from '@/components/app-gate'
 import { Toaster } from '@/components/ui/sonner'
-import { listApps, toApp } from '@/lib/api/apps'
+import { listVisibleApps } from '@/lib/api/apps'
+import { getMe } from '@/lib/api/me'
+import type { AdminProfileDto } from '@/lib/api/types'
 import { isSessionExpired, sessionToken } from '@/lib/api/client'
 import { currentAdmin, type AdminDto } from '@/lib/api/auth'
 import { describeError } from '@/lib/api/error-message'
@@ -40,20 +42,25 @@ export const viewport: Viewport = { colorScheme: 'light', themeColor: '#FFFFFF' 
 /** Console quản trị luôn đọc trạng thái thật — không phục vụ bản dựng sẵn lúc build. */
 export const dynamic = 'force-dynamic'
 
+/** Chưa đọc được vai (API hỏng): không cho thấy gì — sai về phía an toàn. */
+const NO_ACCESS: AdminProfileDto = { isSuperAdmin: false, orgs: [], appRoles: {} }
+
 /**
- * Nơi DUY NHẤT nạp danh sách app. Chạy phía server nên token phiên không rời máy chủ.
+ * Nơi DUY NHẤT nạp vai (`/admin/me`) và danh sách app — mọi org người này thuộc về (ADR-0022 của
+ * backend). Chạy phía server nên token phiên không rời máy chủ.
  * API hỏng không làm sập toàn bộ console — trả lý do để `<NoAppsScreen>` nói ra.
  *
  * Phiên hết hiệu lực thì KHÔNG phải lỗi hạ tầng: trả `expired` để layout đưa về trang đăng nhập,
  * chứ không hiện màn "không đọc được danh sách app" làm người dùng đi sửa nhầm chỗ.
  */
-async function loadApps(): Promise<{ apps: App[]; error: string | null; expired: boolean }> {
+async function loadApps(): Promise<{ me: AdminProfileDto; apps: App[]; error: string | null; expired: boolean }> {
   try {
-    return { apps: (await listApps()).map(toApp), error: null, expired: false }
+    const me = await getMe()
+    return { me, apps: await listVisibleApps(me), error: null, expired: false }
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
-    if (isSessionExpired(err)) return { apps: [], error: null, expired: true }
-    return { apps: [], error: await describeError(err), expired: false }
+    if (isSessionExpired(err)) return { me: NO_ACCESS, apps: [], error: null, expired: true }
+    return { me: NO_ACCESS, apps: [], error: await describeError(err), expired: false }
   }
 }
 
@@ -99,12 +106,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Đã đăng nhập mà vẫn ở /login (vừa bấm đăng nhập xong) -> để trang đó tự chuyển vào console.
   if (pathname === LOGIN_PATH) return <Document>{children}</Document>
 
-  const { apps, error, expired } = await loadApps()
+  const { me, apps, error, expired } = await loadApps()
   if (expired) redirect(LOGIN_PATH)
 
   return (
     <Document>
-      <RoleProvider>
+      <RoleProvider me={me}>
         <AppProvider apps={apps}>
           {/*
             Layout KHÔNG tự chọn màn hình bên trong console: `<AppGate>` (client) mới biết đang ở

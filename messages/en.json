@@ -50,7 +50,6 @@
     "expandSidebar": "Expand sidebar (Ctrl + B)",
     "chooseApp": "Choose app",
     "switchApp": "Switch App Service",
-    "demoRole": "Demo view (Role)",
     "signOut": "Sign out",
     "search": "Search",
     "quotaTitle": "Per-minute quota: {used}/{max}",
@@ -79,7 +78,9 @@
     "errorTitle": "Could not load the app list",
     "emptyTitle": "No apps yet",
     "emptyBody": "This org has no app service yet. Register the first app to start managing EWS Notification Service.",
-    "registerFirst": "Register the first app"
+    "registerFirst": "Register the first app",
+    "noAccessTitle": "No access yet",
+    "noAccessBody": "Your account is not in any organization or app yet. Ask an organization Owner or a Super Admin to add you."
   },
   "errors": {
     "withCode": "{message} (code: {code})",
@@ -730,7 +731,8 @@
     "optOut": "Receives (opt_out) — users must turn it off themselves",
     "optIn": "Does not receive (opt_in) — users must turn it on themselves",
     "mandatory": "Mandatory",
-    "mandatoryHint": "Users cannot turn this topic off. Only for required transactional notifications."
+    "mandatoryHint": "Users cannot turn this topic off. Only for required transactional notifications.",
+    "mandatorySuperAdminOnly": "Only a Super Admin can make a topic mandatory — it overrides recipients’ opt-out."
   },
   "suppressed": {
     "user_unsubscribe": "user unsubscribed",
@@ -1099,7 +1101,14 @@
     "approveBody": "Approval is when the app receives its permissions. The MVP only sends email, so the channel is fixed to <mono>email</mono>.",
     "noKeyTitle": "Approved, but no key could be issued",
     "noKeyBody": "{message} The app is <mono>active</mono> — go to <link>API keys</link> to issue one.",
-    "activeNote": "The app is active. The new topics are still <mono>draft</mono> — go to <link>Topics</link> and activate them before the app can send."
+    "activeNote": "The app is active. The new topics are still <mono>draft</mono> — go to <link>Topics</link> and activate them before the app can send.",
+    "org": "Organization",
+    "orgPlaceholder": "Choose the organization that owns this app…",
+    "mandatorySuperAdminOnly": "Only a Super Admin can make a topic mandatory — it overrides recipients’ opt-out.",
+    "waitingReviewTitle": "Submitted for review",
+    "waitingReviewBody": "The app is waiting for a Super Admin to approve it and grant channels. After approval, issue an API key in App Settings → Credentials.",
+    "noOrgTitle": "You cannot register apps",
+    "noOrgBody": "Only an organization Owner / Org Admin (or a Super Admin) can register apps. Ask your organization Owner to raise your role."
   },
   "repeatable": {
     "add": "Add",
@@ -1166,5 +1175,12 @@
     "reasonValue": "Reason: <b>{reason}</b>",
     "ignoredTitle": "Channels will be skipped when sending",
     "ignoredBody": "Topic <mono>{topic}</mono> declares channel <mono>{channels}</mono> but the app was not granted it — it will be skipped when sending."
+  },
+  "roles": {
+    "superAdmin": "Super Admin",
+    "owner": "Owner",
+    "org_admin": "Org Admin",
+    "member": "Member",
+    "user": "No organization yet"
   }
 }

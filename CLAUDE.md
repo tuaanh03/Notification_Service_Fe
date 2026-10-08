@@ -195,9 +195,10 @@ trong cookie `httpOnly` `ews_session`: JavaScript trong browser không đọc đ
 | Biến (`.env`) | Nghĩa |
 |---|---|
 | `EWS_API_URL` | `http://ews-astrolink-api:3000` trong docker; `http://127.0.0.1:4002` khi `pnpm dev` |
-| `EWS_ORG_ID` | org console đang quản trị — `GET /admin/apps` bắt buộc query `orgId` |
 
-*   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho hai biến trên. `lib/api/client.ts` mở đầu bằng
+*   **Không còn `EWS_ORG_ID`** (ADR-0022 của backend): `layout.tsx` gọi `GET /admin/me` lấy org + vai của
+    người đăng nhập, rồi `GET /admin/apps?orgId=` cho từng org (`listVisibleApps`). Một console phục vụ mọi org.
+*   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho biến trên. `lib/api/client.ts` mở đầu bằng
     `import 'server-only'` nên build sẽ đỏ ngay nếu có component client lỡ import.
 *   **Kiểu dữ liệu sao đúng DTO của backend**, để ở `lib/api/types.ts` (không `server-only` — component
     client cần import type). Đổi tên field là đổi hợp đồng, phải sửa cả hai bên.
@@ -421,8 +422,12 @@ hiện dữ liệu của app khác mà không báo gì.
     — sidebar, ô chọn app, `<AppLink>`. Gọi `useApp()` trong màn `/admin` là ném lỗi.
 *   **Danh sách app nạp ở `layout.tsx` (server)**: thêm / duyệt app xong phải `router.refresh()`,
     không thì app mới không có trong danh sách và link `?app=<slug mới>` rơi vào trang chọn app.
-*   Chưa có đăng nhập nên trang chọn app liệt kê mọi app của tổ chức. Lọc theo vai trò làm ở
-    `<AppChooser>` khi có RBAC (plan §12.4 của backend) — đừng giả lập bằng ô Role demo.
+*   **Danh sách app đã lọc theo vai ở backend** (ADR-0022): mọi org người này thuộc về, Member chỉ
+    thấy app được cấp vai. Nhiều org thì trang chọn app và ô chọn app chia nhóm theo org.
+*   **Giá trị `?app=` lấy bằng `appKey(app)`**, không đọc thẳng `slug`: slug chỉ duy nhất trong một
+    org, hai org trùng slug thì `appKey` thêm đuôi `~<8 ký tự id>` (`appRouteKeys` trong `lib/app-routes.ts`).
+*   **Nút ghi ẩn theo vai** (`useRole().canManage(app)`): App Viewer không thấy thêm topic, cấp / thu
+    hồi khoá, sửa IP & Origin, soạn / xuất bản template. Chỉ để giao diện gọn — backend vẫn trả 403.
 
 ### 2.10. IP & Origin (`/settings/origins`) — IP đơn, xác nhận khi đổi hẳn hành vi
 
@@ -536,7 +541,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<MailFrame subject body|bodyHtml device? header? footerNote?>` | `components/mail-frame.tsx` | ✓ | khung email nền sáng duy nhất (token `--mail-*`), footer opt-out có khoá (tooltip qua `footerNote`) — Composer block 3, chi tiết lần gửi và Template editor dùng chung; `bodyHtml` chỉ nhận HTML đã qua `renderHtmlPreview()` (sanitize + escape) |
 | `<ContractPanel templateId variables>` | `components/templates/contract-panel.tsx` | ✓ | Hợp đồng cho đội app: biến bắt buộc + lời gọi `POST /v1/notifications` mẫu (`templateId` + `payload`) + lỗi template lấy từ `v1-errors.ts` |
 | Composer blocks | `components/compose/{recipient,content,preview,send}-block.tsx`, `composer.tsx` | ✓ | 4 khối gated |
-| `RoleContext` | `components/role-context.tsx` | ✓ | `RoleProvider` bọc `<AppShell>` trong `layout.tsx`; đọc bằng `useRole()` để gate nút / nhóm nav (`EWS Tổng` chỉ Super Admin) |
+| `RoleContext` | `components/role-context.tsx` | ✓ | vai THẬT từ `GET /admin/me` (`layout.tsx` nạp ở server); `useRole()` trả `isSuperAdmin`, `canManage(app)`, `creatableOrgs` — gate nút ghi / nhóm nav (`EWS Tổng` chỉ Super Admin). Luật ở `lib/access.ts`, sao cùng `decide()` của backend. Không giả lập vai ở client |
 | `<AppRegistrationWizard>`, `<AppAdminList>` | `components/app-registration-wizard.tsx`, `app-admin-list.tsx` | ✓ | thêm từ v0 cho UC-001 — giữ, không tạo bản song song |
 
 Thứ tự dựng: **foundation (01) trước, bắt buộc** → các màn hình còn lại theo `00_README_cach_dung.md`.

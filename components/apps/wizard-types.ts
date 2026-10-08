@@ -64,6 +64,7 @@ export type TopicDraft = CreateTopicInput
 export type GrantDraft = { grantedChannels: string[]; rateLimitPerMinute: number; maxRecipientsPerEvent: number }
 
 export const EMPTY_PROFILE: ProfileDraft = {
+  orgId: '',
   slug: '',
   name: '',
   namespace: '',
@@ -89,6 +90,7 @@ export const toGrant = (g: GrantDraft): ApproveAppInput => ({ ...g })
  * app `external` không khai IP thì ai cầm được khoá cũng gọi được, nên giữ.
  */
 export const profileValid = (p: ProfileDraft) =>
+  p.orgId !== '' &&
   APP_SLUG.test(p.slug) &&
   APP_SLUG.test(p.namespace) &&
   p.name.trim().length > 0 &&
