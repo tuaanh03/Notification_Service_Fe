@@ -70,9 +70,7 @@
     "external": "bên ngoài",
     "lastUsed": "dùng gần nhất",
     "adminHint": "Tạm ngưng hay thu hồi app:",
-    "adminLink": "Quản trị EWS → Tất cả app",
-    "orgFilter": "Đang xem app của org <b>{org}</b>",
-    "allOrgs": "Xem tất cả org"
+    "adminLink": "Quản trị EWS → Tất cả app"
   },
   "noApps": {
     "errorTitle": "Không đọc được danh sách app",
@@ -1185,5 +1183,22 @@
     "noApps": "chưa có app",
     "appCount": "{count} app",
     "allOrgs": "Xem tất cả org"
+  },
+  "orgs": {
+    "title": "Tổ chức",
+    "subtitle": "Các tổ chức bạn làm việc cùng. Chọn một tổ chức để xem app của nó.",
+    "colName": "Tên",
+    "colRole": "Vai của bạn",
+    "colApps": "Số app",
+    "emptyTitle": "Chưa thuộc tổ chức nào",
+    "emptyBody": "Nhờ Owner của tổ chức thêm bạn vào.",
+    "appsSubtitle": "App của tổ chức này mà bạn được xem. Chọn một app để mở.",
+    "colAppName": "Tên app",
+    "colStatus": "Trạng thái",
+    "noAppsTitle": "Tổ chức chưa có app",
+    "noAppsBody": "Chưa có app nào bạn được xem trong tổ chức này.",
+    "notFoundTitle": "Không có tổ chức này",
+    "notFoundBody": "Link có thể sai, hoặc bạn không thuộc tổ chức đó.",
+    "orgCount": "{count} tổ chức"
   }
 }

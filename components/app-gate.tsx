@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { appKey, isAdminRoute, isBootstrapRoute, isOrgRoute } from '@/lib/app-routes'
+import { appKey, isAdminRoute, isBootstrapRoute, isOrgRoute, isOrgsRoute } from '@/lib/app-routes'
 import { AdminShell } from './admin-shell'
 import { AppChooser } from './app-chooser'
 import { useAppSelection } from './app-context'
@@ -10,6 +10,7 @@ import { AppShell } from './app-shell'
 import { useAppRouter } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { NoAppsScreen } from './no-apps-screen'
+import { OrgsShell } from './orgs-shell'
 import { useRole } from './role-context'
 import type { AdminDto } from '@/lib/api/auth'
 
@@ -20,6 +21,7 @@ import type { AdminDto } from '@/lib/api/auth'
  * - Khu Quản trị EWS (`/admin/*`) -> `<AdminShell>` với Super Admin, không cần app; người khác
  *   -> khung trần + trang 404 mà `app/admin/layout.tsx` đã dựng. Xét TRƯỚC mọi nhánh về app:
  *   Super Admin không thuộc org nào (0 app) vẫn phải vào được.
+ * - Trang Tổ chức (`/orgs/*`) -> `<OrgsShell>`, không cần app (org chưa có app vẫn hiện).
  * - Chưa có app nào, đang ở màn đăng ký app đầu tiên -> khung trần + màn đó.
  * - Chưa có app nào (hoặc đọc `/admin/apps` hỏng) -> `<NoAppsScreen>`, mọi đường dẫn khác.
  * - Màn toàn tổ chức (`ORG_ROUTES`), hoặc có `?app=` hợp lệ -> `<AppShell>` + màn đó.
@@ -48,9 +50,10 @@ export function AppGate({
   const { app, apps, requested } = useAppSelection()
   const { isSuperAdmin } = useRole()
   const adminArea = isAdminRoute(pathname)
+  const orgsPage = isOrgsRoute(pathname)
 
   const open = isOrgRoute(pathname) || app !== null
-  const only = !adminArea && !open && requested === null && apps.length === 1 ? appKey(apps[0]) : null
+  const only = !adminArea && !orgsPage && !open && requested === null && apps.length === 1 ? appKey(apps[0]) : null
   const here = search ? `${pathname}?${search}` : pathname
 
   /**
@@ -79,6 +82,7 @@ export function AppGate({
     if (error !== null) return <NoAppsScreen error={error} />
     return isSuperAdmin ? <AdminShell admin={admin}>{children}</AdminShell> : <BootstrapFrame>{children}</BootstrapFrame>
   }
+  if (orgsPage) return error !== null ? <NoAppsScreen error={error} /> : <OrgsShell admin={admin}>{children}</OrgsShell>
   if (bootstrapPath === pathname) return <BootstrapFrame>{children}</BootstrapFrame>
   // Rỗng vì API hỏng KHÁC rỗng vì chưa có gì — `<NoAppsScreen>` phân biệt bằng `error`.
   if (apps.length === 0) return <NoAppsScreen error={error} />

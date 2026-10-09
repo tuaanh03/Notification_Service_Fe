@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Building2, Check, ChevronsUpDown, LayoutGrid, Plus, Search } from 'lucide-react'
 import { consoleOrgs } from '@/lib/access'
-import { appKey, ORG_PARAM, switchAppPath } from '@/lib/app-routes'
+import { appKey, ORGS_HOME, orgPath, switchAppPath } from '@/lib/app-routes'
 import { statusColors } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { useAppSelection } from './app-context'
@@ -48,7 +48,7 @@ function orgInitials(name: string): string {
  * mọi org, người khác org mình là thành viên).
  *
  * Chọn org KHÔNG đoán app (mục 2.9): org có đúng một app thì mở app đó (không có gì để chọn);
- * nhiều app thì về trang chọn app lọc sẵn theo org (`?org=`). Org chưa có app thì không bấm được.
+ * còn lại về `/orgs/<orgId>` (bảng app của org). "Xem tất cả org" -> `/orgs`.
  */
 export function AppSwitcher() {
   const path = usePathname()
@@ -72,7 +72,7 @@ export function AppSwitcher() {
   function chooseOrg(orgId: string) {
     const inOrg = apps.filter((a) => a.org_id === orgId)
     if (inOrg.length === 1) router.push(switchAppPath(path), { app: appKey(inOrg[0]!) })
-    else router.push(`${switchAppPath(path)}?${ORG_PARAM}=${encodeURIComponent(orgId)}`, { app: null })
+    else router.push(orgPath(orgId))
   }
 
   return (
@@ -193,7 +193,6 @@ export function AppSwitcher() {
                       return (
                         <DropdownMenuItem
                           key={o.id}
-                          disabled={count === 0}
                           onClick={() => o.id !== org?.id && chooseOrg(o.id)}
                           className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs"
                         >
@@ -210,7 +209,7 @@ export function AppSwitcher() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator className="my-1 bg-border/60" />
                 <DropdownMenuItem
-                  onClick={() => router.push(switchAppPath(path), { app: null })}
+                  onClick={() => router.push(ORGS_HOME)}
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs"
                 >
                   <LayoutGrid className="size-3.5 text-muted-foreground" />

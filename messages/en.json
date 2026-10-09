@@ -70,9 +70,7 @@
     "external": "external",
     "lastUsed": "last used",
     "adminHint": "Suspend or revoke apps:",
-    "adminLink": "EWS administration → All apps",
-    "orgFilter": "Showing apps of <b>{org}</b>",
-    "allOrgs": "View all orgs"
+    "adminLink": "EWS administration → All apps"
   },
   "noApps": {
     "errorTitle": "Could not load the app list",
@@ -1185,5 +1183,22 @@
     "noApps": "no apps",
     "appCount": "{count, plural, one {# app} other {# apps}}",
     "allOrgs": "View all orgs"
+  },
+  "orgs": {
+    "title": "Organizations",
+    "subtitle": "The organizations you work with. Pick one to see its apps.",
+    "colName": "Name",
+    "colRole": "Your role",
+    "colApps": "Apps",
+    "emptyTitle": "Not in any organization",
+    "emptyBody": "Ask an organization Owner to add you.",
+    "appsSubtitle": "Apps of this organization you can see. Pick one to open it.",
+    "colAppName": "App name",
+    "colStatus": "Status",
+    "noAppsTitle": "No apps yet",
+    "noAppsBody": "There is no app you can see in this organization.",
+    "notFoundTitle": "Organization not found",
+    "notFoundBody": "The link may be wrong, or you are not a member of that organization.",
+    "orgCount": "{count, plural, one {# organization} other {# organizations}}"
   }
 }

@@ -43,6 +43,7 @@ webservice/ews-astrolink/
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
 │   ├── settings/{credentials,origins,profile,quota,sync}/
 │   │                         # credentials/, origins/ có actions.ts (đã đấu API); còn lại vẫn mock
+│   ├── orgs/                 # /orgs, /orgs/[orgId] — trang Tổ chức (mục 2.9), dữ liệu từ layout
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 │                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
 │                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
@@ -74,6 +75,7 @@ webservice/ews-astrolink/
 │   │                         # AppShell render 1 lần, tự ẩn ở route trong WIRED_ROUTES (mục 2.4)
 │   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
 │   ├── admin-shell.tsx       # khung khu Quản trị EWS (/admin/*) — không ô chọn app, không cần ?app=
+│   ├── orgs-shell.tsx · orgs/*   # trang Tổ chức /orgs (bảng org) + /orgs/[orgId] (bảng app của org)
 │   ├── shell-parts.tsx       # mảnh dùng chung của AppShell + AdminShell: logo, nút thu gọn, menu tài khoản
 │   └── ui/*                  # shadcn v4 (base-ui) — chỉ thêm qua CLI, không sửa tay:
 │                             # alert avatar badge breadcrumb button checkbox collapsible dialog
@@ -403,6 +405,7 @@ hiện dữ liệu của app khác mà không báo gì.
 | Đường dẫn | Hiện |
 | --- | --- |
 | `/admin/*` (`isAdminRoute` — khu Quản trị EWS) | Super Admin: `<AdminShell>`, không cần app (kể cả khi 0 app); người khác: 404 |
+| `/orgs/*` (`isOrgsRoute` — trang Tổ chức) | `<OrgsShell>`, không cần app |
 | `ORG_ROUTES` (`/apps` — đăng ký app) | vào thẳng, có hay không có `?app=` |
 | màn của app, `?app=` hợp lệ | màn như thường |
 | thiếu `?app=`, tổ chức CHỈ có 1 app | tự thêm `?app=` (`router.replace`) |
@@ -419,10 +422,13 @@ hiện dữ liệu của app khác mà không báo gì.
     Màn vẫn không dựng lại khi chỉ đổi `?app=`, nên các chỗ xoá bộ lọc theo `appId` ở `/users` và
     `/notifications` **vẫn cần**.
 *   **Ô chuyển app / org** (`components/app-switcher.tsx`): nút ghi tên app + tên org; menu chỉ có app
-    của org đang xem (org = org của app đang mở, đường dẫn vẫn chỉ có `?app=`), menu con là org mình
-    LÀ THÀNH VIÊN. **Chọn org không đoán app**: org có 1 app -> mở app đó; nhiều app -> trang chọn app
-    lọc sẵn `?org=<orgId>` (`ORG_PARAM`, chỉ là bộ lọc hiển thị, bị bỏ khỏi link thẻ app); org chưa có
-    app -> không bấm được. "Xem tất cả org" = trang chọn app không lọc (`app: null`).
+    của org đang xem (org = org của app đang mở, đường dẫn vẫn chỉ có `?app=`), menu con là
+    `consoleOrgs(me)`. **Chọn org không đoán app**: org có 1 app -> mở app đó; còn lại -> `/orgs/<orgId>`
+    (bảng app của org). "Xem tất cả org" -> `/orgs`.
+*   **Trang Tổ chức** (`/orgs`, `/orgs/<orgId>` — `isOrgsRoute`, khung `<OrgsShell>`): bảng org (tên, vai
+    của mình, số app) và bảng app của một org; bấm dòng là đi tiếp. CHỈ cột có dữ liệu thật — không
+    thêm Plan / MAU kiểu OneSignal. Không cần `?app=`, link tới đây không mang `?app=` (`withApp`).
+    Trang chọn app (`<AppChooser>`) chỉ còn một việc: đường dẫn thiếu / sai `?app=`.
 *   **Link nội bộ CHỈ qua `<AppLink>` / `useAppRouter()`** (`components/app-link.tsx`) — tự gắn
     `?app=`. `app-link.tsx` là file duy nhất được import `next/link` và `useRouter`. Link tới app
     KHÁC app đang xem thì truyền `app=` (trang chọn app, bước 4 wizard tạo app); `app={null}` = cố ý
@@ -520,7 +526,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<CosmicBackground>` | `components/cosmic-background.tsx` | ✓ | nền nebula + starfield seeded, fixed |
 | `<Panel glow? ring?>` | `components/panel.tsx` | ✓ | glass surface (`.cosmic-surface`), orbit ring tuỳ chọn; forward mọi prop `<section>` |
 | `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, `<AppSwitcher>`, top bar — KHÔNG có nhóm Quản trị EWS |
-| `<AppSwitcher>` | `components/app-switcher.tsx` | ✓ | ô chuyển app / org đầu sidebar (mục 2.9): app của org đang xem + menu con org mình là thành viên; ô tìm khi org có > 6 app |
+| `<AppSwitcher>` | `components/app-switcher.tsx` | ✓ | ô chuyển app / org đầu sidebar (mục 2.9): app của org đang xem + menu con `consoleOrgs`; ô tìm khi org có > 6 app |
+| `<OrgsShell>` / `<OrgList>` / `<OrgApps orgId>` | `components/orgs-shell.tsx`, `components/orgs/*` | ✓ | trang Tổ chức `/orgs` (mục 2.9): khung riêng, bảng org, bảng app của một org |
 | `<AdminShell>` | `components/admin-shell.tsx` | ✓ | khung khu Quản trị EWS (`/admin/*`, chỉ Super Admin): menu riêng; dùng chung `shell-parts.tsx` với AppShell |
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |
@@ -539,7 +546,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
 | `<RecipientDetail externalId>` | `components/users/recipient-detail.tsx` | ✓ | trang chi tiết một người nhận (mục 2.7): đầu trang có địa chỉ + tình trạng, rồi cài đặt nhận tin, rồi các lần gửi; `page.tsx` truyền `key` theo app + mã |
 | `<AppLink href app?>` / `useAppRouter()` | `components/app-link.tsx` | ✓ | **nguồn duy nhất** của link nội bộ — tự gắn `?app=` (mục 2.9); file duy nhất import `next/link` / `useRouter` |
-| `<AppGate>` / `<AppChooser apps requested here>` | `components/app-gate.tsx`, `app-chooser.tsx` | ✓ | cổng theo `?app=` + trang chọn app toàn màn, lọc theo `?org=` nếu có (mục 2.9) |
+| `<AppGate>` / `<AppChooser apps requested here>` | `components/app-gate.tsx`, `app-chooser.tsx` | ✓ | cổng theo `?app=` + trang chọn app toàn màn (mục 2.9) |
 | `<RecipientPreferences recipient preferences error loading>` | `components/users/recipient-preferences.tsx` | ✓ | khối cài đặt nhận tin trong trang chi tiết; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); kèm `SUPPRESSED_LABEL` |
 | `<NotificationsTable initialExternalId? recipient?>` | `components/notifications/notifications-table.tsx` | ✓ | bảng lịch sử gửi (mục 2.8); `recipient` = cố định một người: ẩn ô gõ mã và cột mã |
 | `<NotificationOutcome notification linkRecipient onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `linkRecipient = false` khi đã ở trang của người đó (không link về chính nó) |
