@@ -22,7 +22,6 @@
     "ews": "EWS",
     "groupOperate": "Operations",
     "groupSystem": "System",
-    "groupEws": "EWS Global",
     "overview": "Overview",
     "notifications": "Notifications",
     "compose": "Compose",
@@ -54,7 +53,8 @@
     "search": "Search",
     "quotaTitle": "Per-minute quota: {used}/{max}",
     "quota": "Quota:",
-    "pendingApprovals": "{count} pending approval requests"
+    "pendingApprovals": "{count} pending approval requests",
+    "adminArea": "EWS Admin"
   },
   "preview": {
     "title": "Preview — sample data",

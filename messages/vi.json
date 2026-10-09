@@ -22,7 +22,6 @@
     "ews": "EWS",
     "groupOperate": "Điều hành",
     "groupSystem": "Hệ thống",
-    "groupEws": "EWS Tổng",
     "overview": "Tổng quan",
     "notifications": "Thông báo",
     "compose": "Soạn thông báo",
@@ -54,7 +53,8 @@
     "search": "Tìm kiếm",
     "quotaTitle": "Quota phút: {used}/{max}",
     "quota": "Quota:",
-    "pendingApprovals": "{count} yêu cầu chờ duyệt"
+    "pendingApprovals": "{count} yêu cầu chờ duyệt",
+    "adminArea": "Quản trị EWS"
   },
   "preview": {
     "title": "Bản xem trước — số liệu minh hoạ",

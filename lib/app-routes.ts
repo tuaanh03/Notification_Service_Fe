@@ -11,14 +11,25 @@
 export const APP_PARAM = 'app'
 
 /**
- * Màn KHÔNG thuộc app nào — vào thẳng, không bắt chọn app: dữ liệu toàn tổ chức (`/admin`) và
- * đăng ký app mới (`/apps/new`). Liệt kê theo chiều này là có chủ đích: route mới mặc định CẦN
- * app — quên khai báo thì bị bắt chọn app, sai về phía an toàn.
+ * Màn KHÔNG thuộc app nào — vào thẳng, không bắt chọn app: đăng ký app mới (`/apps/new`). Liệt kê
+ * theo chiều này là có chủ đích: route mới mặc định CẦN app — quên khai báo thì bị bắt chọn app,
+ * sai về phía an toàn. `/admin/*` không nằm ở đây: đó là khu riêng (`isAdminRoute`).
  */
-export const ORG_ROUTES = ['/admin', '/apps'] as const
+export const ORG_ROUTES = ['/apps'] as const
 
 export function isOrgRoute(pathname: string): boolean {
   return ORG_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))
+}
+
+/**
+ * Khu Quản trị EWS — chỉ Super Admin (ADR-0022 của backend). Khung riêng (`<AdminShell>`), không
+ * thuộc app nào, không cần `?app=`. Người khác mở vào nhận 404 (`app/admin/layout.tsx`).
+ */
+export const ADMIN_AREA = '/admin'
+export const ADMIN_HOME = '/admin/apps'
+
+export function isAdminRoute(pathname: string): boolean {
+  return pathname === ADMIN_AREA || pathname.startsWith(`${ADMIN_AREA}/`)
 }
 
 /**

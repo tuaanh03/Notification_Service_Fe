@@ -4,8 +4,6 @@ import { Fragment } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
-  Bell,
-  CircleGauge,
   FileText,
   LayoutDashboard,
   Search,
@@ -13,36 +11,21 @@ import {
   Settings,
   Users,
   ListTree,
-  ShieldCheck,
-  History,
-  Database,
-  UserCheck,
-  KeyRound,
-  Globe,
-  RefreshCw,
   ChevronRight,
   ChevronsUpDown,
   Check,
-  Layers,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react'
-import { Languages, LogOut } from 'lucide-react'
-import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
 import { AppLink, useAppRouter } from './app-link'
 import { appKey, switchAppPath } from '@/lib/app-routes'
-import { Button } from '@/components/ui/button'
 import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
 import { statusColors } from '@/lib/theme'
-import { BRAND_LOGO_SRC } from '@/lib/brand'
-import { LOCALES } from '@/i18n/locales'
-import { useLocaleSwitch } from './locale-switcher'
 import { useRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
+import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -60,13 +43,7 @@ import {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
-  useSidebar,
 } from '@/components/ui/sidebar'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import {
   Collapsible,
   CollapsibleContent,
@@ -78,11 +55,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -92,65 +66,20 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 
-function CustomSidebarTrigger({
-  className,
-  tooltipSide = 'bottom',
-}: {
-  className?: string
-  tooltipSide?: 'bottom' | 'right' | 'left' | 'top'
-}) {
-  const t = useTranslations('shell')
-  const { toggleSidebar, open } = useSidebar()
-  const label = open ? t('collapseSidebar') : t('expandSidebar')
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className={cn(
-              'flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:scale-95 focus-visible:outline-hidden',
-              className,
-            )}
-            aria-label={label}
-          >
-            {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
-          </button>
-        }
-      />
-      <TooltipContent side={tooltipSide}>{label}</TooltipContent>
-    </Tooltip>
-  )
-}
-
-/** Chữ cái đầu cho avatar. Bảng `admins` chỉ có email, không có tên hiển thị. */
-function initialsOf(email: string): string {
-  const local = email.split('@')[0] ?? email
-  const parts = local.split(/[._-]+/).filter(Boolean)
-  const picked = parts.length >= 2 ? [parts[0]!, parts[1]!] : [local]
-  return picked
-    .map((p) => p[0]?.toUpperCase() ?? '')
-    .join('')
-    .slice(0, 2)
-}
-
+/**
+ * Khung của console APP (đội app service): ô chọn app + menu của một app. Màn Quản trị EWS
+ * (`/admin/*`, chỉ Super Admin) có khung riêng — `<AdminShell>`; `<AppGate>` chọn khung.
+ */
 export function AppShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
   const path = usePathname()
   const t = useTranslations('shell')
   const tn = useTranslations('nav')
-  const tl = useTranslations('locale')
-  const { locale, change: changeLocale, pending: localePending } = useLocaleSwitch()
   const tr = useTranslations('roles')
   const { me, isSuperAdmin } = useRole()
   // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock. `app` đọc từ `?app=`
-  // trên đường dẫn — null ở màn `/admin` mở chưa kèm app (lib/app-routes.ts).
+  // trên đường dẫn — null ở màn toàn tổ chức mở chưa kèm app (lib/app-routes.ts).
   const { app, apps } = useAppSelection()
   const router = useAppRouter()
-  // Số thật từ danh sách app của AppProvider. Trước đây lấy `pendingApprovalCount()` của mock:
-  // một con số bịa nằm trên khung luôn hiển thị, ngoài vùng <PreviewBanner> che phủ (mục 2.4).
-  // Chỉ Super Admin duyệt app -> chỉ họ cần con số chờ duyệt (ADR-0022).
-  const pending = isSuperAdmin ? apps.filter((a) => a.status === 'pending_approval').length : 0
   // Thấy app của nhiều org thì ô chọn app chia nhóm theo org (danh sách đã xếp theo org ở layout).
   const multiOrg = new Set(apps.map((a) => a.org_id)).size > 1
   // Vai THẬT: Super Admin, hoặc vai trong org của app đang xem.
@@ -173,10 +102,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
     { href: '/settings/quota', name: 'quota', group: 'appSettings' },
     { href: '/settings/origins', name: 'origins', group: 'appSettings' },
     { href: '/settings/sync', name: 'sync', group: 'appSettings' },
-    { href: '/admin/send-approvals', name: 'sendApprovals', group: 'groupEws' },
-    { href: '/admin/apps', name: 'allApps', group: 'groupEws' },
-    { href: '/admin/audit', name: 'audit', group: 'groupEws' },
-    { href: '/admin/directory', name: 'directory', group: 'groupEws' },
   ] as const
 
   const crumb = breadcrumbMap
@@ -190,30 +115,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
         <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar/95 backdrop-blur-xl">
           {/* Header: System Brand Logo & App Service Switcher */}
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] space-y-2 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:space-y-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-            {/* 1. System Brand Logo */}
-            <div className="flex items-center justify-between gap-1 w-full group-data-[collapsible=icon]:justify-center">
-              <AppLink
-                href="/"
-                className="flex items-center gap-2.5 px-1 py-1 rounded-lg group transition-colors hover:bg-sidebar-accent/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center min-w-0"
-              >
-                <img
-                  src={BRAND_LOGO_SRC}
-                  alt=""
-                  className="size-8 shrink-0 rounded-full shadow-[0_0_12px_-2px_rgba(34,211,238,0.3)] transition-transform group-hover:scale-110"
-                />
-                <div className="flex flex-col min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="font-heading font-bold text-sm tracking-wide text-sidebar-foreground group-hover:text-[var(--starlight)] transition-colors truncate">
-                    EWS AstroLink
-                  </span>
-                  <span className="font-mono text-[10px] text-muted-foreground tracking-wider uppercase truncate">
-                    Notification Hub
-                  </span>
-                </div>
-              </AppLink>
-              <div className="group-data-[collapsible=icon]:hidden">
-                <CustomSidebarTrigger className="text-muted-foreground/70 hover:text-foreground" />
-              </div>
-            </div>
+            <SidebarBrand href="/" subtitle="Notification Hub" />
 
             {/* 2. Sleek App Service Selector */}
             <SidebarMenu className="group-data-[collapsible=icon]:hidden">
@@ -459,160 +361,12 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
               </SidebarMenu>
             </SidebarGroup>
 
-            {/* Nhóm EWS Tổng (Super Admin Only) */}
-            {isSuperAdmin && (
-              <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
-                <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
-                  {tn('groupEws')}
-                </SidebarGroupLabel>
-                <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
-                  <Collapsible
-                    defaultOpen={path.startsWith('/admin')}
-                    className="group/collapsible"
-                  >
-                    <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                      <CollapsibleTrigger
-                        render={
-                          <SidebarMenuButton
-                            tooltip={tn('ewsAdmin')}
-                            isActive={path.startsWith('/admin')}
-                          >
-                            <ShieldCheck className="size-4" />
-                            <span>{tn('ewsAdmin')}</span>
-                            <ChevronRight className="ml-auto size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-                          </SidebarMenuButton>
-                        }
-                      />
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/admin/send-approvals" />} isActive={path.startsWith('/admin/send-approvals')}>
-                              <span>{tn('sendApprovals')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/admin/apps" />} isActive={path === '/admin/apps'}>
-                              <span>{tn('allApps')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/admin/audit" />} isActive={path === '/admin/audit'}>
-                              <span>{tn('audit')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/admin/directory" />} isActive={path === '/admin/directory'}>
-                              <span>{tn('directory')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                </SidebarMenu>
-              </SidebarGroup>
-            )}
-
-            {/* Bottom Action: Trigger mở rộng sidebar khi đang thu gọn */}
-            <div className="mt-auto hidden group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center py-2">
-              <CustomSidebarTrigger
-                tooltipSide="right"
-                className="text-muted-foreground hover:bg-[var(--starlight)]/15 hover:text-[var(--starlight)] transition-all"
-              />
-            </div>
+            <CollapsedSidebarTrigger />
           </SidebarContent>
 
           {/* Footer: tài khoản, vai thật, ngôn ngữ, đăng xuất */}
           <SidebarFooter className="p-2 border-t border-[var(--orbit)] group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-            <SidebarMenu className="group-data-[collapsible=icon]:items-center">
-              <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <SidebarMenuButton
-                        size="lg"
-                        className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border border-[var(--orbit)] shadow-xs transition-all hover:border-[var(--starlight)]/40 hover:bg-[var(--void)]/80 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
-                      >
-                        <Avatar className="size-8 rounded-lg border border-[var(--orbit)] shrink-0">
-                          <AvatarFallback className="rounded-lg bg-gradient-to-br from-[var(--starlight)]/25 to-[var(--pulsar)]/20 text-[var(--starlight)] font-bold text-xs">
-                            {initialsOf(admin.email)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="grid flex-1 text-left text-xs leading-tight min-w-0 group-data-[collapsible=icon]:hidden">
-                          <span className="truncate font-semibold text-sidebar-foreground">
-                            {admin.email}
-                          </span>
-                          <span className="truncate text-[10px] text-muted-foreground flex items-center gap-1.5">
-                            <span className="inline-block size-1.5 rounded-full bg-[var(--aurora)] shadow-[0_0_5px_var(--aurora)]" />
-                            {roleLabel}
-                          </span>
-                        </div>
-                        <ChevronsUpDown className="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden shrink-0" />
-                      </SidebarMenuButton>
-                    }
-                  />
-                  <DropdownMenuContent
-                    className="w-(--anchor-width) min-w-64 rounded-xl border border-border/80 bg-popover p-2 shadow-lg"
-                    side="top"
-                    align="start"
-                    sideOffset={8}
-                  >
-                    {/* User Summary Card */}
-                    <div className="flex items-center gap-2.5 px-2 py-2 mb-1 rounded-lg bg-[var(--void)]/60 border border-[var(--orbit)]">
-                      <Avatar className="size-9 rounded-lg border border-[var(--orbit)] shrink-0">
-                        <AvatarFallback className="rounded-lg bg-gradient-to-br from-[var(--starlight)]/20 to-[var(--pulsar)]/20 text-[var(--starlight)] font-bold text-xs">
-                          {initialsOf(admin.email)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-semibold text-foreground truncate">
-                          {admin.email}
-                        </span>
-                        <span className="text-[10px] font-mono text-muted-foreground truncate">
-                          {roleLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    <DropdownMenuSeparator className="my-1 bg-border/60" />
-
-                    {/* Ngôn ngữ giao diện — ghi cookie rồi dựng lại trang (`components/locale-switcher.tsx`). */}
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
-                        {tl('label')}
-                      </DropdownMenuLabel>
-                      {LOCALES.map((l) => (
-                        <DropdownMenuItem
-                          key={l}
-                          disabled={localePending}
-                          onClick={() => changeLocale(l)}
-                          className={cn(
-                            'flex items-center justify-between rounded-lg px-2 py-1.5 cursor-pointer text-xs',
-                            l === locale && 'bg-sidebar-accent font-medium text-foreground',
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Languages className="size-3.5 text-muted-foreground" />
-                            <span>{tl(l)}</span>
-                          </div>
-                          {l === locale && <Check className="size-3.5 text-[var(--starlight)]" />}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuGroup>
-
-                    <DropdownMenuSeparator className="my-1 bg-border/60" />
-
-                    <DropdownMenuItem
-                      onClick={() => signOutAction()}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs text-[var(--solar)]"
-                    >
-                      <LogOut className="size-3.5" />
-                      <span>{t('signOut')}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <AccountMenu admin={admin} roleLabel={roleLabel} />
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>
@@ -660,14 +414,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                   </span>
                 </div>
               )}
-              <Button variant="ghost" size="icon-sm" className="relative text-muted-foreground hover:text-foreground" aria-label={t('pendingApprovals', { count: pending })}>
-                <Bell className="size-4" />
-                {pending > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--solar)] font-mono text-[9px] font-bold tabular-nums text-white">
-                    {pending}
-                  </span>
-                )}
-              </Button>
             </div>
           </header>
 

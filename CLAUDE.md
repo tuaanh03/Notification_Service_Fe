@@ -44,6 +44,8 @@ webservice/ews-astrolink/
 │   ├── settings/{credentials,origins,profile,quota,sync}/
 │   │                         # credentials/, origins/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
+│                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
+│                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
 │                             # apps/ có actions.ts (approveAndIssueKeyAction — CỬA DUYỆT CHÍNH, mục 2.5)
 │                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
 ├── components/               # shared component (bảng ở mục 3)
@@ -71,6 +73,8 @@ webservice/ews-astrolink/
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
 │   │                         # AppShell render 1 lần, tự ẩn ở route trong WIRED_ROUTES (mục 2.4)
 │   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
+│   ├── admin-shell.tsx       # khung khu Quản trị EWS (/admin/*) — không ô chọn app, không cần ?app=
+│   ├── shell-parts.tsx       # mảnh dùng chung của AppShell + AdminShell: logo, nút thu gọn, menu tài khoản, chuông
 │   └── ui/*                  # shadcn v4 (base-ui) — chỉ thêm qua CLI, không sửa tay:
 │                             # alert avatar badge breadcrumb button checkbox collapsible dialog
 │                             # dropdown-menu input label native-select resizable separator sheet
@@ -400,7 +404,8 @@ hiện dữ liệu của app khác mà không báo gì.
 
 | Đường dẫn | Hiện |
 | --- | --- |
-| `ORG_ROUTES` (`/admin`, `/apps` — toàn tổ chức, đăng ký app) | vào thẳng, có hay không có `?app=` |
+| `/admin/*` (`isAdminRoute` — khu Quản trị EWS) | Super Admin: `<AdminShell>`, không cần app (kể cả khi 0 app); người khác: 404 |
+| `ORG_ROUTES` (`/apps` — đăng ký app) | vào thẳng, có hay không có `?app=` |
 | màn của app, `?app=` hợp lệ | màn như thường |
 | thiếu `?app=`, tổ chức CHỈ có 1 app | tự thêm `?app=` (`router.replace`) |
 | thiếu hoặc sai `?app=` | `<AppChooser>` toàn màn, thay cả AppShell |
@@ -510,7 +515,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 |---|---|---|---|
 | `<CosmicBackground>` | `components/cosmic-background.tsx` | ✓ | nền nebula + starfield seeded, fixed |
 | `<Panel glow? ring?>` | `components/panel.tsx` | ✓ | glass surface (`.cosmic-surface`), orbit ring tuỳ chọn; forward mọi prop `<section>` |
-| `<AppShell>` | `components/app-shell.tsx` | ✓ | left rail 240px, app switcher (đổi `?app=` qua `switchAppPath`), role switcher, top bar |
+| `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, app switcher (đổi `?app=` qua `switchAppPath`), top bar — KHÔNG có nhóm Quản trị EWS |
+| `<AdminShell>` | `components/admin-shell.tsx` | ✓ | khung khu Quản trị EWS (`/admin/*`, chỉ Super Admin): menu riêng, chuông chờ duyệt; dùng chung `shell-parts.tsx` với AppShell |
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |
 | `<StatPill label value delta?>` | `components/stat-pill.tsx` | ✓ | số lớn mono + sparkline |
@@ -541,7 +547,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<MailFrame subject body|bodyHtml device? header? footerNote?>` | `components/mail-frame.tsx` | ✓ | khung email nền sáng duy nhất (token `--mail-*`), footer opt-out có khoá (tooltip qua `footerNote`) — Composer block 3, chi tiết lần gửi và Template editor dùng chung; `bodyHtml` chỉ nhận HTML đã qua `renderHtmlPreview()` (sanitize + escape) |
 | `<ContractPanel templateId variables>` | `components/templates/contract-panel.tsx` | ✓ | Hợp đồng cho đội app: biến bắt buộc + lời gọi `POST /v1/notifications` mẫu (`templateId` + `payload`) + lỗi template lấy từ `v1-errors.ts` |
 | Composer blocks | `components/compose/{recipient,content,preview,send}-block.tsx`, `composer.tsx` | ✓ | 4 khối gated |
-| `RoleContext` | `components/role-context.tsx` | ✓ | vai THẬT từ `GET /admin/me` (`layout.tsx` nạp ở server); `useRole()` trả `isSuperAdmin`, `canManage(app)`, `creatableOrgs` — gate nút ghi / nhóm nav (`EWS Tổng` chỉ Super Admin). Luật ở `lib/access.ts`, sao cùng `decide()` của backend. Không giả lập vai ở client |
+| `RoleContext` | `components/role-context.tsx` | ✓ | vai THẬT từ `GET /admin/me` (`layout.tsx` nạp ở server); `useRole()` trả `isSuperAdmin`, `canManage(app)`, `creatableOrgs` — gate nút ghi; `<AppGate>` dùng `isSuperAdmin` để mở khu Quản trị EWS. Luật ở `lib/access.ts`, sao cùng `decide()` của backend. Không giả lập vai ở client |
 | `<AppRegistrationWizard>`, `<AppAdminList>` | `components/app-registration-wizard.tsx`, `app-admin-list.tsx` | ✓ | thêm từ v0 cho UC-001 — giữ, không tạo bản song song |
 
 Thứ tự dựng: **foundation (01) trước, bắt buộc** → các màn hình còn lại theo `00_README_cach_dung.md`.
