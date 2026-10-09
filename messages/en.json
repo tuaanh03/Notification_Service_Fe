@@ -47,8 +47,6 @@
   "shell": {
     "collapseSidebar": "Collapse sidebar (Ctrl + B)",
     "expandSidebar": "Expand sidebar (Ctrl + B)",
-    "chooseApp": "Choose app",
-    "switchApp": "Switch App Service",
     "signOut": "Sign out",
     "search": "Search",
     "quotaTitle": "Per-minute quota: {used}/{max}",
@@ -73,7 +71,9 @@
     "external": "external",
     "lastUsed": "last used",
     "adminHint": "Approve, suspend or revoke apps:",
-    "adminLink": "EWS administration → All apps"
+    "adminLink": "EWS administration → All apps",
+    "orgFilter": "Showing apps of <b>{org}</b>",
+    "allOrgs": "View all orgs"
   },
   "noApps": {
     "errorTitle": "Could not load the app list",
@@ -1183,5 +1183,15 @@
     "org_admin": "Org Admin",
     "member": "Member",
     "user": "No organization yet"
+  },
+  "switcher": {
+    "chooseApp": "Choose app",
+    "searchApps": "Search apps…",
+    "noMatch": "No app matches “{query}”",
+    "createApp": "Create app",
+    "chooseOrg": "Choose org",
+    "noApps": "no apps",
+    "appCount": "{count, plural, one {# app} other {# apps}}",
+    "allOrgs": "View all orgs"
   }
 }

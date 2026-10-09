@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronRight, Search, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { ChevronRight, LayoutGrid, Search, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { readLastApp } from './app-context'
 import { AppLink } from './app-link'
@@ -14,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
-import { appKey } from '@/lib/app-routes'
+import { appKey, ORG_PARAM } from '@/lib/app-routes'
 import type { App, AppStatus } from '@/lib/mock-data'
 
 /** App đang chạy lên đầu; app đã thu hồi gom riêng ở cuối. */
@@ -53,6 +54,16 @@ function AppCard({ app, here, last }: { app: App; here: string; last: boolean })
   )
 }
 
+/** Bỏ `?org=` khỏi đường dẫn, giữ tham số khác. */
+function withoutOrgParam(href: string): string {
+  const at = href.indexOf('?')
+  if (at === -1) return href
+  const params = new URLSearchParams(href.slice(at + 1))
+  params.delete(ORG_PARAM)
+  const rest = params.toString()
+  return rest ? `${href.slice(0, at)}?${rest}` : href.slice(0, at)
+}
+
 /** Gom app theo org, giữ thứ tự đã sắp bên trong mỗi nhóm; nhóm theo tên org. */
 function groupByOrg(apps: App[]): { orgId: string | undefined; orgName: string | undefined; apps: App[] }[] {
   const groups = new Map<string | undefined, { orgId: string | undefined; orgName: string | undefined; apps: App[] }>()
@@ -71,22 +82,31 @@ function groupByOrg(apps: App[]): { orgId: string | undefined; orgName: string |
  * Không đoán thay người dùng: "dùng gần nhất" chỉ là nhãn. Danh sách đã lọc theo vai ở backend
  * (ADR-0022): chỉ app người này được xem, của mọi org họ thuộc về — nhiều org thì chia nhóm theo org.
  * Chỉ hiện trường backend đang trả — không có số người nhận / số thư tự chế.
+ *
+ * `?org=` (ô chuyển org dẫn tới): chỉ hiện app của org đó, kèm lối "xem tất cả org". Tham số này
+ * bị bỏ khỏi link của thẻ app — mở app rồi thì nó hết nghĩa.
  */
 export function AppChooser({ apps, requested, here }: { apps: App[]; requested: string | null; here: string }) {
   const t = useTranslations('chooser')
   const locale = useLocale()
   const { isSuperAdmin } = useRole()
   const [query, setQuery] = useState('')
+  const orgFilter = useSearchParams().get(ORG_PARAM)
+  const inOrg = orgFilter === null ? [] : apps.filter((a) => a.org_id === orgFilter)
+  // Org lạ (gõ tay, hoặc vừa mất quyền) thì bỏ lọc — không hiện trang trống không lý do.
+  const scoped = inOrg.length > 0 ? inOrg : apps
+  const filtering = inOrg.length > 0
+  const target = withoutOrgParam(here)
   // Đọc sau khi mount: server không có localStorage, đọc lúc render là lệch hydrate.
   const [last, setLast] = useState<string | null>(null)
   useEffect(() => setLast(readLastApp()), [])
 
   const q = query.trim().toLowerCase()
-  const shown = apps
+  const shown = scoped
     .filter((a) => !q || a.name.toLowerCase().includes(q) || a.slug.includes(q))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.name.localeCompare(b.name, locale))
   const live = shown.filter((a) => a.status !== 'revoked')
-  const multiOrg = new Set(apps.map((a) => a.org_id)).size > 1
+  const multiOrg = new Set(scoped.map((a) => a.org_id)).size > 1
   const revoked = shown.filter((a) => a.status === 'revoked')
 
   return (
@@ -114,6 +134,21 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
             </Alert>
           )}
 
+          {filtering && (
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-[var(--text-secondary)]">
+                {t.rich('orgFilter', {
+                  org: inOrg[0]?.org_name ?? '',
+                  b: (chunks) => <span className="font-semibold text-foreground">{chunks}</span>,
+                })}
+              </span>
+              <AppLink href={target} app={null} className="flex items-center gap-1 text-[var(--starlight)] underline-offset-2 hover:underline">
+                <LayoutGrid className="size-3.5" />
+                {t('allOrgs')}
+              </AppLink>
+            </div>
+          )}
+
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
@@ -134,7 +169,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
                   {multiOrg && <h2 className="text-xs font-semibold text-[var(--text-secondary)]">{group.orgName}</h2>}
                   <div className="grid gap-3 sm:grid-cols-2">
                     {group.apps.map((a) => (
-                      <AppCard key={a.app_id} app={a} here={here} last={appKey(a) === last} />
+                      <AppCard key={a.app_id} app={a} here={target} last={appKey(a) === last} />
                     ))}
                   </div>
                 </section>
@@ -151,7 +186,7 @@ export function AppChooser({ apps, requested, here }: { apps: App[]; requested: 
               <CollapsibleContent>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {revoked.map((a) => (
-                    <AppCard key={a.app_id} app={a} here={here} last={appKey(a) === last} />
+                    <AppCard key={a.app_id} app={a} here={target} last={appKey(a) === last} />
                   ))}
                 </div>
               </CollapsibleContent>

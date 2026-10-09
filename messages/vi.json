@@ -47,8 +47,6 @@
   "shell": {
     "collapseSidebar": "Thu gọn sidebar (Ctrl + B)",
     "expandSidebar": "Mở rộng sidebar (Ctrl + B)",
-    "chooseApp": "Chọn app",
-    "switchApp": "Chuyển App Service",
     "signOut": "Đăng xuất",
     "search": "Tìm kiếm",
     "quotaTitle": "Quota phút: {used}/{max}",
@@ -73,7 +71,9 @@
     "external": "bên ngoài",
     "lastUsed": "dùng gần nhất",
     "adminHint": "Duyệt, tạm ngưng hay thu hồi app:",
-    "adminLink": "Quản trị EWS → Tất cả app"
+    "adminLink": "Quản trị EWS → Tất cả app",
+    "orgFilter": "Đang xem app của org <b>{org}</b>",
+    "allOrgs": "Xem tất cả org"
   },
   "noApps": {
     "errorTitle": "Không đọc được danh sách app",
@@ -1183,5 +1183,15 @@
     "org_admin": "Org Admin",
     "member": "Thành viên",
     "user": "Chưa thuộc org nào"
+  },
+  "switcher": {
+    "chooseApp": "Chọn app",
+    "searchApps": "Tìm app…",
+    "noMatch": "Không có app khớp «{query}»",
+    "createApp": "Tạo app",
+    "chooseOrg": "Chọn org",
+    "noApps": "chưa có app",
+    "appCount": "{count} app",
+    "allOrgs": "Xem tất cả org"
   }
 }

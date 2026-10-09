@@ -11,6 +11,12 @@
 export const APP_PARAM = 'app'
 
 /**
+ * `?org=<orgId>` trên trang chọn app: chỉ hiện app của org đó (ô chuyển org dẫn tới khi org có
+ * nhiều app). Chỉ là bộ lọc hiển thị — vẫn bắt người dùng tự chọn app, không đoán.
+ */
+export const ORG_PARAM = 'org'
+
+/**
  * Màn KHÔNG thuộc app nào — vào thẳng, không bắt chọn app: đăng ký app mới (`/apps/new`). Liệt kê
  * theo chiều này là có chủ đích: route mới mặc định CẦN app — quên khai báo thì bị bắt chọn app,
  * sai về phía an toàn. `/admin/*` không nằm ở đây: đó là khu riêng (`isAdminRoute`).

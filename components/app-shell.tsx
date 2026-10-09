@@ -1,6 +1,5 @@
 'use client'
 
-import { Fragment } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -12,20 +11,17 @@ import {
   Users,
   ListTree,
   ChevronRight,
-  ChevronsUpDown,
-  Check,
   ShieldCheck,
 } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
-import { AppLink, useAppRouter } from './app-link'
-import { ADMIN_HOME, appKey, switchAppPath } from '@/lib/app-routes'
+import { AppLink } from './app-link'
+import { ADMIN_HOME } from '@/lib/app-routes'
 import { QuotaArc } from '@/components/quota-arc'
-import { StatusPill } from './status-pill'
-import { statusColors } from '@/lib/theme'
 import { useRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
+import { AppSwitcher } from './app-switcher'
 import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
 import { cn } from '@/lib/utils'
 import {
@@ -51,14 +47,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -79,16 +67,12 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
   const { me, isSuperAdmin } = useRole()
   // `apps` tới từ AppProvider (layout nạp từ /admin/apps), không còn là mock. `app` đọc từ `?app=`
   // trên đường dẫn — null ở màn toàn tổ chức mở chưa kèm app (lib/app-routes.ts).
-  const { app, apps } = useAppSelection()
-  const router = useAppRouter()
-  // Thấy app của nhiều org thì ô chọn app chia nhóm theo org (danh sách đã xếp theo org ở layout).
-  const multiOrg = new Set(apps.map((a) => a.org_id)).size > 1
+  const { app } = useAppSelection()
   // Vai THẬT trong org của app đang xem — console app là chỗ làm việc của thành viên org, kể cả khi
   // người đó cũng là Super Admin (quyền đó dùng ở khu Quản trị EWS).
   const orgRole = me.orgs.find((o) => o.id === app?.org_id)?.role ?? null
   const roleLabel = orgRole ? tr(orgRole) : isSuperAdmin ? tr('superAdmin') : tr('user')
   const toAdmin = isSuperAdmin ? { href: ADMIN_HOME, label: tn('ewsAdmin'), icon: ShieldCheck } : undefined
-  const appDot = app ? (statusColors[app.status] ?? statusColors.draft) : statusColors.draft
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
   const breadcrumbMap = [
@@ -120,73 +104,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] space-y-2 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:space-y-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
             <SidebarBrand href="/" subtitle="Notification Hub" />
 
-            {/* 2. Sleek App Service Selector */}
-            <SidebarMenu className="group-data-[collapsible=icon]:hidden">
-              <SidebarMenuItem>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <SidebarMenuButton
-                        size="sm"
-                        className="h-8 w-full justify-between rounded-lg bg-[var(--void)]/60 border border-[var(--orbit)] px-2.5 text-xs hover:border-[var(--starlight)]/40 hover:bg-[var(--void)]/90 transition-all"
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          {/* Chấm theo TRẠNG THÁI THẬT, không phải xanh cố định: app đang tạm ngưng
-                              mà hiện chấm xanh là nói dối ở chỗ luôn nhìn thấy. Màu lấy từ
-                              `statusColors` — cùng nguồn với <StatusPill> trong menu bên dưới. */}
-                          <div
-                            className="size-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: appDot, boxShadow: `0 0 6px ${appDot}` }}
-                          />
-                          <span className="font-medium text-sidebar-foreground truncate">{app?.name ?? t('chooseApp')}</span>
-                        </div>
-                        <ChevronsUpDown className="size-3 text-muted-foreground shrink-0" />
-                      </SidebarMenuButton>
-                    }
-                  />
-                  <DropdownMenuContent
-                    className="w-(--anchor-width) min-w-64 rounded-xl border border-border/80 bg-popover p-2 shadow-lg"
-                    side="bottom"
-                    align="start"
-                    sideOffset={6}
-                  >
-                    {/* DropdownMenuLabel là Menu.GroupLabel -> bắt buộc nằm TRONG
-                        <DropdownMenuGroup>; để ngoài sẽ ném Base UI error #31
-                        ("MenuGroupContext is missing") và trắng trang khi mở menu. */}
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
-                        {t('switchApp')}
-                      </DropdownMenuLabel>
-                      {apps.map((a, i) => (
-                        <Fragment key={a.app_id}>
-                        {/* Nhiều org: tên org làm tiêu đề mỗi nhóm (danh sách đã xếp theo org). */}
-                        {multiOrg && a.org_id !== apps[i - 1]?.org_id && (
-                          <div className="px-2 pt-2 pb-1 text-[10px] text-muted-foreground truncate">{a.org_name}</div>
-                        )}
-                        <DropdownMenuItem
-                          // Đổi app = đổi `?app=`: ở lại màn này, hoặc về danh sách nếu đang ở trang chi tiết.
-                          onClick={() => router.push(switchAppPath(path), { app: appKey(a) })}
-                          className={cn(
-                            'flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs',
-                            a.app_id === app?.app_id && 'bg-sidebar-accent font-medium',
-                          )}
-                        >
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-medium truncate">{a.name}</span>
-                            <span className="font-mono text-[10px] text-muted-foreground truncate">{a.app_id}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <StatusPill status={a.status} />
-                            {a.app_id === app?.app_id && <Check className="size-3.5 text-[var(--starlight)]" />}
-                          </div>
-                        </DropdownMenuItem>
-                        </Fragment>
-                      ))}
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <AppSwitcher />
           </SidebarHeader>
 
           {/* Navigation Items */}
