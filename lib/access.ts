@@ -8,6 +8,11 @@ const ORG_MANAGERS: readonly OrgRole[] = ['owner', 'org_admin']
 
 const orgRoleOf = (me: AdminProfileDto, orgId: string | undefined) => me.orgs.find((o) => o.id === orgId)?.role ?? null
 
+/** Org người này LÀ THÀNH VIÊN — nguồn của console app. Super Admin không thuộc org nào -> rỗng. */
+export function memberOrgs(me: AdminProfileDto): AdminProfileDto['orgs'] {
+  return me.orgs.filter((o) => o.role !== null)
+}
+
 /** Cấu hình được app: topic, template, khoá API, IP / Origin, gửi duyệt. */
 export function canManageApp(me: AdminProfileDto, app: { app_id: string; org_id?: string | undefined }): boolean {
   if (me.isSuperAdmin) return true

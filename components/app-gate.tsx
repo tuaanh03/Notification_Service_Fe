@@ -36,9 +36,12 @@ export function AppGate({
   children,
   error,
   admin,
+  pending,
 }: {
   children: React.ReactNode
   error: string | null
+  /** Số app chờ duyệt trên mọi org — chuông của khu Quản trị EWS (layout chỉ đếm ở khu đó). */
+  pending: number
   /** Admin đang đăng nhập — `<AppShell>` hiện ở chân sidebar. Layout đã chặn trường hợp null. */
   admin: AdminDto
 }) {
@@ -77,7 +80,7 @@ export function AppGate({
   if (adminArea) {
     // API hỏng: nói ra lý do như mọi màn khác, không dựng khung với bảng trống.
     if (error !== null) return <NoAppsScreen error={error} />
-    return isSuperAdmin ? <AdminShell admin={admin}>{children}</AdminShell> : <BootstrapFrame>{children}</BootstrapFrame>
+    return isSuperAdmin ? <AdminShell admin={admin} pending={pending}>{children}</AdminShell> : <BootstrapFrame>{children}</BootstrapFrame>
   }
   if (bootstrapPath === pathname) return <BootstrapFrame>{children}</BootstrapFrame>
   // Rỗng vì API hỏng KHÁC rỗng vì chưa có gì — `<NoAppsScreen>` phân biệt bằng `error`.

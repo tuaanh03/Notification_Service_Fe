@@ -13,7 +13,10 @@ export type AppRole = 'app_admin' | 'app_viewer'
 /** `GET /admin/me` — sao đúng `AdminProfileDto` của backend (`apps/application/queries/get-admin-profile.ts`). */
 export type AdminProfileDto = {
   isSuperAdmin: boolean
-  /** Super Admin: mọi org, `role: null`. Người khác: org mình là thành viên. */
+  /**
+   * Super Admin: mọi org, `role` = vai thành viên thật (null ở org không thuộc về). Người khác: org
+   * mình là thành viên. Console app chỉ dùng org có `role` (`memberOrgs`); khu Quản trị EWS dùng hết.
+   */
   orgs: { id: string; name: string; role: OrgRole | null }[]
   /** Vai cấp TRỰC TIẾP trên app. Owner / Org Admin còn có quyền ngầm trên mọi app của org. */
   appRoles: Record<string, AppRole>

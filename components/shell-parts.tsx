@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Bell, Check, ChevronsUpDown, Languages, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Bell, Check, ChevronsUpDown, Languages, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { AppLink } from './app-link'
@@ -113,8 +113,20 @@ function initialsOf(email: string): string {
     .slice(0, 2)
 }
 
-/** Chân sidebar: tài khoản, vai thật, ngôn ngữ, đăng xuất. */
-export function AccountMenu({ admin, roleLabel }: { admin: AdminDto; roleLabel: string }) {
+/** Lối sang khu kia: console app -> Quản trị EWS (Super Admin), hoặc ngược lại (khi là thành viên org). */
+export type AreaSwitch = { href: string; label: string; icon: LucideIcon }
+
+/** Chân sidebar: tài khoản, vai thật, chuyển khu, ngôn ngữ, đăng xuất. */
+export function AccountMenu({
+  admin,
+  roleLabel,
+  switchArea,
+}: {
+  admin: AdminDto
+  roleLabel: string
+  /** Không truyền = không có khu nào khác để sang. */
+  switchArea?: AreaSwitch | undefined
+}) {
   const t = useTranslations('shell')
   const tl = useTranslations('locale')
   const { locale, change: changeLocale, pending: localePending } = useLocaleSwitch()
@@ -164,6 +176,19 @@ export function AccountMenu({ admin, roleLabel }: { admin: AdminDto; roleLabel: 
             </div>
 
             <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+            {switchArea && (
+              <>
+                <DropdownMenuItem
+                  render={<AppLink href={switchArea.href} />}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs"
+                >
+                  <switchArea.icon className="size-3.5 text-muted-foreground" />
+                  <span>{switchArea.label}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 bg-border/60" />
+              </>
+            )}
 
             {/* Ngôn ngữ giao diện — ghi cookie rồi dựng lại trang (`components/locale-switcher.tsx`). */}
             <DropdownMenuGroup>

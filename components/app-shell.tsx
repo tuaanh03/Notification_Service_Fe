@@ -14,11 +14,12 @@ import {
   ChevronRight,
   ChevronsUpDown,
   Check,
+  ShieldCheck,
 } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
 import { AppLink, useAppRouter } from './app-link'
-import { appKey, switchAppPath } from '@/lib/app-routes'
+import { ADMIN_HOME, appKey, switchAppPath } from '@/lib/app-routes'
 import { QuotaArc } from '@/components/quota-arc'
 import { StatusPill } from './status-pill'
 import { statusColors } from '@/lib/theme'
@@ -82,9 +83,11 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
   const router = useAppRouter()
   // Thấy app của nhiều org thì ô chọn app chia nhóm theo org (danh sách đã xếp theo org ở layout).
   const multiOrg = new Set(apps.map((a) => a.org_id)).size > 1
-  // Vai THẬT: Super Admin, hoặc vai trong org của app đang xem.
+  // Vai THẬT trong org của app đang xem — console app là chỗ làm việc của thành viên org, kể cả khi
+  // người đó cũng là Super Admin (quyền đó dùng ở khu Quản trị EWS).
   const orgRole = me.orgs.find((o) => o.id === app?.org_id)?.role ?? null
-  const roleLabel = isSuperAdmin ? tr('superAdmin') : orgRole ? tr(orgRole) : tr('user')
+  const roleLabel = orgRole ? tr(orgRole) : isSuperAdmin ? tr('superAdmin') : tr('user')
+  const toAdmin = isSuperAdmin ? { href: ADMIN_HOME, label: tn('ewsAdmin'), icon: ShieldCheck } : undefined
   const appDot = app ? (statusColors[app.status] ?? statusColors.draft) : statusColors.draft
 
   // Breadcrumb top bar: nhóm / mục nav khớp prefix dài nhất với path hiện tại
@@ -366,7 +369,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
 
           {/* Footer: tài khoản, vai thật, ngôn ngữ, đăng xuất */}
           <SidebarFooter className="p-2 border-t border-[var(--orbit)] group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-            <AccountMenu admin={admin} roleLabel={roleLabel} />
+            <AccountMenu admin={admin} roleLabel={roleLabel} switchArea={toAdmin} />
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>

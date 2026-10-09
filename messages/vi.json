@@ -54,7 +54,8 @@
     "quotaTitle": "Quota phút: {used}/{max}",
     "quota": "Quota:",
     "pendingApprovals": "{count} yêu cầu chờ duyệt",
-    "adminArea": "Quản trị EWS"
+    "adminArea": "Quản trị EWS",
+    "toConsole": "Về console app"
   },
   "preview": {
     "title": "Bản xem trước — số liệu minh hoạ",

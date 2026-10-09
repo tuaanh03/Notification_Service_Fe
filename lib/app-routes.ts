@@ -73,7 +73,7 @@ export function appRouteKeys(apps: readonly { app_id: string; slug: string }[]):
   return new Map(apps.map((a) => [a.app_id, (count.get(a.slug) ?? 0) > 1 ? `${a.slug}~${a.app_id.slice(0, 8)}` : a.slug]))
 }
 
-/** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `slug = null` hoặc link ngoài -> để nguyên. */
+/** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `slug = null`, link ngoài hoặc khu Quản trị EWS -> để nguyên. */
 export function withApp(href: string, slug: string | null): string {
   if (slug === null || !href.startsWith('/')) return href
   const hashAt = href.indexOf('#')
@@ -81,6 +81,8 @@ export function withApp(href: string, slug: string | null): string {
   const beforeHash = hashAt === -1 ? href : href.slice(0, hashAt)
   const queryAt = beforeHash.indexOf('?')
   const path = queryAt === -1 ? beforeHash : beforeHash.slice(0, queryAt)
+  // Khu Quản trị EWS không thuộc app nào: link tới đó không mang `?app=`.
+  if (isAdminRoute(path)) return href
   const params = new URLSearchParams(queryAt === -1 ? '' : beforeHash.slice(queryAt + 1))
   params.set(APP_PARAM, slug)
   return `${path}?${params.toString()}${hash}`

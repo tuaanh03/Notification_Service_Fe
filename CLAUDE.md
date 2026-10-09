@@ -201,7 +201,10 @@ trong cookie `httpOnly` `ews_session`: JavaScript trong browser không đọc đ
 | `EWS_API_URL` | `http://ews-astrolink-api:3000` trong docker; `http://127.0.0.1:4002` khi `pnpm dev` |
 
 *   **Không còn `EWS_ORG_ID`** (ADR-0022 của backend): `layout.tsx` gọi `GET /admin/me` lấy org + vai của
-    người đăng nhập, rồi `GET /admin/apps?orgId=` cho từng org (`listVisibleApps`). Một console phục vụ mọi org.
+    người đăng nhập, rồi `GET /admin/apps?orgId=` cho từng org mình LÀ THÀNH VIÊN (`listVisibleApps(memberOrgs(me))`).
+    Một console phục vụ mọi org. Super Admin cũng chỉ thấy org mình là thành viên ở console app; mọi org
+    xem ở khu Quản trị EWS (mục 2.9). Super Admin không thuộc org nào -> layout chuyển thẳng tới `/admin/apps`
+    (chừa `/apps/new`). Hai khu qua lại bằng mục trong menu tài khoản (`switchArea` của `<AccountMenu>`).
 *   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho biến trên. `lib/api/client.ts` mở đầu bằng
     `import 'server-only'` nên build sẽ đỏ ngay nếu có component client lỡ import.
 *   **Kiểu dữ liệu sao đúng DTO của backend**, để ở `lib/api/types.ts` (không `server-only` — component

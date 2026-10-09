@@ -2,13 +2,14 @@
 
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Database, History, Layers, Send } from 'lucide-react'
+import { Database, History, LayoutDashboard, Layers, Send } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { ADMIN_HOME } from '@/lib/app-routes'
-import { useAppSelection } from './app-context'
+import { memberOrgs } from '@/lib/access'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
+import { useRole } from './role-context'
 import { AccountMenu, CollapsedSidebarTrigger, PendingBell, SidebarBrand } from './shell-parts'
 import {
   Sidebar,
@@ -46,14 +47,15 @@ const NAV = [
  * app, không có vòng quota, không cần `?app=`. Super Admin không thuộc org nào vẫn vào được.
  * `<AppGate>` chọn khung theo đường dẫn; `app/admin/layout.tsx` chặn người không phải Super Admin.
  */
-export function AdminShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
+export function AdminShell({ children, admin, pending }: { children: React.ReactNode; admin: AdminDto; pending: number }) {
   const path = usePathname()
   const t = useTranslations('shell')
   const tn = useTranslations('nav')
   const tr = useTranslations('roles')
-  const { apps } = useAppSelection()
-  // Số thật từ danh sách app của AppProvider — không phải số mock (mục 2.4).
-  const pending = apps.filter((a) => a.status === 'pending_approval').length
+  const { me } = useRole()
+  // `pending` đếm trên MỌI org ở layout (server) — danh sách app của AppProvider chỉ có org mình là thành viên.
+  // Về console app chỉ khi có org để về: Super Admin không thuộc org nào thì console app không có gì.
+  const backToConsole = memberOrgs(me).length > 0 ? { href: '/', label: t('toConsole'), icon: LayoutDashboard } : undefined
   // Khớp prefix dài nhất: `/admin/send-approvals/<id>` vẫn sáng mục "Duyệt lần gửi".
   const current = NAV.filter((l) => path === l.href || path.startsWith(`${l.href}/`)).sort(
     (a, b) => b.href.length - a.href.length,
@@ -95,7 +97,7 @@ export function AdminShell({ children, admin }: { children: React.ReactNode; adm
           </SidebarContent>
 
           <SidebarFooter className="p-2 border-t border-[var(--orbit)] group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-            <AccountMenu admin={admin} roleLabel={tr('superAdmin')} />
+            <AccountMenu admin={admin} roleLabel={tr('superAdmin')} switchArea={backToConsole} />
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>

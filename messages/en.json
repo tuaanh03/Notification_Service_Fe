@@ -54,7 +54,8 @@
     "quotaTitle": "Per-minute quota: {used}/{max}",
     "quota": "Quota:",
     "pendingApprovals": "{count} pending approval requests",
-    "adminArea": "EWS Admin"
+    "adminArea": "EWS Admin",
+    "toConsole": "Back to app console"
   },
   "preview": {
     "title": "Preview — sample data",
