@@ -9,8 +9,14 @@
 /** Vai trong org / trên app — sao đúng `ORG_ROLES` / `APP_ROLES` của backend (ADR-0022). */
 export type OrgRole = 'owner' | 'org_admin' | 'member'
 
-/** Một thành viên org — sao đúng `OrgMemberDto` của backend (ADR-0026). */
-export type OrgMemberDto = { orgId: string; adminId: string; email: string; role: OrgRole }
+/** Một thành viên org — sao đúng `OrgMemberDto` của backend (ADR-0026). `displayName`: tên từ M365 (ADR-0027), `null` = chưa biết. */
+export type OrgMemberDto = { orgId: string; adminId: string; email: string; displayName: string | null; role: OrgRole }
+
+/** Một người có thể thêm vào org — sao đúng `MemberCandidateDto` của backend (ADR-0027). */
+export type MemberCandidateDto = { adminId: string; email: string; displayName: string | null }
+
+/** Kết quả một lượt đồng bộ danh bạ M365 — chỉ con số (ADR-0027). */
+export type DirectorySyncDto = { total: number; created: number; linked: number; renamed: number; unchanged: number; conflicts: number }
 
 /** Vai app còn hiệu lực của một người trên một app của org (ADR-0026). */
 export type OrgAppRoleDto = { adminId: string; appId: string; role: AppRole }

@@ -121,7 +121,10 @@
     "ADMIN_NOT_REGISTERED": "This person has no EWS account yet. Ask them to sign in with Microsoft once, then add them again.",
     "OWNER_REQUIRED": "Only an Owner can grant, change or remove the Owner role.",
     "LAST_OWNER": "The organization must keep at least one Owner.",
-    "NOT_ORG_MEMBER": "App roles can only be granted to members of the organization."
+    "NOT_ORG_MEMBER": "App roles can only be granted to members of the organization.",
+    "M365_DIRECTORY_NOT_CONFIGURED": "The EWS server has no Microsoft 365 connection configured, so the directory cannot be synced yet.",
+    "M365_DIRECTORY_TENANT_MISMATCH": "The mail app and the Microsoft sign-in app belong to different tenants, so the directory cannot be synced. Ask an administrator to check the configuration.",
+    "M365_DIRECTORY_ERROR": "Microsoft 365 did not return the directory. Try again in a few minutes; if it keeps failing, ask an administrator to check the app's directory read permission."
   },
   "common": {
     "loadErrorTitle": "Could not read data from the API",
@@ -1220,7 +1223,7 @@
     "title": "Members · {org}",
     "subtitleManage": "Add colleagues, change roles and grant app access. Owners and Org Admins already manage every app.",
     "subtitleRead": "People in this organization. Only Owners and Org Admins can make changes.",
-    "colEmail": "Email",
+    "colEmail": "Person",
     "colRole": "Role",
     "colApps": "App access",
     "colActions": "Actions",
@@ -1232,11 +1235,11 @@
     "remove": "Remove from organization",
     "add": "Add member",
     "emptyTitle": "No members yet",
-    "emptyBody": "Add colleagues by their email.",
+    "emptyBody": "Add colleagues from your company's people list.",
     "notFoundTitle": "Organization not found",
     "notFoundBody": "The link may be wrong, or you are not a member of that organization.",
     "addTitle": "Add member",
-    "addBody": "The person must have signed in to EWS with Microsoft at least once.",
+    "addBody": "Pick a colleague from your company's people list (from Microsoft 365).",
     "email": "Email",
     "role": "Role",
     "saving": "Saving…",
@@ -1253,6 +1256,16 @@
     "added": "Added {email}",
     "roleChanged": "Changed the role of {email}",
     "appAccessSaved": "Saved app access for {email}",
-    "removed": "Removed {email}"
+    "removed": "Removed {email}",
+    "sync": "Sync M365",
+    "syncing": "Syncing…",
+    "synced": "Synced {total} people: {created} new accounts, {linked} linked, {renamed} renamed.",
+    "syncConflicts": "{count} emails are linked to a different Microsoft account and were skipped.",
+    "person": "Person",
+    "searchPeople": "Search by name or email",
+    "loadingPeople": "Loading people…",
+    "noPeople": "No one to add yet. A Super Admin can press \"Sync M365\" to load your company's people.",
+    "noMatch": "No one matches \"{query}\".",
+    "peopleCount": "{count} people"
   }
 }

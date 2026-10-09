@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { TriangleAlert } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, Loader2, Search, TriangleAlert } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { App } from '@/lib/mock-data'
-import type { AppRole, OrgAppRoleDto, OrgMemberDto, OrgRole } from '@/lib/api/types'
+import type { AppRole, MemberCandidateDto, OrgAppRoleDto, OrgMemberDto, OrgRole } from '@/lib/api/types'
+import { listCandidatesAction } from '@/app/orgs/actions'
+import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -16,9 +18,6 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
  * xác nhận duy nhất của app (CLAUDE.md mục 1). Vai Owner chỉ có trong danh sách khi người đang
  * thao tác là Owner / Super Admin (`allowOwner`).
  */
-
-/** Sơ bộ cho nút bấm — backend mới là nơi kiểm thật. */
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function ErrorAlert({ error }: { error: string | null }) {
   if (!error) return null
@@ -55,6 +54,7 @@ function RoleSelect({
 }
 
 export function AddMemberDialog({
+  orgId,
   open,
   allowOwner,
   pending,
@@ -62,48 +62,109 @@ export function AddMemberDialog({
   onCancel,
   onSubmit,
 }: {
+  orgId: string
   open: boolean
   allowOwner: boolean
   pending: boolean
   error: string | null
   onCancel: () => void
-  onSubmit: (email: string, role: OrgRole) => void
+  onSubmit: (person: MemberCandidateDto, role: OrgRole) => void
 }) {
   const t = useTranslations('members')
-  const [email, setEmail] = useState('')
+  const [people, setPeople] = useState<MemberCandidateDto[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [picked, setPicked] = useState<MemberCandidateDto | null>(null)
   const [role, setRole] = useState<OrgRole>('member')
-  const trimmed = email.trim()
-  const close = () => {
-    setEmail('')
-    setRole('member')
-    onCancel()
-  }
+
+  // Đọc danh sách mỗi lần mở (component được dựng lại theo `key` ở `<OrgMembers>`): vừa đồng bộ M365
+  // hay vừa thêm ai thì lần mở sau đã đúng.
+  useEffect(() => {
+    if (!open) return
+    let alive = true
+    listCandidatesAction(orgId).then((res) => {
+      if (!alive) return
+      if (res.ok) setPeople(res.data)
+      else setLoadError(res.message)
+    })
+    return () => {
+      alive = false
+    }
+  }, [open, orgId])
+
+  const q = query.trim().toLowerCase()
+  const shown = (people ?? []).filter(
+    (p) => !q || p.email.includes(q) || (p.displayName ?? '').toLowerCase().includes(q),
+  )
+
   return (
     <ConfirmDialog
       open={open}
       title={t('addTitle')}
       description={t('addBody')}
       confirmLabel={pending ? t('saving') : t('add')}
-      confirmDisabled={!EMAIL.test(trimmed) || pending}
-      onConfirm={() => onSubmit(trimmed, role)}
-      onCancel={close}
+      confirmDisabled={picked === null || pending}
+      onConfirm={() => picked && onSubmit(picked, role)}
+      onCancel={onCancel}
     >
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="member-email">{t('email')}</Label>
-          <Input
-            id="member-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="ten@congty.com"
-          />
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="member-search">{t('person')}</Label>
+            {people && people.length > 0 && (
+              <span className="text-[11px] text-[var(--text-muted)]">{t('peopleCount', { count: people.length })}</span>
+            )}
+          </div>
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Input
+              id="member-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('searchPeople')}
+              className="pl-8"
+              disabled={people === null || people.length === 0}
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto rounded-lg border border-[var(--orbit)]">
+            {people === null && !loadError && (
+              <p className="flex items-center gap-2 px-3 py-3 text-xs text-[var(--text-muted)]">
+                <Loader2 className="size-3.5 animate-spin" />
+                {t('loadingPeople')}
+              </p>
+            )}
+            {people?.length === 0 && <p className="px-3 py-3 text-xs text-[var(--text-muted)]">{t('noPeople')}</p>}
+            {people && people.length > 0 && shown.length === 0 && (
+              <p className="px-3 py-3 text-xs text-[var(--text-muted)]">{t('noMatch', { query })}</p>
+            )}
+            {shown.map((p) => {
+              const active = picked?.adminId === p.adminId
+              return (
+                <button
+                  key={p.adminId}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setPicked(p)}
+                  className={cn(
+                    'flex w-full items-center gap-2 border-b border-[var(--orbit)] px-3 py-2 text-left last:border-b-0 hover:bg-sidebar-accent/60',
+                    active && 'bg-sidebar-accent',
+                  )}
+                >
+                  <Check className={cn('size-3.5 shrink-0 text-[var(--starlight)]', !active && 'invisible')} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{p.displayName ?? p.email}</p>
+                    {p.displayName && <p className="truncate text-[11px] text-[var(--text-muted)]">{p.email}</p>}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="member-role">{t('role')}</Label>
           <RoleSelect id="member-role" value={role} allowOwner={allowOwner} onChange={setRole} />
         </div>
-        <ErrorAlert error={error} />
+        <ErrorAlert error={loadError ?? error} />
       </div>
     </ConfirmDialog>
   )

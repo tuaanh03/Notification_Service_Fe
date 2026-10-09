@@ -434,9 +434,12 @@ hiện dữ liệu của app khác mà không báo gì.
     org mới báo "không có". Người chưa thuộc org nào: `<NoAppsScreen>` dẫn tới `/orgs` để tạo.
 *   **Màn Thành viên** (`/orgs/<orgId>/members`, ADR-0026 của backend): Server Component đọc thành viên +
     vai app (`lib/api/organizations.ts`), ghi qua Server Action (`app/orgs/actions.ts`) rồi
-    `router.refresh()`. Mọi thành viên xem; Owner / Org Admin thêm (email người ĐÃ đăng nhập M365 một lần),
-    đổi vai, cấp vai app, gỡ. Lựa chọn vai Owner chỉ hiện với Owner / Super Admin — backend vẫn chặn
-    (`OWNER_REQUIRED`). Owner / Org Admin hiện "Mọi app" và không có hộp Quyền app (ngầm là App Admin).
+    `router.refresh()`. Mọi thành viên xem; Owner / Org Admin thêm, đổi vai, cấp vai app, gỡ. Hộp Thêm
+    là DANH SÁCH CHỌN (ADR-0027 của backend): mỗi lần mở gọi `listCandidatesAction` (người cùng công ty
+    chưa thuộc org, có tên từ M365), lọc tại chỗ theo tên / email. Danh sách đến từ nút **Đồng bộ M365**
+    (chỉ Super Admin thấy, `syncDirectoryAction`, chờ tối đa 2 phút) hoặc lần đăng nhập M365 đầu tiên.
+    Bảng hiện tên (`displayName`) kèm email; chưa có tên thì chỉ email. Lựa chọn vai Owner chỉ hiện với
+    Owner / Super Admin — backend vẫn chặn (`OWNER_REQUIRED`). Owner / Org Admin hiện "Mọi app" và không có hộp Quyền app (ngầm là App Admin).
     Vào từ sidebar khung Tổ chức (Apps · Thành viên) hoặc mục "Thành viên" của ô chuyển app/org.
 *   **`messageOf` ưu tiên mã trong `issues`** (lỗi 422 `VALIDATION`) nếu mã đó có câu dịch ở nhóm
     `errors` — ví dụ `ADMIN_NOT_REGISTERED` nằm trong `issues`, không ở `code`.

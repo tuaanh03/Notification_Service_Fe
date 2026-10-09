@@ -1,6 +1,6 @@
 import 'server-only'
 import { adminFetch } from './client'
-import type { AppRole, OrganizationDto, OrgAppRoleDto, OrgMemberDto, OrgRole } from './types'
+import type { AppRole, DirectorySyncDto, MemberCandidateDto, OrganizationDto, OrgAppRoleDto, OrgMemberDto, OrgRole } from './types'
 
 /** POST /admin/organizations — tạo org, người gọi thành Owner (ADR-0025 của backend). */
 export function createOrganization(name: string): Promise<OrganizationDto> {
@@ -14,6 +14,19 @@ const org = (orgId: string) => `/organizations/${encodeURIComponent(orgId)}`
 /** GET /admin/organizations/:orgId/members — mọi thành viên xem được. */
 export function listMembers(orgId: string): Promise<OrgMemberDto[]> {
   return adminFetch<OrgMemberDto[]>(`${org(orgId)}/members`)
+}
+
+/** GET /admin/organizations/:orgId/member-candidates — người cùng công ty chưa thuộc org (ADR-0027). */
+export function listMemberCandidates(orgId: string): Promise<MemberCandidateDto[]> {
+  return adminFetch<MemberCandidateDto[]>(`${org(orgId)}/member-candidates`)
+}
+
+/**
+ * POST /admin/directory/m365-sync — đồng bộ danh bạ M365 thành tài khoản EWS, chỉ Super Admin (ADR-0027).
+ * Lần đầu tạo cả trăm tài khoản, mỗi người một transaction — chờ tối đa 2 phút thay vì 10 giây.
+ */
+export function syncDirectory(): Promise<DirectorySyncDto> {
+  return adminFetch<DirectorySyncDto>('/directory/m365-sync', { method: 'POST', timeoutMs: 120_000 })
 }
 
 /** PUT /admin/organizations/:orgId/members — thêm người đã có tài khoản / đổi vai. */

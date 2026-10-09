@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { KeyRound, MoreHorizontal, Pencil, Plus, TriangleAlert, UserMinus, Users } from 'lucide-react'
+import { KeyRound, MoreHorizontal, Pencil, Plus, RefreshCw, TriangleAlert, UserMinus, Users } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { consoleOrgs } from '@/lib/access'
@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { removeMemberAction, setAppRolesAction, setMemberAction } from '@/app/orgs/actions'
+import { removeMemberAction, setAppRolesAction, setMemberAction, syncDirectoryAction } from '@/app/orgs/actions'
 import { AddMemberDialog, AppRolesDialog, ChangeRoleDialog, RemoveMemberDialog } from './member-dialogs'
 
 type Row = OrgMemberDto & { access: string; apps: number }
@@ -59,6 +59,7 @@ export function OrgMembers({
   const [open, setOpen] = useState<Open>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [syncing, startSync] = useTransition()
 
   const org = consoleOrgs(me).find((o) => o.id === orgId) ?? null
   if (!org) return <EmptyState icon={Users} title={t('notFoundTitle')} description={t('notFoundBody')} />
@@ -83,13 +84,32 @@ export function OrgMembers({
       router.refresh()
     })
 
+  /** Đồng bộ danh bạ M365 (ADR-0027 của backend) — việc cấp hệ thống, chỉ Super Admin thấy nút. */
+  const sync = () =>
+    startSync(async () => {
+      const res = await syncDirectoryAction()
+      if (!res.ok) return void toast.error(res.message)
+      toast.success(t('synced', res.data))
+      if (res.data.conflicts > 0) toast.warning(t('syncConflicts', { count: res.data.conflicts }))
+      router.refresh()
+    })
+
   const close = () => {
     setOpen(null)
     setActionError(null)
   }
 
   const columns: Column<Row>[] = [
-    { key: 'email', label: t('colEmail'), render: (r) => <span className="font-medium">{r.email}</span> },
+    {
+      key: 'email',
+      label: t('colEmail'),
+      render: (r) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium">{r.displayName ?? r.email}</p>
+          {r.displayName && <p className="truncate text-[11px] text-[var(--text-muted)]">{r.email}</p>}
+        </div>
+      ),
+    },
     { key: 'role', label: t('colRole'), render: (r) => tr(r.role) },
     { key: 'access', label: t('colApps') },
   ]
@@ -145,10 +165,18 @@ export function OrgMembers({
         subtitle={canManage ? t('subtitleManage') : t('subtitleRead')}
         actions={
           canManage ? (
-            <Button onClick={() => setOpen({ kind: 'add' })}>
-              <Plus />
-              {t('add')}
-            </Button>
+            <div className="flex items-center gap-2">
+              {isSuperAdmin && (
+                <Button variant="outline" onClick={sync} disabled={syncing}>
+                  <RefreshCw className={syncing ? 'animate-spin' : undefined} />
+                  {syncing ? t('syncing') : t('sync')}
+                </Button>
+              )}
+              <Button onClick={() => setOpen({ kind: 'add' })}>
+                <Plus />
+                {t('add')}
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -168,14 +196,17 @@ export function OrgMembers({
       />
 
       <AddMemberDialog
-        // Dựng lại mỗi lần mở: thêm xong mở lại thì ô email trống, không còn người vừa thêm.
+        // Dựng lại mỗi lần mở: đọc lại danh sách người, bỏ người vừa chọn lần trước.
         key={open?.kind === 'add' ? 'add-open' : 'add-closed'}
+        orgId={orgId}
         open={open?.kind === 'add'}
         allowOwner={isOwner}
         pending={pending}
         error={actionError}
         onCancel={close}
-        onSubmit={(email, role) => run(() => setMemberAction(orgId, email, role), t('added', { email }))}
+        onSubmit={(person, role) =>
+          run(() => setMemberAction(orgId, person.email, role), t('added', { email: person.displayName ?? person.email }))
+        }
       />
       <ChangeRoleDialog
         member={open?.kind === 'role' ? open.member : null}

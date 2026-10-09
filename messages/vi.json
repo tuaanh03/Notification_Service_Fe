@@ -121,7 +121,10 @@
     "ADMIN_NOT_REGISTERED": "Người này chưa có tài khoản EWS. Nhờ họ đăng nhập bằng Microsoft một lần, rồi thêm lại.",
     "OWNER_REQUIRED": "Chỉ Owner mới trao, đổi hoặc gỡ vai Owner.",
     "LAST_OWNER": "Tổ chức phải còn ít nhất một Owner.",
-    "NOT_ORG_MEMBER": "Chỉ cấp vai app cho người đã là thành viên của tổ chức."
+    "NOT_ORG_MEMBER": "Chỉ cấp vai app cho người đã là thành viên của tổ chức.",
+    "M365_DIRECTORY_NOT_CONFIGURED": "Máy chủ EWS chưa cấu hình kết nối Microsoft 365 nên chưa đồng bộ được danh bạ.",
+    "M365_DIRECTORY_TENANT_MISMATCH": "App gửi mail và app đăng nhập Microsoft thuộc hai tenant khác nhau, nên không đồng bộ danh bạ được. Nhờ người quản trị kiểm cấu hình.",
+    "M365_DIRECTORY_ERROR": "Microsoft 365 không trả danh bạ. Thử lại sau ít phút; nếu vẫn lỗi, nhờ người quản trị kiểm quyền đọc danh bạ của app."
   },
   "common": {
     "loadErrorTitle": "Không đọc được dữ liệu từ API",
@@ -1220,7 +1223,7 @@
     "title": "Thành viên · {org}",
     "subtitleManage": "Thêm đồng nghiệp, đổi vai và cấp quyền app. Owner / Org Admin có sẵn quyền trên mọi app.",
     "subtitleRead": "Những người trong tổ chức này. Chỉ Owner / Org Admin thay đổi được.",
-    "colEmail": "Email",
+    "colEmail": "Người",
     "colRole": "Vai",
     "colApps": "Quyền app",
     "colActions": "Thao tác",
@@ -1232,11 +1235,11 @@
     "remove": "Gỡ khỏi tổ chức",
     "add": "Thêm thành viên",
     "emptyTitle": "Chưa có thành viên",
-    "emptyBody": "Thêm đồng nghiệp bằng email của họ.",
+    "emptyBody": "Thêm đồng nghiệp từ danh sách người trong công ty.",
     "notFoundTitle": "Không có tổ chức này",
     "notFoundBody": "Link có thể sai, hoặc bạn không thuộc tổ chức đó.",
     "addTitle": "Thêm thành viên",
-    "addBody": "Người được thêm phải đã đăng nhập EWS bằng Microsoft ít nhất một lần.",
+    "addBody": "Chọn đồng nghiệp trong danh sách người của công ty (lấy từ Microsoft 365).",
     "email": "Email",
     "role": "Vai",
     "saving": "Đang lưu…",
@@ -1253,6 +1256,16 @@
     "added": "Đã thêm {email}",
     "roleChanged": "Đã đổi vai của {email}",
     "appAccessSaved": "Đã lưu quyền app của {email}",
-    "removed": "Đã gỡ {email}"
+    "removed": "Đã gỡ {email}",
+    "sync": "Đồng bộ M365",
+    "syncing": "Đang đồng bộ…",
+    "synced": "Đã đồng bộ {total} người: {created} tài khoản mới, {linked} gắn thêm, {renamed} đổi tên.",
+    "syncConflicts": "{count} email đã gắn với một tài khoản Microsoft khác, đã bỏ qua.",
+    "person": "Người",
+    "searchPeople": "Tìm theo tên hoặc email",
+    "loadingPeople": "Đang tải danh sách…",
+    "noPeople": "Chưa có ai để thêm. Super Admin bấm \"Đồng bộ M365\" để lấy danh sách người trong công ty.",
+    "noMatch": "Không ai khớp \"{query}\".",
+    "peopleCount": "{count} người"
   }
 }
