@@ -35,8 +35,15 @@ export function NoAppsScreen({ error }: { error: string | null }) {
             title={error ? t('errorTitle') : noAccess ? t('noAccessTitle') : t('emptyTitle')}
             description={error ?? (noAccess ? t('noAccessBody') : t('emptyBody'))}
             action={
-              error || noAccess ? undefined : (
-                <Button render={<AppLink href="/apps/new" />}>{t('registerFirst')}</Button>
+              error ? undefined : noAccess ? (
+                // Chưa thuộc org nào: tự tạo tổ chức (ADR-0025 của backend) ở trang Tổ chức.
+                <Button render={<AppLink href="/orgs" />} nativeButton={false}>
+                  {t('createOrg')}
+                </Button>
+              ) : (
+                <Button render={<AppLink href="/apps/new" />} nativeButton={false}>
+                  {t('registerFirst')}
+                </Button>
               )
             }
           />

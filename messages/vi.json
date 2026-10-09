@@ -78,7 +78,8 @@
     "emptyBody": "Org này chưa có app service nào. Đăng ký app đầu tiên để bắt đầu quản trị EWS Notification Service.",
     "registerFirst": "Đăng ký app đầu tiên",
     "noAccessTitle": "Chưa có quyền vào org nào",
-    "noAccessBody": "Tài khoản của bạn chưa được gán vào org hay app nào. Nhờ Owner của org hoặc Super Admin thêm bạn."
+    "noAccessBody": "Tài khoản của bạn chưa thuộc tổ chức nào. Tạo tổ chức cho đội của bạn, hoặc nhờ Owner của một tổ chức thêm bạn vào.",
+    "createOrg": "Tạo tổ chức"
   },
   "errors": {
     "withCode": "{message} (mã: {code})",
@@ -1199,6 +1200,13 @@
     "noAppsBody": "Chưa có app nào bạn được xem trong tổ chức này.",
     "notFoundTitle": "Không có tổ chức này",
     "notFoundBody": "Link có thể sai, hoặc bạn không thuộc tổ chức đó.",
-    "orgCount": "{count} tổ chức"
+    "orgCount": "{count} tổ chức",
+    "create": "Tạo tổ chức",
+    "createTitle": "Tạo tổ chức",
+    "createBody": "Tổ chức là nơi đội của bạn quản lý app. Bạn sẽ là Owner và mời đồng nghiệp vào sau.",
+    "nameLabel": "Tên tổ chức",
+    "namePlaceholder": "Đội Đơn hàng",
+    "creating": "Đang tạo…",
+    "createApp": "Tạo app"
   }
 }

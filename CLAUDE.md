@@ -428,6 +428,10 @@ hiện dữ liệu của app khác mà không báo gì.
 *   **Trang Tổ chức** (`/orgs`, `/orgs/<orgId>` — `isOrgsRoute`, khung `<OrgsShell>`): bảng org (tên, vai
     của mình, số app) và bảng app của một org; bấm dòng là đi tiếp. CHỈ cột có dữ liệu thật — không
     thêm Plan / MAU kiểu OneSignal. Không cần `?app=`, link tới đây không mang `?app=` (`withApp`).
+    Nút **"Tạo tổ chức"** (`<CreateOrgDialog>`, `app/orgs/actions.ts` -> `POST /admin/organizations`): ai
+    đăng nhập cũng tạo được, người tạo thành Owner (ADR-0025 của backend). Tạo xong `router.push` tới org
+    mới RỒI MỚI `router.refresh()` — refresh trước thì push đè mất, layout giữ danh sách org cũ và trang
+    org mới báo "không có". Người chưa thuộc org nào: `<NoAppsScreen>` dẫn tới `/orgs` để tạo.
     Trang chọn app (`<AppChooser>`) chỉ còn một việc: đường dẫn thiếu / sai `?app=`.
 *   **Link nội bộ CHỈ qua `<AppLink>` / `useAppRouter()`** (`components/app-link.tsx`) — tự gắn
     `?app=`. `app-link.tsx` là file duy nhất được import `next/link` và `useRouter`. Link tới app
@@ -527,7 +531,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<Panel glow? ring?>` | `components/panel.tsx` | ✓ | glass surface (`.cosmic-surface`), orbit ring tuỳ chọn; forward mọi prop `<section>` |
 | `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, `<AppSwitcher>`, top bar — KHÔNG có nhóm Quản trị EWS |
 | `<AppSwitcher>` | `components/app-switcher.tsx` | ✓ | ô chuyển app / org đầu sidebar (mục 2.9): app của org đang xem + menu con `consoleOrgs`; ô tìm khi org có > 6 app |
-| `<OrgsShell>` / `<OrgList>` / `<OrgApps orgId>` | `components/orgs-shell.tsx`, `components/orgs/*` | ✓ | trang Tổ chức `/orgs` (mục 2.9): khung riêng, bảng org, bảng app của một org |
+| `<OrgsShell>` / `<OrgList>` / `<OrgApps orgId>` / `<CreateOrgDialog>` | `components/orgs-shell.tsx`, `components/orgs/*` | ✓ | trang Tổ chức `/orgs` (mục 2.9): khung riêng, bảng org (+ nút Tạo tổ chức), bảng app của một org (+ Tạo app cho Owner / Org Admin) |
 | `<AdminShell>` | `components/admin-shell.tsx` | ✓ | khung khu Quản trị EWS (`/admin/*`, chỉ Super Admin): menu riêng; dùng chung `shell-parts.tsx` với AppShell |
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |

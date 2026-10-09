@@ -8,6 +8,14 @@
 
 /** Vai trong org / trên app — sao đúng `ORG_ROLES` / `APP_ROLES` của backend (ADR-0022). */
 export type OrgRole = 'owner' | 'org_admin' | 'member'
+
+/** Sao đúng `OrganizationDto` của backend (`tenancy/application/dto.ts`). */
+export type OrganizationDto = {
+  id: string
+  accountId: string
+  name: string
+  createdAt: string
+}
 export type AppRole = 'app_admin' | 'app_viewer'
 
 /** `GET /admin/me` — sao đúng `AdminProfileDto` của backend (`apps/application/queries/get-admin-profile.ts`). */

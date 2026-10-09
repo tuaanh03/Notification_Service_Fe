@@ -78,7 +78,8 @@
     "emptyBody": "This org has no app service yet. Register the first app to start managing EWS Notification Service.",
     "registerFirst": "Register the first app",
     "noAccessTitle": "No access yet",
-    "noAccessBody": "Your account is not in any organization or app yet. Ask an organization Owner or a Super Admin to add you."
+    "noAccessBody": "Your account is not in any organization yet. Create one for your team, or ask an organization Owner to add you.",
+    "createOrg": "Create organization"
   },
   "errors": {
     "withCode": "{message} (code: {code})",
@@ -1199,6 +1200,13 @@
     "noAppsBody": "There is no app you can see in this organization.",
     "notFoundTitle": "Organization not found",
     "notFoundBody": "The link may be wrong, or you are not a member of that organization.",
-    "orgCount": "{count, plural, one {# organization} other {# organizations}}"
+    "orgCount": "{count, plural, one {# organization} other {# organizations}}",
+    "create": "Create organization",
+    "createTitle": "Create organization",
+    "createBody": "An organization is where your team manages its apps. You will be its Owner and can invite colleagues later.",
+    "nameLabel": "Organization name",
+    "namePlaceholder": "Orders team",
+    "creating": "Creating…",
+    "createApp": "Create app"
   }
 }
