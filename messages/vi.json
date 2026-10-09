@@ -117,7 +117,11 @@
     "M365_TOKEN_INVALID": "Không xác minh được danh tính Microsoft. Bấm đăng nhập lại; lặp lại thì báo người quản trị.",
     "M365_PROVIDER_ERROR": "Không kết nối được tới Microsoft hoặc cấu hình đăng nhập phía EWS có lỗi. Báo người quản trị.",
     "M365_ACCOUNT_NOT_REGISTERED": "Chưa tạo được tài khoản EWS cho tài khoản Microsoft này (không đọc được email). Liên hệ người quản trị EWS.",
-    "M365_ACCOUNT_MISMATCH": "Email này đã gắn với một tài khoản Microsoft khác. Báo người quản trị."
+    "M365_ACCOUNT_MISMATCH": "Email này đã gắn với một tài khoản Microsoft khác. Báo người quản trị.",
+    "ADMIN_NOT_REGISTERED": "Người này chưa có tài khoản EWS. Nhờ họ đăng nhập bằng Microsoft một lần, rồi thêm lại.",
+    "OWNER_REQUIRED": "Chỉ Owner mới trao, đổi hoặc gỡ vai Owner.",
+    "LAST_OWNER": "Tổ chức phải còn ít nhất một Owner.",
+    "NOT_ORG_MEMBER": "Chỉ cấp vai app cho người đã là thành viên của tổ chức."
   },
   "common": {
     "loadErrorTitle": "Không đọc được dữ liệu từ API",
@@ -1183,7 +1187,8 @@
     "chooseOrg": "Chọn org",
     "noApps": "chưa có app",
     "appCount": "{count} app",
-    "allOrgs": "Xem tất cả org"
+    "allOrgs": "Xem tất cả org",
+    "members": "Thành viên"
   },
   "orgs": {
     "title": "Tổ chức",
@@ -1207,6 +1212,47 @@
     "nameLabel": "Tên tổ chức",
     "namePlaceholder": "Đội Đơn hàng",
     "creating": "Đang tạo…",
-    "createApp": "Tạo app"
+    "createApp": "Tạo app",
+    "navApps": "Apps",
+    "navMembers": "Thành viên"
+  },
+  "members": {
+    "title": "Thành viên · {org}",
+    "subtitleManage": "Thêm đồng nghiệp, đổi vai và cấp quyền app. Owner / Org Admin có sẵn quyền trên mọi app.",
+    "subtitleRead": "Những người trong tổ chức này. Chỉ Owner / Org Admin thay đổi được.",
+    "colEmail": "Email",
+    "colRole": "Vai",
+    "colApps": "Quyền app",
+    "colActions": "Thao tác",
+    "allApps": "Mọi app",
+    "appCount": "{count} app",
+    "actionsFor": "Thao tác với {email}",
+    "changeRole": "Đổi vai",
+    "appAccess": "Quyền app",
+    "remove": "Gỡ khỏi tổ chức",
+    "add": "Thêm thành viên",
+    "emptyTitle": "Chưa có thành viên",
+    "emptyBody": "Thêm đồng nghiệp bằng email của họ.",
+    "notFoundTitle": "Không có tổ chức này",
+    "notFoundBody": "Link có thể sai, hoặc bạn không thuộc tổ chức đó.",
+    "addTitle": "Thêm thành viên",
+    "addBody": "Người được thêm phải đã đăng nhập EWS bằng Microsoft ít nhất một lần.",
+    "email": "Email",
+    "role": "Vai",
+    "saving": "Đang lưu…",
+    "save": "Lưu",
+    "changeRoleTitle": "Đổi vai",
+    "changeRoleBody": "Vai mới của {email} trong tổ chức.",
+    "appAccessTitle": "Quyền app",
+    "appAccessBody": "Quyền của {email} trên từng app của tổ chức.",
+    "appAccessFor": "Quyền trên {app}",
+    "noAccess": "Không có",
+    "noApps": "Tổ chức chưa có app nào.",
+    "removeTitle": "Gỡ khỏi tổ chức?",
+    "removeBody": "{email} sẽ không còn vào được {org}. Mọi quyền app của người này trong tổ chức cũng bị thu hồi.",
+    "added": "Đã thêm {email}",
+    "roleChanged": "Đã đổi vai của {email}",
+    "appAccessSaved": "Đã lưu quyền app của {email}",
+    "removed": "Đã gỡ {email}"
   }
 }

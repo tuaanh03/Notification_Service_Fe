@@ -43,7 +43,7 @@ webservice/ews-astrolink/
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
 │   ├── settings/{credentials,origins,profile,quota,sync}/
 │   │                         # credentials/, origins/ có actions.ts (đã đấu API); còn lại vẫn mock
-│   ├── orgs/                 # /orgs, /orgs/[orgId] — trang Tổ chức (mục 2.9), dữ liệu từ layout
+│   ├── orgs/                 # /orgs, /orgs/[orgId], /orgs/[orgId]/members — trang Tổ chức + màn Thành viên (mục 2.9)
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 │                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
 │                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
@@ -432,6 +432,14 @@ hiện dữ liệu của app khác mà không báo gì.
     đăng nhập cũng tạo được, người tạo thành Owner (ADR-0025 của backend). Tạo xong `router.push` tới org
     mới RỒI MỚI `router.refresh()` — refresh trước thì push đè mất, layout giữ danh sách org cũ và trang
     org mới báo "không có". Người chưa thuộc org nào: `<NoAppsScreen>` dẫn tới `/orgs` để tạo.
+*   **Màn Thành viên** (`/orgs/<orgId>/members`, ADR-0026 của backend): Server Component đọc thành viên +
+    vai app (`lib/api/organizations.ts`), ghi qua Server Action (`app/orgs/actions.ts`) rồi
+    `router.refresh()`. Mọi thành viên xem; Owner / Org Admin thêm (email người ĐÃ đăng nhập M365 một lần),
+    đổi vai, cấp vai app, gỡ. Lựa chọn vai Owner chỉ hiện với Owner / Super Admin — backend vẫn chặn
+    (`OWNER_REQUIRED`). Owner / Org Admin hiện "Mọi app" và không có hộp Quyền app (ngầm là App Admin).
+    Vào từ sidebar khung Tổ chức (Apps · Thành viên) hoặc mục "Thành viên" của ô chuyển app/org.
+*   **`messageOf` ưu tiên mã trong `issues`** (lỗi 422 `VALIDATION`) nếu mã đó có câu dịch ở nhóm
+    `errors` — ví dụ `ADMIN_NOT_REGISTERED` nằm trong `issues`, không ở `code`.
     Trang chọn app (`<AppChooser>`) chỉ còn một việc: đường dẫn thiếu / sai `?app=`.
 *   **Link nội bộ CHỈ qua `<AppLink>` / `useAppRouter()`** (`components/app-link.tsx`) — tự gắn
     `?app=`. `app-link.tsx` là file duy nhất được import `next/link` và `useRouter`. Link tới app
@@ -532,6 +540,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, `<AppSwitcher>`, top bar — KHÔNG có nhóm Quản trị EWS |
 | `<AppSwitcher>` | `components/app-switcher.tsx` | ✓ | ô chuyển app / org đầu sidebar (mục 2.9): app của org đang xem + menu con `consoleOrgs`; ô tìm khi org có > 6 app |
 | `<OrgsShell>` / `<OrgList>` / `<OrgApps orgId>` / `<CreateOrgDialog>` | `components/orgs-shell.tsx`, `components/orgs/*` | ✓ | trang Tổ chức `/orgs` (mục 2.9): khung riêng, bảng org (+ nút Tạo tổ chức), bảng app của một org (+ Tạo app cho Owner / Org Admin) |
+| `<OrgMembers>` + `member-dialogs.tsx` | `components/orgs/org-members.tsx` | ✓ | màn Thành viên `/orgs/<orgId>/members` (mục 2.9): bảng + 4 hộp (Thêm, Đổi vai, Quyền app, Gỡ) đều bọc `<ConfirmDialog>` |
 | `<AdminShell>` | `components/admin-shell.tsx` | ✓ | khung khu Quản trị EWS (`/admin/*`, chỉ Super Admin): menu riêng; dùng chung `shell-parts.tsx` với AppShell |
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |

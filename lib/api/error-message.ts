@@ -20,6 +20,9 @@ const isKnownCode = (code: string): code is ErrorCode => /^[A-Z][A-Z0-9_]*$/.tes
 export async function messageOf(err: unknown): Promise<string> {
   const t = await getTranslations('errors')
   if (!(err instanceof ApiError)) return t('unknown')
+  // Lỗi kiểm dữ liệu (422 `VALIDATION`): mã cụ thể nằm trong `issues` — dùng nếu có câu dịch.
+  const issueCode = err.issues.map((i) => i.code).find(isKnownCode)
+  if (issueCode) return t(issueCode)
   if (isKnownCode(err.code)) return t(err.code)
   if (err.status === 401 || err.status === 403) return t('forbidden')
   return t('unmapped', { code: err.code })

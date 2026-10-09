@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { Building2, Check, ChevronsUpDown, LayoutGrid, Plus, Search } from 'lucide-react'
+import { Building2, Check, ChevronsUpDown, LayoutGrid, Plus, Search, Users } from 'lucide-react'
 import { consoleOrgs } from '@/lib/access'
-import { appKey, ORGS_HOME, orgPath, switchAppPath } from '@/lib/app-routes'
+import { appKey, ORGS_HOME, orgMembersPath, orgPath, switchAppPath } from '@/lib/app-routes'
 import { statusColors } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { useAppSelection } from './app-context'
@@ -174,6 +174,17 @@ export function AppSwitcher() {
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>
+
+            {/* Thành viên của org đang xem (ADR-0026 của backend) — mọi thành viên xem được. */}
+            {org && (
+              <DropdownMenuItem
+                render={<AppLink href={orgMembersPath(org.id)} />}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs"
+              >
+                <Users className="size-3.5 text-muted-foreground" />
+                <span>{t('members')}</span>
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuSeparator className="my-1 bg-border/60" />
 

@@ -117,7 +117,11 @@
     "M365_TOKEN_INVALID": "Could not verify your Microsoft identity. Try again; if it keeps happening, contact an administrator.",
     "M365_PROVIDER_ERROR": "Could not reach Microsoft, or the EWS sign-in configuration is wrong. Contact an administrator.",
     "M365_ACCOUNT_NOT_REGISTERED": "Could not create an EWS account for this Microsoft account (no usable email). Contact the EWS administrator.",
-    "M365_ACCOUNT_MISMATCH": "This email is already linked to a different Microsoft account. Contact an administrator."
+    "M365_ACCOUNT_MISMATCH": "This email is already linked to a different Microsoft account. Contact an administrator.",
+    "ADMIN_NOT_REGISTERED": "This person has no EWS account yet. Ask them to sign in with Microsoft once, then add them again.",
+    "OWNER_REQUIRED": "Only an Owner can grant, change or remove the Owner role.",
+    "LAST_OWNER": "The organization must keep at least one Owner.",
+    "NOT_ORG_MEMBER": "App roles can only be granted to members of the organization."
   },
   "common": {
     "loadErrorTitle": "Could not read data from the API",
@@ -1183,7 +1187,8 @@
     "chooseOrg": "Choose org",
     "noApps": "no apps",
     "appCount": "{count, plural, one {# app} other {# apps}}",
-    "allOrgs": "View all orgs"
+    "allOrgs": "View all orgs",
+    "members": "Members"
   },
   "orgs": {
     "title": "Organizations",
@@ -1207,6 +1212,47 @@
     "nameLabel": "Organization name",
     "namePlaceholder": "Orders team",
     "creating": "Creating…",
-    "createApp": "Create app"
+    "createApp": "Create app",
+    "navApps": "Apps",
+    "navMembers": "Members"
+  },
+  "members": {
+    "title": "Members · {org}",
+    "subtitleManage": "Add colleagues, change roles and grant app access. Owners and Org Admins already manage every app.",
+    "subtitleRead": "People in this organization. Only Owners and Org Admins can make changes.",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "colApps": "App access",
+    "colActions": "Actions",
+    "allApps": "All apps",
+    "appCount": "{count, plural, one {# app} other {# apps}}",
+    "actionsFor": "Actions for {email}",
+    "changeRole": "Change role",
+    "appAccess": "App access",
+    "remove": "Remove from organization",
+    "add": "Add member",
+    "emptyTitle": "No members yet",
+    "emptyBody": "Add colleagues by their email.",
+    "notFoundTitle": "Organization not found",
+    "notFoundBody": "The link may be wrong, or you are not a member of that organization.",
+    "addTitle": "Add member",
+    "addBody": "The person must have signed in to EWS with Microsoft at least once.",
+    "email": "Email",
+    "role": "Role",
+    "saving": "Saving…",
+    "save": "Save",
+    "changeRoleTitle": "Change role",
+    "changeRoleBody": "New role of {email} in the organization.",
+    "appAccessTitle": "App access",
+    "appAccessBody": "Access of {email} on each app of the organization.",
+    "appAccessFor": "Access on {app}",
+    "noAccess": "None",
+    "noApps": "This organization has no apps yet.",
+    "removeTitle": "Remove from organization?",
+    "removeBody": "{email} will lose access to {org}. Their app roles in this organization are revoked too.",
+    "added": "Added {email}",
+    "roleChanged": "Changed the role of {email}",
+    "appAccessSaved": "Saved app access for {email}",
+    "removed": "Removed {email}"
   }
 }

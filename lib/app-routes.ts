@@ -46,6 +46,11 @@ export function orgPath(orgId: string): string {
   return `${ORGS_HOME}/${encodeURIComponent(orgId)}`
 }
 
+/** Màn Thành viên của một org (ADR-0026 của backend). */
+export function orgMembersPath(orgId: string): string {
+  return `${orgPath(orgId)}/members`
+}
+
 /**
  * Màn vào được khi tổ chức CHƯA có app nào — chỉ đúng một màn: đăng ký app đầu tiên.
  *

@@ -2,10 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Building2, ShieldCheck } from 'lucide-react'
+import { Building2, LayoutGrid, ShieldCheck, Users } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { consoleOrgs } from '@/lib/access'
-import { ADMIN_HOME, ORGS_HOME } from '@/lib/app-routes'
+import { ADMIN_HOME, ORGS_HOME, orgMembersPath, orgPath } from '@/lib/app-routes'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { useRole } from './role-context'
@@ -15,6 +15,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -33,7 +34,7 @@ import {
 } from '@/components/ui/breadcrumb'
 
 /**
- * Khung trang Tổ chức (`/orgs`, `/orgs/<orgId>`) — không thuộc app nào nên không dùng sidebar của
+ * Khung trang Tổ chức (`/orgs`, `/orgs/<orgId>`, `/orgs/<orgId>/members`) — không thuộc app nào nên không dùng sidebar của
  * `<AppShell>` (mọi mục ở đó cần app). `<AppGate>` chọn khung theo đường dẫn (`isOrgsRoute`).
  */
 export function OrgsShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
@@ -42,9 +43,18 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
   const tn = useTranslations('nav')
   const tr = useTranslations('roles')
   const { me, isSuperAdmin } = useRole()
-  // `/orgs/<orgId>`: tên org cho breadcrumb. Org lạ (không thấy được) thì chỉ còn "Tổ chức".
-  const orgId = path.startsWith(`${ORGS_HOME}/`) ? decodeURIComponent(path.slice(ORGS_HOME.length + 1)) : null
+  // `/orgs/<orgId>[/members]`: org đang xem — cho menu và breadcrumb. Org lạ (không thấy được) thì chỉ
+  // còn mục "Tổ chức".
+  const [, , rawOrgId, section] = path.split('/')
+  const orgId = rawOrgId ? decodeURIComponent(rawOrgId) : null
   const org = orgId ? (consoleOrgs(me).find((o) => o.id === orgId) ?? null) : null
+  const onMembers = section === 'members'
+  const orgNav = org
+    ? [
+        { href: orgPath(org.id), label: t('navApps'), icon: LayoutGrid, active: !onMembers },
+        { href: orgMembersPath(org.id), label: t('navMembers'), icon: Users, active: onMembers },
+      ]
+    : []
   const toAdmin = isSuperAdmin ? { href: ADMIN_HOME, label: tn('ewsAdmin'), icon: ShieldCheck } : undefined
 
   return (
@@ -60,13 +70,31 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
             <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
               <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
                 <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                  <SidebarMenuButton render={<AppLink href={ORGS_HOME} />} isActive tooltip={t('title')}>
+                  <SidebarMenuButton render={<AppLink href={ORGS_HOME} />} isActive={org === null} tooltip={t('title')}>
                     <Building2 className="size-4" />
                     <span>{t('title')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
+
+            {org && (
+              <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
+                <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
+                  {org.name}
+                </SidebarGroupLabel>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
+                  {orgNav.map((item) => (
+                    <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                      <SidebarMenuButton render={<AppLink href={item.href} />} isActive={item.active} tooltip={item.label}>
+                        <item.icon className="size-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            )}
 
             <CollapsedSidebarTrigger />
           </SidebarContent>
@@ -94,9 +122,23 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="font-semibold text-foreground">{org.name}</BreadcrumbPage>
-                    </BreadcrumbItem>
+                    {onMembers ? (
+                      <>
+                        <BreadcrumbItem>
+                          <BreadcrumbLink render={<AppLink href={orgPath(org.id)} />} className="text-muted-foreground hover:text-foreground">
+                            {org.name}
+                          </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          <BreadcrumbPage className="font-semibold text-foreground">{t('navMembers')}</BreadcrumbPage>
+                        </BreadcrumbItem>
+                      </>
+                    ) : (
+                      <BreadcrumbItem>
+                        <BreadcrumbPage className="font-semibold text-foreground">{org.name}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    )}
                   </>
                 ) : (
                   <BreadcrumbItem>

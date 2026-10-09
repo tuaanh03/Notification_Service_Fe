@@ -9,6 +9,12 @@
 /** Vai trong org / trên app — sao đúng `ORG_ROLES` / `APP_ROLES` của backend (ADR-0022). */
 export type OrgRole = 'owner' | 'org_admin' | 'member'
 
+/** Một thành viên org — sao đúng `OrgMemberDto` của backend (ADR-0026). */
+export type OrgMemberDto = { orgId: string; adminId: string; email: string; role: OrgRole }
+
+/** Vai app còn hiệu lực của một người trên một app của org (ADR-0026). */
+export type OrgAppRoleDto = { adminId: string; appId: string; role: AppRole }
+
 /** Sao đúng `OrganizationDto` của backend (`tenancy/application/dto.ts`). */
 export type OrganizationDto = {
   id: string
