@@ -13,8 +13,8 @@ export async function listApps(orgId: string): Promise<AppDto[]> {
 }
 
 /**
- * App của các org cho trước (`GET /admin/me` -> từng org). Console app truyền org mình là thành
- * viên (`memberOrgs`). Mỗi org một lời gọi, chạy song song — số org của một người nhỏ.
+ * App của các org cho trước (`GET /admin/me` -> từng org). Console app truyền `consoleOrgs(me)`.
+ * Mỗi org một lời gọi, chạy song song.
  */
 export async function listVisibleApps(orgs: AdminProfileDto['orgs']): Promise<App[]> {
   const perOrg = await Promise.all(
@@ -24,12 +24,6 @@ export async function listVisibleApps(orgs: AdminProfileDto['orgs']): Promise<Ap
   // Slug chỉ duy nhất TRONG một org: hai org trùng slug thì `?app=` phải phân biệt được.
   const keys = appRouteKeys(apps)
   return apps.map((a) => ({ ...a, route_key: keys.get(a.app_id) ?? a.slug }))
-}
-
-/** Số app đang chờ Super Admin duyệt, trên MỌI org — chuông của khu Quản trị EWS. */
-export async function countPendingApprovals(me: AdminProfileDto): Promise<number> {
-  const perOrg = await Promise.all(me.orgs.map((org) => listApps(org.id)))
-  return perOrg.flat().filter((a) => a.status === 'pending_approval').length
 }
 
 /** GET /admin/apps/:appId */

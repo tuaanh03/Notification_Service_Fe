@@ -8,9 +8,12 @@ const ORG_MANAGERS: readonly OrgRole[] = ['owner', 'org_admin']
 
 const orgRoleOf = (me: AdminProfileDto, orgId: string | undefined) => me.orgs.find((o) => o.id === orgId)?.role ?? null
 
-/** Org người này LÀ THÀNH VIÊN — nguồn của console app. Super Admin không thuộc org nào -> rỗng. */
-export function memberOrgs(me: AdminProfileDto): AdminProfileDto['orgs'] {
-  return me.orgs.filter((o) => o.role !== null)
+/**
+ * Org hiện ở console app: Super Admin thấy MỌI org (xem được tất cả — ADR-0023 của backend), người
+ * khác chỉ org mình là thành viên (backend cũng chỉ trả những org đó).
+ */
+export function consoleOrgs(me: AdminProfileDto): AdminProfileDto['orgs'] {
+  return me.isSuperAdmin ? me.orgs : me.orgs.filter((o) => o.role !== null)
 }
 
 /** Cấu hình được app: topic, template, khoá API, IP / Origin, gửi duyệt. */

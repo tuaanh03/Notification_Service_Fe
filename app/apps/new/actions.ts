@@ -1,12 +1,12 @@
 'use server'
 
-import { addNetworkRule, createApp, toApp, transitionApp, type CreateAppInput } from '@/lib/api/apps'
+import { addNetworkRule, createApp, issueSecret, toApp, type CreateAppInput } from '@/lib/api/apps'
 import { createTopic, type CreateTopicInput } from '@/lib/api/topics'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
 import { getTranslations } from 'next-intl/server'
 import { messageOf } from '@/lib/api/error-message'
 import { ApiError } from '@/lib/api/problem'
-import type { NetworkRuleDto } from '@/lib/api/types'
+import type { IssuedAppSecretDto, NetworkRuleDto } from '@/lib/api/types'
 import type { App } from '@/lib/mock-data'
 
 /**
@@ -15,11 +15,11 @@ import type { App } from '@/lib/mock-data'
  * Server Action chứ không phải Server Component: wizard là form nhiều bước, dữ liệu chỉ có
  * lúc người dùng bấm, không có lúc render (CLAUDE.md mục 2.2).
  *
- * Backend KHÔNG có lệnh gộp "đăng ký app": tạo app, thêm allowlist, tạo topic và gửi duyệt là
+ * Backend KHÔNG có lệnh gộp "đăng ký app": tạo app, thêm allowlist, tạo topic và cấp khoá là
  * bốn lời gọi riêng, KHÔNG nằm chung một transaction. Nên chuỗi này có thể dừng giữa chừng —
  * xem `RegisterResult` và `ActionStop`.
  *
- * Duyệt app KHÔNG ở file này: cửa duyệt chính là `/admin/apps` (`app/admin/apps/actions.ts`).
+ * Không còn bước duyệt (ADR-0023 của backend): app tạo xong là `active`, người tạo nhận khoá ngay.
  */
 
 export type RegisterResult = {
@@ -27,7 +27,9 @@ export type RegisterResult = {
   app: App
   rulesAdded: number
   topicsCreated: number
-  /** `null` = app đã ở `pending_approval`. Khác `null` = app còn `draft`, làm nốt bằng tay. */
+  /** Khoá API đầu tiên — plaintext CHỈ có ở đây, hiện đúng một lần. `null` = chưa cấp được. */
+  secret: IssuedAppSecretDto | null
+  /** Khác `null` = chuỗi dừng giữa chừng; app vẫn tồn tại và `active`, làm nốt bằng tay. */
   stoppedAt: ActionStop | null
 }
 
@@ -38,7 +40,7 @@ export type RegisterAppInput = {
 }
 
 /**
- * Tạo app -> allowlist -> topic -> gửi duyệt.
+ * Tạo app -> allowlist -> topic -> cấp khoá API đầu tiên.
  *
  * Quy ước quan trọng: CHỈ lỗi ở lời gọi đầu (tạo app) mới trả `ok: false` — lúc đó chưa có gì
  * trong hệ thống. Sau khi app đã tồn tại, mọi lỗi đều trả `ok: true` kèm `stoppedAt`, vì nói
@@ -65,16 +67,18 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
 
   for (const rule of input.rules) {
     const failed = await stop(t('stopRule', { value: rule.value }), () => addNetworkRule(app.app_id, rule))
-    if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
+    if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, secret: null, stoppedAt: failed } }
     rulesAdded += 1
   }
   for (const topic of input.topics) {
     const failed = await stop(t('stopTopic', { key: topic.key }), () => createTopic(app.app_id, topic))
-    if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
+    if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, secret: null, stoppedAt: failed } }
     topicsCreated += 1
   }
 
-  const failed = await stop(t('stopSubmit'), () => transitionApp(app.app_id, 'submit'))
-  if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, stoppedAt: failed } }
-  return { ok: true, data: { app: { ...app, status: 'pending_approval' }, rulesAdded, topicsCreated, stoppedAt: null } }
+  let secret: IssuedAppSecretDto | null = null
+  const failed = await stop(t('stopIssueKey'), async () => {
+    secret = await issueSecret(app.app_id)
+  })
+  return { ok: true, data: { app, rulesAdded, topicsCreated, secret, stoppedAt: failed } }
 }

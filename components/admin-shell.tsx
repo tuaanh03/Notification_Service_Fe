@@ -5,12 +5,10 @@ import { useTranslations } from 'next-intl'
 import { Database, History, LayoutDashboard, Layers, Send } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { ADMIN_HOME } from '@/lib/app-routes'
-import { memberOrgs } from '@/lib/access'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
-import { useRole } from './role-context'
-import { AccountMenu, CollapsedSidebarTrigger, PendingBell, SidebarBrand } from './shell-parts'
+import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +30,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 
-/** Menu của khu Quản trị EWS. `/admin/approvals` (còn mock) vẫn gỡ khỏi menu — cửa duyệt app là `/admin/apps`. */
+/** Menu của khu Quản trị EWS. `/admin/approvals` (còn mock) vẫn gỡ khỏi menu — app tự phục vụ, không còn hàng chờ duyệt (ADR-0023). */
 const NAV = [
   { href: ADMIN_HOME, name: 'allApps', icon: Layers },
   { href: '/admin/send-approvals', name: 'sendApprovals', icon: Send },
@@ -47,15 +45,13 @@ const NAV = [
  * app, không có vòng quota, không cần `?app=`. Super Admin không thuộc org nào vẫn vào được.
  * `<AppGate>` chọn khung theo đường dẫn; `app/admin/layout.tsx` chặn người không phải Super Admin.
  */
-export function AdminShell({ children, admin, pending }: { children: React.ReactNode; admin: AdminDto; pending: number }) {
+export function AdminShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
   const path = usePathname()
   const t = useTranslations('shell')
   const tn = useTranslations('nav')
   const tr = useTranslations('roles')
-  const { me } = useRole()
-  // `pending` đếm trên MỌI org ở layout (server) — danh sách app của AppProvider chỉ có org mình là thành viên.
-  // Về console app chỉ khi có org để về: Super Admin không thuộc org nào thì console app không có gì.
-  const backToConsole = memberOrgs(me).length > 0 ? { href: '/', label: t('toConsole'), icon: LayoutDashboard } : undefined
+  // Super Admin xem được mọi org ở console app (ADR-0023 của backend) — lối về luôn có.
+  const backToConsole = { href: '/', label: t('toConsole'), icon: LayoutDashboard }
   // Khớp prefix dài nhất: `/admin/send-approvals/<id>` vẫn sáng mục "Duyệt lần gửi".
   const current = NAV.filter((l) => path === l.href || path.startsWith(`${l.href}/`)).sort(
     (a, b) => b.href.length - a.href.length,
@@ -82,11 +78,6 @@ export function AdminShell({ children, admin, pending }: { children: React.React
                     >
                       <l.icon className="size-4" />
                       <span>{tn(l.name)}</span>
-                      {l.href === ADMIN_HOME && pending > 0 && (
-                        <span className="ml-auto font-mono text-[10px] tabular-nums text-[var(--solar)] group-data-[collapsible=icon]:hidden">
-                          {pending}
-                        </span>
-                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -117,10 +108,6 @@ export function AdminShell({ children, admin, pending }: { children: React.React
                 )}
               </BreadcrumbList>
             </Breadcrumb>
-
-            <div className="ml-auto flex items-center gap-3">
-              <PendingBell count={pending} />
-            </div>
           </header>
 
           <main className="w-full px-4 lg:px-6 py-6 min-w-0">

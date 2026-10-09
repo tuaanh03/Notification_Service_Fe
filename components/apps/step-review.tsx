@@ -78,7 +78,7 @@ export function StepReview({
       )}
 
       <Button size="lg" disabled={pending} onClick={onSubmit} className="w-full">
-        {pending ? t('creating') : t('createAndSubmit', { count: topics.length })}
+        {pending ? t('creating') : t('create', { count: topics.length })}
       </Button>
     </div>
   )

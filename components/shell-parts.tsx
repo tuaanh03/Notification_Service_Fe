@@ -1,11 +1,10 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Bell, Check, ChevronsUpDown, Languages, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import { Check, ChevronsUpDown, Languages, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { AppLink } from './app-link'
-import { Button } from '@/components/ui/button'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
 import { LOCALES } from '@/i18n/locales'
 import { useLocaleSwitch } from './locale-switcher'
@@ -26,7 +25,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 /**
  * Mảnh dùng chung của HAI khung: console app (`<AppShell>`) và Quản trị EWS (`<AdminShell>`).
  * Hai khung khác nhau ở menu và ở chỗ có / không có app đang chọn; logo, nút thu gọn, menu tài
- * khoản và chuông thì giống nhau — giữ một bản ở đây để hai bên không lệch dần.
+ * khoản thì giống nhau — giữ một bản ở đây để hai bên không lệch dần.
  */
 
 export function CustomSidebarTrigger({
@@ -227,25 +226,5 @@ export function AccountMenu({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
-}
-
-/** Chuông số yêu cầu chờ duyệt — chỉ khung Quản trị EWS có (chỉ Super Admin duyệt, ADR-0022). */
-export function PendingBell({ count }: { count: number }) {
-  const t = useTranslations('shell')
-  return (
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      className="relative text-muted-foreground hover:text-foreground"
-      aria-label={t('pendingApprovals', { count })}
-    >
-      <Bell className="size-4" />
-      {count > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--solar)] font-mono text-[9px] font-bold tabular-nums text-white">
-          {count}
-        </span>
-      )}
-    </Button>
   )
 }

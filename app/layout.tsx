@@ -9,7 +9,7 @@ import { RoleProvider } from '@/components/role-context'
 import { AppProvider } from '@/components/app-context'
 import { AppGate } from '@/components/app-gate'
 import { Toaster } from '@/components/ui/sonner'
-import { countPendingApprovals, listVisibleApps } from '@/lib/api/apps'
+import { listVisibleApps } from '@/lib/api/apps'
 import { getMe } from '@/lib/api/me'
 import type { AdminProfileDto } from '@/lib/api/types'
 import { isSessionExpired, sessionToken } from '@/lib/api/client'
@@ -18,8 +18,7 @@ import { describeError } from '@/lib/api/error-message'
 import { ApiError } from '@/lib/api/problem'
 import { BRAND_APPLE_ICON_SRC, BRAND_ICON_192_SRC, BRAND_ICON_SRC } from '@/lib/brand'
 import type { App } from '@/lib/mock-data'
-import { memberOrgs } from '@/lib/access'
-import { ADMIN_HOME, isAdminRoute, isOrgRoute } from '@/lib/app-routes'
+import { consoleOrgs } from '@/lib/access'
 import { PATHNAME_HEADER } from '@/middleware'
 const inter = Inter({ subsets: ['latin', 'vietnamese'], variable: '--next-font-sans' })
 const space = Space_Grotesk({ subsets: ['latin'], variable: '--next-font-heading' })
@@ -48,29 +47,22 @@ export const dynamic = 'force-dynamic'
 const NO_ACCESS: AdminProfileDto = { isSuperAdmin: false, orgs: [], appRoles: {} }
 
 /**
- * Nơi DUY NHẤT nạp vai (`/admin/me`) và danh sách app — CHỈ org người này là thành viên (ADR-0022
- * của backend). Super Admin cũng vậy: app của org khác họ xem ở khu Quản trị EWS, không ở console
- * app. Ở khu Quản trị EWS thì thêm số app chờ duyệt trên mọi org (chuông).
+ * Nơi DUY NHẤT nạp vai (`/admin/me`) và danh sách app của console app (`consoleOrgs`: Super Admin
+ * mọi org, người khác org mình là thành viên — ADR-0022, ADR-0023 của backend).
  * Chạy phía server nên token phiên không rời máy chủ.
  * API hỏng không làm sập toàn bộ console — trả lý do để `<NoAppsScreen>` nói ra.
  *
  * Phiên hết hiệu lực thì KHÔNG phải lỗi hạ tầng: trả `expired` để layout đưa về trang đăng nhập,
  * chứ không hiện màn "không đọc được danh sách app" làm người dùng đi sửa nhầm chỗ.
  */
-async function loadApps(
-  adminArea: boolean,
-): Promise<{ me: AdminProfileDto; apps: App[]; pending: number; error: string | null; expired: boolean }> {
+async function loadApps(): Promise<{ me: AdminProfileDto; apps: App[]; error: string | null; expired: boolean }> {
   try {
     const me = await getMe()
-    const [apps, pending] = await Promise.all([
-      listVisibleApps(memberOrgs(me)),
-      me.isSuperAdmin && adminArea ? countPendingApprovals(me) : 0,
-    ])
-    return { me, apps, pending, error: null, expired: false }
+    return { me, apps: await listVisibleApps(consoleOrgs(me)), error: null, expired: false }
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
-    if (isSessionExpired(err)) return { me: NO_ACCESS, apps: [], pending: 0, error: null, expired: true }
-    return { me: NO_ACCESS, apps: [], pending: 0, error: await describeError(err), expired: false }
+    if (isSessionExpired(err)) return { me: NO_ACCESS, apps: [], error: null, expired: true }
+    return { me: NO_ACCESS, apps: [], error: await describeError(err), expired: false }
   }
 }
 
@@ -116,14 +108,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Đã đăng nhập mà vẫn ở /login (vừa bấm đăng nhập xong) -> để trang đó tự chuyển vào console.
   if (pathname === LOGIN_PATH) return <Document>{children}</Document>
 
-  const adminArea = pathname !== null && isAdminRoute(pathname)
-  const { me, apps, pending, error, expired } = await loadApps(adminArea)
+  const { me, apps, error, expired } = await loadApps()
   if (expired) redirect(LOGIN_PATH)
-  // Super Admin không thuộc org nào thì console app không có gì cho họ -> vào thẳng khu Quản trị EWS.
-  // Chừa `ORG_ROUTES` (`/apps/new`): nút "Đăng ký App Service" của khu quản trị dẫn tới đó.
-  if (me.isSuperAdmin && memberOrgs(me).length === 0 && pathname !== null && !adminArea && !isOrgRoute(pathname)) {
-    redirect(ADMIN_HOME)
-  }
 
   return (
     <Document>
@@ -134,7 +120,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             đường dẫn nào và dựng khung tương ứng — shell, trang chọn app, màn chưa có app,
             hay màn báo lỗi.
           */}
-          <AppGate error={error} admin={admin} pending={pending}>
+          <AppGate error={error} admin={admin}>
             {children}
           </AppGate>
         </AppProvider>

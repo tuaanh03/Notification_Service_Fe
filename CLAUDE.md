@@ -46,7 +46,7 @@ webservice/ews-astrolink/
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 │                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
 │                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
-│                             # apps/ có actions.ts (approveAndIssueKeyAction — CỬA DUYỆT CHÍNH, mục 2.5)
+│                             # apps/ có actions.ts (approveAndIssueKeyAction — chỉ còn cho app CŨ chờ duyệt, mục 2.5)
 │                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
@@ -74,7 +74,7 @@ webservice/ews-astrolink/
 │   │                         # AppShell render 1 lần, tự ẩn ở route trong WIRED_ROUTES (mục 2.4)
 │   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
 │   ├── admin-shell.tsx       # khung khu Quản trị EWS (/admin/*) — không ô chọn app, không cần ?app=
-│   ├── shell-parts.tsx       # mảnh dùng chung của AppShell + AdminShell: logo, nút thu gọn, menu tài khoản, chuông
+│   ├── shell-parts.tsx       # mảnh dùng chung của AppShell + AdminShell: logo, nút thu gọn, menu tài khoản
 │   └── ui/*                  # shadcn v4 (base-ui) — chỉ thêm qua CLI, không sửa tay:
 │                             # alert avatar badge breadcrumb button checkbox collapsible dialog
 │                             # dropdown-menu input label native-select resizable separator sheet
@@ -201,10 +201,9 @@ trong cookie `httpOnly` `ews_session`: JavaScript trong browser không đọc đ
 | `EWS_API_URL` | `http://ews-astrolink-api:3000` trong docker; `http://127.0.0.1:4002` khi `pnpm dev` |
 
 *   **Không còn `EWS_ORG_ID`** (ADR-0022 của backend): `layout.tsx` gọi `GET /admin/me` lấy org + vai của
-    người đăng nhập, rồi `GET /admin/apps?orgId=` cho từng org mình LÀ THÀNH VIÊN (`listVisibleApps(memberOrgs(me))`).
-    Một console phục vụ mọi org. Super Admin cũng chỉ thấy org mình là thành viên ở console app; mọi org
-    xem ở khu Quản trị EWS (mục 2.9). Super Admin không thuộc org nào -> layout chuyển thẳng tới `/admin/apps`
-    (chừa `/apps/new`). Hai khu qua lại bằng mục trong menu tài khoản (`switchArea` của `<AccountMenu>`).
+    người đăng nhập, rồi `GET /admin/apps?orgId=` cho từng org của `consoleOrgs(me)` (`lib/access.ts`): Super Admin MỌI org (xem được tất cả — ADR-0023
+    của backend), người khác org mình là thành viên. Một console phục vụ mọi org. Hai khu qua lại bằng
+    mục trong menu tài khoản (`switchArea` của `<AccountMenu>`).
 *   **Tuyệt đối không đặt tên `NEXT_PUBLIC_*`** cho biến trên. `lib/api/client.ts` mở đầu bằng
     `import 'server-only'` nên build sẽ đỏ ngay nếu có component client lỡ import.
 *   **Kiểu dữ liệu sao đúng DTO của backend**, để ở `lib/api/types.ts` (không `server-only` — component
@@ -263,17 +262,20 @@ Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` �
 `/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
-chuông từng hiện `pendingApprovalCount()` của mock, nay đếm từ `useAppSelection().apps`.
+chuông từng hiện `pendingApprovalCount()` của mock; nay đã bỏ hẳn vì không còn hàng chờ duyệt (ADR-0023).
 
 ### 2.5. Wizard đăng ký app — chuỗi nhiều lời gọi, KHÔNG có transaction
+
+**App tự phục vụ (ADR-0023 của backend):** tạo xong là `active`, cấp sẵn kênh `email`, không
+còn bước duyệt. Người tạo nhận khoá API ngay ở bước 4. Super Admin chỉ tạm ngưng / thu hồi app rác.
 
 Backend không có lệnh gộp "đăng ký app". `registerAppAction` gọi lần lượt:
 
 ```
-POST /admin/apps                      -> draft
+POST /admin/apps                      -> active (kênh email)
 POST /admin/apps/:id/network-rules    (mỗi origin / IP một lời gọi — IP ĐƠN, không dải: mục 2.10)
 POST /admin/apps/:id/topics           (mỗi chủ đề một lời gọi)
-POST /admin/apps/:id/submit           -> pending_approval
+POST /admin/apps/:id/secrets          -> khoá API đầu tiên (plaintext CHỈ ở đây, hiện một lần)
 ```
 
 Bốn bước này **không chung transaction**, nên chuỗi có thể dừng giữa chừng. Quy ước đã chốt:
@@ -282,28 +284,21 @@ Bốn bước này **không chung transaction**, nên chuỗi có thể dừng g
 *   **Sau khi app đã tồn tại**, mọi lỗi đều trả `ok: true` kèm `stoppedAt` (bước nào, vì sao).
     Nói "thất bại" trong khi app đã nằm trong DB là nói sai: người dùng cần biết `app_id` để vào
     sửa nốt, chứ không phải bấm tạo lại rồi dính `APP_SLUG_TAKEN`.
-*   `approveAndIssueKeyAction` cũng vậy: duyệt xong mà cấp khoá hỏng thì app **vẫn active** —
-    trả `secret: null` + `stoppedAt`, không báo thất bại.
+*   Bước cấp khoá hỏng thì app **vẫn active** — `secret: null` + `stoppedAt`, cấp lại ở Khoá API.
+    `approveAndIssueKeyAction` (duyệt app CŨ) theo cùng quy ước.
 
-**Cửa duyệt chính là `/admin/apps`, không phải wizard.** Bước 4 của wizard chỉ là lối tắt cho
-người vừa tạo xong; phiên đó đóng lại là mất. App `pending_approval` phải duyệt được từ danh
-sách, nếu không là **đường cụt** — app kẹt vĩnh viễn, không màn nào mở ra được. Vì vậy
-`approveAndIssueKeyAction` đặt ở `app/admin/apps/actions.ts` và wizard import ngược lại.
+**App CŨ** còn `draft` / `pending_approval` từ trước ADR-0023: duyệt ở `/admin/apps` (mục 2.6),
+hộp `<ApproveAppDialog>` + `<GrantFields>`. Wizard không còn phần duyệt. `/admin/approvals`
+(còn mock) vẫn **gỡ khỏi menu**; thư mục route giữ nguyên cho ai còn bookmark.
 
-Hệ quả: `/admin/approvals` (còn mock) **đã gỡ khỏi menu** — hai cửa duyệt, một cửa giả, là cách
-chắc chắn để người mới bấm nhầm. Thư mục route giữ nguyên cho ai còn bookmark.
-
-Phần nhập quyền cấp nằm ở **`<GrantFields>`**, dùng chung cả hai cửa. Có hai bản là sớm muộn
-lệch nhau — và lệch ở đây nghĩa là một cửa bỏ qua ô xác nhận bắt buộc.
-
-**Bước 1–3 chỉ là nháp trong trình duyệt.** Bấm gửi ở bước 3 mới ghi thật, và từ đó không quay
-lại được — wizard bỏ nút Quay lại ở bước 4 đúng vì vậy.
+**Bước 1–3 chỉ là nháp trong trình duyệt.** Bấm tạo ở bước 3 mới ghi thật, và từ đó không quay
+lại được — wizard bỏ nút Quay lại ở bước 4 đúng vì vậy. Bước 4 (`components/apps/step-done.tsx`)
+hiện khoá qua `<CredentialDialog>` — đóng là mất.
 
 Form của wizard **sao đúng body backend, không hơn**. Bản v0 từng có `description`,
 `technical_contact`, `severity`, `userMutable`, kênh riêng cho từng chủ đề và ô "quota đề xuất"
 ở bước 1 — backend không có cột nào chứa chúng, nên đã bỏ. Nhập vào rồi mất im lặng còn tệ hơn
-là không có ô. Kênh và hạn mức hỏi ở **bước 4**, vì chúng là quyền cấp lúc duyệt, không phải
-thuộc tính lúc tạo.
+là không có ô. Kênh cấp sẵn là `email` (backend), wizard không hỏi.
 
 ### 2.6. Vòng đời app trên `/admin/apps` — nút phải khớp máy trạng thái
 
@@ -312,8 +307,8 @@ thuộc tính lúc tạo.
 
 | Trạng thái | Nút |
 |---|---|
-| `draft` | — (chỉ có `submit`, việc của wizard) |
-| `pending_approval` | Duyệt |
+| `draft` | — (chỉ app CŨ; app mới tạo đã `active`) |
+| `pending_approval` | Duyệt (chỉ app CŨ — ADR-0023) |
 | `active` | Tạm ngưng · Thu hồi |
 | `suspended` | Mở lại · Thu hồi |
 | `revoked` | — (**trạng thái kết thúc**, không có dòng trong bảng) |
@@ -526,7 +521,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<Panel glow? ring?>` | `components/panel.tsx` | ✓ | glass surface (`.cosmic-surface`), orbit ring tuỳ chọn; forward mọi prop `<section>` |
 | `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, `<AppSwitcher>`, top bar — KHÔNG có nhóm Quản trị EWS |
 | `<AppSwitcher>` | `components/app-switcher.tsx` | ✓ | ô chuyển app / org đầu sidebar (mục 2.9): app của org đang xem + menu con org mình là thành viên; ô tìm khi org có > 6 app |
-| `<AdminShell>` | `components/admin-shell.tsx` | ✓ | khung khu Quản trị EWS (`/admin/*`, chỉ Super Admin): menu riêng, chuông chờ duyệt; dùng chung `shell-parts.tsx` với AppShell |
+| `<AdminShell>` | `components/admin-shell.tsx` | ✓ | khung khu Quản trị EWS (`/admin/*`, chỉ Super Admin): menu riêng; dùng chung `shell-parts.tsx` với AppShell |
 | `<PageHeader title subtitle breadcrumb actions>` | `components/page-header.tsx` | ✓ | `breadcrumb: Breadcrumb[]` = `Array<{label; href?}>`; có `href` → render `next/link` |
 | `<StatusPill status>` | `components/status-pill.tsx` | ✓ | **nguồn màu duy nhất** — 11 trạng thái notification + app / template / subscription / binding |
 | `<StatPill label value delta?>` | `components/stat-pill.tsx` | ✓ | số lớn mono + sparkline |
@@ -587,10 +582,11 @@ chuyện thẩm mỹ. Nguồn: `../../use_case_template/use_case_*.md`, `../../u
     dạng `ews_<32 hex>_<43 ký tự>`; `/v1/*` xác thực THẲNG bằng `Authorization: Bearer <khoá>`,
     **không** có bước đổi token. Cấp khoá mới **không** thu hồi khoá cũ — tối đa 2 khoá active
     đúng để xoay vòng không mất kết nối.
-*   **Ô tick trước khi duyệt app**: "đội này đã có màn Cài đặt nhận thông báo". Backend không
-    lưu, không vào audit — nó là **gờ giảm tốc, không phải hàng rào**. Giữ vì nhân viên chỉ tắt
-    được thông báo nếu app tự dựng màn đó; không có thì cổng consent L0/L1/L3 vô dụng (ĐX-0003).
-    Đừng bỏ ở một cửa mà giữ ở cửa kia — cả hai cùng dùng `<GrantFields>` đúng vì vậy.
+*   **Ô tick trước khi duyệt app CŨ**: "đội này đã có màn Cài đặt nhận thông báo". Backend không
+    lưu, không vào audit — nó là **gờ giảm tốc, không phải hàng rào**. App mới không qua duyệt nên
+    trách nhiệm dựng màn đó nằm ở đội app (tài liệu tích hợp, Bước 4).
+*   **Bấm một dòng ở `/admin/apps`** = mở app đó ở console app (Super Admin thấy mọi org). Cột ⋯
+    chặn sự kiện bấm (`stopPropagation`) để chọn thao tác không mở nhầm app.
 *   **11 trạng thái notification**, đúng tên, đúng màu, qua `<StatusPill>` (SM §3).
 *   **`GET` trang unsubscribe không đổi trạng thái** — chỉ `POST` (UC-007 BR-3).
 *   **Exception path là UI thật**, không phải toast — mỗi spec màn hình có mục riêng cho nó.

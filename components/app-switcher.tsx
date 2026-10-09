@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { Building2, Check, ChevronsUpDown, LayoutGrid, Plus, Search } from 'lucide-react'
-import { memberOrgs } from '@/lib/access'
+import { consoleOrgs } from '@/lib/access'
 import { appKey, ORG_PARAM, switchAppPath } from '@/lib/app-routes'
 import { statusColors } from '@/lib/theme'
 import { cn } from '@/lib/utils'
@@ -44,7 +44,8 @@ function orgInitials(name: string): string {
  * Ô chuyển app / org của console app (đầu sidebar `<AppShell>`).
  *
  * Nút: tên app + tên org — nhìn là biết đang ở org nào. Menu: CHỈ app của org đang xem (org lấy
- * từ app đang mở — đường dẫn vẫn chỉ có `?app=`), kèm menu con chọn org mình là thành viên.
+ * từ app đang mở — đường dẫn vẫn chỉ có `?app=`), kèm menu con chọn org (`consoleOrgs`: Super Admin
+ * mọi org, người khác org mình là thành viên).
  *
  * Chọn org KHÔNG đoán app (mục 2.9): org có đúng một app thì mở app đó (không có gì để chọn);
  * nhiều app thì về trang chọn app lọc sẵn theo org (`?org=`). Org chưa có app thì không bấm được.
@@ -59,7 +60,7 @@ export function AppSwitcher() {
   const { app, apps } = useAppSelection()
   const [query, setQuery] = useState('')
 
-  const orgs = memberOrgs(me)
+  const orgs = consoleOrgs(me)
   const org = orgs.find((o) => o.id === app?.org_id) ?? null
   const orgApps = apps.filter((a) => a.org_id === app?.org_id)
   const q = query.trim().toLowerCase()

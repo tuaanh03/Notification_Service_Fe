@@ -11,44 +11,38 @@ import { OrbitStepper } from './apps/orbit-stepper'
 import { StepProfile } from './apps/step-profile'
 import { StepTopics } from './apps/step-topics'
 import { StepReview } from './apps/step-review'
-import { StepWaiting } from './apps/step-waiting'
+import { StepDone } from './apps/step-done'
 import {
-  DEFAULT_GRANT,
   EMPTY_PROFILE,
   EMPTY_TOPIC,
   profileValid as isProfileValid,
-  toGrant,
   topicsValid as areTopicsValid,
-  type GrantDraft,
   type ProfileDraft,
   type TopicDraft,
 } from './apps/wizard-types'
 import { registerAppAction, type RegisterResult } from '@/app/apps/new/actions'
 import { useRole } from './role-context'
-import { approveAndIssueKeyAction, type ApproveResult } from '@/app/admin/apps/actions'
 
 /**
  * Wizard đăng ký app (UC-001) — state ở đây, từng bước ở `components/apps/step-*.tsx`.
  *
- * Bước 1–3 chỉ là nháp trong trình duyệt, chưa chạm hệ thống. Bấm gửi ở bước 3 mới ghi thật,
+ * Bước 1–3 chỉ là nháp trong trình duyệt, chưa chạm hệ thống. Bấm tạo ở bước 3 mới ghi thật,
  * và từ đó KHÔNG quay lại được: app đã tồn tại, bấm lại chỉ dính trùng slug.
+ * Không còn bước duyệt (ADR-0023 của backend): bước 4 trao khoá API đầu tiên cho người tạo.
  */
 export function AppRegistrationWizard() {
   const t = useTranslations('wizard')
-  const steps = [t('stepProfile'), t('stepTopics'), t('stepReview'), t('stepWaiting')]
+  const steps = [t('stepProfile'), t('stepTopics'), t('stepReview'), t('stepKey')]
   const reduced = useReducedMotion()
   const [step, setStep] = useState(0)
-  const { isSuperAdmin, creatableOrgs } = useRole()
+  const { creatableOrgs } = useRole()
   // Chỉ một org được tạo app thì chọn sẵn; nhiều org thì bắt chọn ở bước 1.
   const [profile, setProfile] = useState<ProfileDraft>(() => ({
     ...EMPTY_PROFILE,
     orgId: creatableOrgs.length === 1 ? creatableOrgs[0]!.id : '',
   }))
   const [topics, setTopics] = useState<TopicDraft[]>([{ ...EMPTY_TOPIC }])
-  const [grant, setGrant] = useState<GrantDraft>(DEFAULT_GRANT)
-  const [acknowledged, setAcknowledged] = useState(false)
   const [registered, setRegistered] = useState<RegisterResult | null>(null)
-  const [approved, setApproved] = useState<ApproveResult | null>(null)
   const [secretOpen, setSecretOpen] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -82,24 +76,11 @@ export function AppRegistrationWizard() {
       router.refresh()
     })
 
-  const approve = () =>
-    startTransition(async () => {
-      setError(null)
-      if (!registered) return
-      const result = await approveAndIssueKeyAction(registered.app.app_id, toGrant(grant))
-      if (!result.ok) return setError(result.message)
-      setApproved(result.data)
-      setSecretOpen(true)
-      router.refresh()
-    })
-
   const next = () => {
     if (step === 0 && !profileValid) return
     if (step === 1 && !topicsValid) return
     setStep((v) => Math.min(2, v + 1))
   }
-
-  const current = approved?.app ?? registered?.app ?? null
 
   // Không phải Owner / Org Admin của org nào: nói rõ thay vì để điền xong rồi mới bị 403.
   if (creatableOrgs.length === 0) {
@@ -127,20 +108,11 @@ export function AppRegistrationWizard() {
           {step === 2 && (
             <StepReview profile={profile} topics={topics} pending={pending} error={error} onSubmit={submit} />
           )}
-          {step === 3 && registered && current && (
-            <StepWaiting
-              app={current}
+          {step === 3 && registered && (
+            <StepDone
+              app={registered.app}
               created={registered}
-              grant={grant}
-              onGrantChange={setGrant}
-              acknowledged={acknowledged}
-              onAcknowledgedChange={setAcknowledged}
-              pending={pending}
-              error={error}
-              stop={approved?.stoppedAt ?? null}
-              secret={secretOpen ? (approved?.secret ?? null) : null}
-              canApprove={isSuperAdmin}
-              onApprove={approve}
+              secret={secretOpen ? registered.secret : null}
               onCloseSecret={() => setSecretOpen(false)}
             />
           )}

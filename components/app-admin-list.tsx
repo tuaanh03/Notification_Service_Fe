@@ -1,5 +1,7 @@
 'use client'
 import { AppLink, useAppRouter } from '@/components/app-link'
+import { useAppSelection } from '@/components/app-context'
+import { appKey } from '@/lib/app-routes'
 import { useState, useTransition } from 'react'
 import { Ban, Check, Copy, Database, MoreHorizontal, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -117,7 +119,9 @@ const actionColumn = (
     const actions = ACTIONS_BY_STATUS[app.status] ?? []
     const reversible = actions.filter((action) => action !== 'revoke')
     return (
-      <div className="flex justify-end">
+      // Bấm dòng = mở app. Menu ⋯ (kể cả các mục trong portal — sự kiện React vẫn nổi qua đây)
+      // không được tính là bấm dòng.
+      <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -182,13 +186,20 @@ const actionColumn = (
 /**
  * UC-001 §A — /admin/apps (Super Admin). Dữ liệu do Server Component truyền vào.
  *
- * Đây là CỬA DUYỆT CHÍNH. Wizard bước 4 chỉ là lối tắt cho người vừa tạo xong; phiên đó đóng
- * lại là mất, nên app `pending_approval` phải duyệt được từ đây.
+ * App tự phục vụ (ADR-0023 của backend): tạo xong là `active`, không còn hàng chờ duyệt. Ở đây
+ * Super Admin tạm ngưng / thu hồi app rác; nút Duyệt chỉ còn cho app CŨ đang `pending_approval`.
+ * Bấm một dòng = mở app đó ở console app (Super Admin thấy mọi org).
  */
 export function AppAdminList({ rows }: { rows: AppDto[] }) {
   const t = useTranslations('allApps')
   const columns = useColumns()
   const router = useAppRouter()
+  // `?app=` của một app lấy từ danh sách của console app (có thể kèm đuôi khi hai org trùng slug).
+  const { apps } = useAppSelection()
+  const keyOf = (appId: string) => {
+    const found = apps.find((a) => a.app_id === appId)
+    return found ? appKey(found) : null
+  }
   const [target, setTarget] = useState<AppDto | null>(null)
   const [transitionTarget, setTransitionTarget] = useState<{ app: AppDto; action: AppAction } | null>(null)
   const [result, setResult] = useState<ApproveResult | null>(null)
@@ -239,7 +250,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
               message: result.stoppedAt.message,
               mono: (chunks) => <span className="font-mono">{chunks}</span>,
               link: (chunks) => (
-                <AppLink href="/settings/credentials" className="underline">
+                <AppLink href="/settings/credentials" app={keyOf(result.app.app_id)} className="underline">
                   {chunks}
                 </AppLink>
               ),
@@ -251,6 +262,10 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
       <DataTable<AppDto>
         columns={[...columns, actionColumn(t, setTarget, (app, action) => setTransitionTarget({ app, action }))]}
         rows={rows}
+        onRowClick={(row) => {
+          const key = keyOf(row.id)
+          if (key) router.push('/', { app: key })
+        }}
         filterKey="status"
         empty={<EmptyState icon={Database} title={t('emptyTitle')} description={t('emptyBody')} />}
       />
