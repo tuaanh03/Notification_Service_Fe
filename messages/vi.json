@@ -115,7 +115,7 @@
     "M365_SIGN_IN_FAILED": "Đăng nhập Microsoft không thành công. Bấm đăng nhập lại.",
     "M365_TOKEN_INVALID": "Không xác minh được danh tính Microsoft. Bấm đăng nhập lại; lặp lại thì báo người quản trị.",
     "M365_PROVIDER_ERROR": "Không kết nối được tới Microsoft hoặc cấu hình đăng nhập phía EWS có lỗi. Báo người quản trị.",
-    "M365_ACCOUNT_NOT_REGISTERED": "Tài khoản Microsoft này chưa được cấp quyền vào EWS. Nhờ người quản trị thêm email của bạn.",
+    "M365_ACCOUNT_NOT_REGISTERED": "Chưa tạo được tài khoản EWS cho tài khoản Microsoft này (không đọc được email). Liên hệ người quản trị EWS.",
     "M365_ACCOUNT_MISMATCH": "Email này đã gắn với một tài khoản Microsoft khác. Báo người quản trị."
   },
   "common": {
