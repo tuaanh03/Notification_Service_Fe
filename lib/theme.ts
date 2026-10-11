@@ -36,6 +36,10 @@ export const statusColors: Record<string, string> = {
   included: '#34D399',
   excluded: '#64748B',
   broken: '#FB7185',
+  // Outgoing webhook (ADR-0029): URL tắt · lượt gọi đã giao / còn chờ gọi (lại)
+  disabled: '#64748B',
+  delivered: '#34D399',
+  pending: '#22D3EE',
 }
 
 export const notificationStatuses = [

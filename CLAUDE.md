@@ -41,8 +41,8 @@ webservice/ews-astrolink/
 │   │                         # /templates/[id] màn soạn (id = templateId, UUID)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
-│   ├── settings/{credentials,origins,profile,quota,sync}/
-│   │                         # credentials/, origins/ có actions.ts (đã đấu API); còn lại vẫn mock
+│   ├── settings/{credentials,origins,webhooks,profile,quota,sync}/
+│   │                         # credentials/, origins/, webhooks/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   ├── orgs/                 # /orgs, /orgs/[orgId], /orgs/[orgId]/members — trang Tổ chức + màn Thành viên (mục 2.9)
 │   └── admin/{apps,audit,directory,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 │                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
@@ -68,7 +68,7 @@ webservice/ews-astrolink/
 │   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
 │   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend)
-│   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), webhooks-panel + webhook-dialogs (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
@@ -87,7 +87,7 @@ webservice/ews-astrolink/
 │                             # app-routes: ?app= trên đường dẫn — ORG_ROUTES, APP_DETAIL_ROUTES (mục 2.9)
 ├── lib/api/                  # đấu nối backend — client.ts (server-only) · problem.ts · types.ts
 │                             # · result.ts (ActionResult + ActionStop) · apps.ts · topics.ts
-│                             # · users.ts · notifications.ts · audit.ts · templates.ts · index.ts
+│                             # · users.ts · notifications.ts · audit.ts · templates.ts · webhooks.ts · index.ts
 │                             # · v1-errors.ts (bảng mã lỗi /v1 — hợp đồng tĩnh, không server-only)
 ├── public/                   # icon, placeholder
 ├── Dockerfile · docker-compose.yml · .dockerignore   # xem mục 2.1
@@ -260,7 +260,7 @@ mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật
 kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
-Tính tới 09/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` · `/settings/credentials` · `/settings/origins` (kèm route con),
+Tính tới 10/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` · `/settings/credentials` · `/settings/origins` · `/settings/webhooks` (kèm route con),
 `/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
@@ -521,6 +521,27 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     `notification-outcome.tsx`, dùng chung bảng và panel.
 *   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).
 
+### 2.13. Webhooks (`/settings/webhooks`) — EWS tự báo kết quả gửi thư cho app
+
+Outgoing webhook, ADR-0029 của backend. Đọc / ghi qua `app/settings/webhooks/actions.ts` ->
+`lib/api/webhooks.ts` -> `/admin/apps/:appId/webhooks/*`. Mọi người xem được danh sách + nhật ký gọi;
+nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đổi secret / Xoá) chỉ hiện với `canManage(app)`.
+
+*   **`configured: false`** (server thiếu `WEBHOOK_SIGNING_KEY`) -> `<Alert>` "chưa bật trên server", khoá
+    Thêm / Gửi thử / Đổi secret. Đừng giấu cả màn: URL đã có vẫn phải xem được.
+*   **Secret `whsec_…` hiện MỘT lần** trong `<WebhookSecretDialog>` (tạo URL, đổi secret) — cùng luật với khoá
+    API (UC-001 BR-4): tick "đã lưu" mới đóng, chưa sao chép mà đóng thì hỏi lại. Backend không lưu secret.
+*   **Tối đa `MAX_WEBHOOK_ENDPOINTS` = 2 URL** (`lib/api/types.ts`, sao backend) — nút Thêm khoá + tooltip;
+    backend vẫn chặn `WEBHOOK_LIMIT_REACHED`. URL không đổi được — muốn đổi thì xoá rồi thêm.
+*   **Lỗi 422 hiện mã trong `issues`** (`WEBHOOK_URL_INVALID`…), không hiện `VALIDATION`; lỗi của hộp thêm /
+    sửa hiện NGAY TRONG hộp, hộp không đóng.
+*   **Gửi thử** gọi ngay, kết quả là `<Alert>` trên đầu màn (không phải toast) kèm mã ngắn của backend
+    (`http_405`, `timeout`, `blocked_private_address`…) + câu gợi ý (`errorHint`). Lời gọi này đặt timeout
+    20 giây vì backend chờ app tới 10 giây.
+*   **Tắt URL có hộp xác nhận**: lượt đang chờ gọi lại bị huỷ, bật lại không gửi bù. Xoá là `tone="blocking"`.
+*   Tên sự kiện có dấu `.` nên khoá câu dịch đi qua `EVENT_LABEL` (next-intl coi `.` là tầng lồng).
+*   Màu trạng thái `disabled` / `delivered` / `pending` thêm vào `statusColors` — vẫn chỉ `<StatusPill>`.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -569,6 +590,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source; chỉ có một vế (thêm / gỡ, cấp / thu hồi) thì vẫn hiện vế đó |
 | `<NetworkRulesPanel>` | `components/settings/network-rules-panel.tsx` | ✓ | `/settings/origins` — xem / thêm / gỡ IP & Origin của app đang xem (mục 2.10) |
+| `<WebhooksPanel>` / `<WebhookFormDialog>` / `<WebhookSecretDialog>` | `components/settings/webhooks-panel.tsx`, `webhook-dialogs.tsx` | ✓ | `/settings/webhooks` — URL nhận outgoing webhook, gửi thử, nhật ký gọi; hộp thêm / đổi sự kiện; secret hiện một lần (mục 2.13) |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
 | `<LifecycleTimeline notification compact?>` | `components/lifecycle-timeline.tsx` | ✓ | vòng đời 11 trạng thái (SVG orbital), node đã đi qua + stub nhánh không đi + "event horizon" `queued → sending`; đường đi từ `lifecycleOf()` trong mock; reduced-motion để CSS lo (không `useReducedMotion` → tránh #418) |

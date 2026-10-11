@@ -104,6 +104,50 @@ export type AppSecretDto = {
  */
 export type IssuedAppSecretDto = AppSecretDto & { apiKey: string }
 
+/**
+ * Outgoing webhook (ADR-0029 của backend). Sự kiện app đăng ký được — sao đúng `WEBHOOK_EVENT_TYPES`
+ * của backend. `ping` chỉ là lần "Gửi thử", không đăng ký được nên không có ở đây.
+ */
+export const WEBHOOK_EVENT_TYPES = ['notification.sent', 'notification.failed', 'notification.no_recipient'] as const
+export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number]
+
+/** Tối đa 2 URL mỗi app — backend chặn bằng `WEBHOOK_LIMIT_REACHED`; console chỉ khoá nút cho gọn. */
+export const MAX_WEBHOOK_ENDPOINTS = 2
+
+/** Sao đúng `WebhookEndpointDto`. KHÔNG có secret — secret chỉ có trong response tạo / đổi secret. */
+export type WebhookEndpointDto = {
+  id: string
+  url: string
+  events: WebhookEventType[]
+  /** active | disabled */
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** `GET /admin/apps/:appId/webhooks`. `configured = false`: server thiếu `WEBHOOK_SIGNING_KEY`. */
+export type WebhookListDto = { configured: boolean; endpoints: WebhookEndpointDto[] }
+
+/** Response DUY NHẤT chứa secret (`whsec_…`) — tạo URL hoặc đổi secret. */
+export type IssuedWebhookSecretDto = { endpoint: WebhookEndpointDto; secret: string }
+
+/** Một lần EWS gọi (hoặc sẽ gọi lại) một URL. Không có body đã gửi, không có phản hồi của app. */
+export type WebhookDeliveryDto = {
+  id: string
+  eventId: string
+  /** một trong `WEBHOOK_EVENT_TYPES` hoặc `ping` */
+  eventType: string
+  /** pending | delivered | failed */
+  status: string
+  attempts: number
+  lastStatusCode: number | null
+  /** mã ngắn: `http_503` · `timeout` · `connection_failed: …` · `blocked_private_address` · `endpoint_disabled` */
+  lastError: string | null
+  nextAttemptAt: string | null
+  createdAt: string
+  deliveredAt: string | null
+}
+
 /** Email của một người nhận, sao đúng `UserEmailView` của backend. */
 export type UserEmailDto = {
   address: string
