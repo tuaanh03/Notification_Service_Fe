@@ -145,7 +145,7 @@ export function WebhookSecretDialog({
         <DialogContent
           showCloseButton={false}
           // Cùng lý do với <CredentialDialog>: chuỗi mono dài không xuống dòng làm cột grid phình.
-          className="orbit-ring z-[100] grid-cols-[minmax(0,1fr)] max-h-[calc(100vh-2rem)] max-w-xl overflow-x-hidden overflow-y-auto rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-xl"
+          className="orbit-ring z-[100] grid-cols-[minmax(0,1fr)] max-h-[calc(100vh-2rem)] max-w-2xl overflow-x-hidden overflow-y-auto rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-2xl"
         >
           <DialogHeader className="items-center text-center">
             <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full border border-[var(--starlight)] text-[var(--starlight)]">
