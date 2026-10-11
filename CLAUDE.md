@@ -557,7 +557,7 @@ nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đ�
     Lỗi `INCOMING_URL_NEEDS_ROTATION` -> câu "bấm Đổi URL".
 *   **Body mẫu** (`<IncomingHookGuide>`, đóng sẵn): khuôn chuẩn EWS không gắn công cụ nào — `POST`,
     `Content-Type: application/json`, body có trường TRÙNG TÊN biến `payload.*` (giá trị mẫu + mô tả lấy từ
-    template), curl với `[URL]`, thư mẫu (backend `preview`). **Nhật ký** (đóng sẵn): câu ngắn qua `CALL_ERROR_KEY`.
+    template), curl với `[URL]`, thư mẫu (backend `preview`). **Nhật ký** (đóng sẵn): câu ngắn qua `CALL_ERROR_KEY`, lỗi thiếu / sai kiểu nối thêm `errorFields` ("Thiếu trường bắt buộc: service").
 *   `WARNING_KEY` chỉ gồm cảnh báo topic / template. Câu dịch chứa `{`, `}` phải thoát `'{}'`; chứa `<…>` bị
     hiểu thành thẻ — dùng `[…]`.
 

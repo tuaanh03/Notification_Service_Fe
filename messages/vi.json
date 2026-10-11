@@ -1123,7 +1123,7 @@
     "callDuplicate": "Trùng lần trước — không gửi lại",
     "callSkipped": "Bỏ qua",
     "errMissing": "Thiếu trường bắt buộc",
-    "errInvalidValue": "Có trường không phải chữ / số",
+    "errInvalidValue": "Sai kiểu (phải là chữ / số)",
     "errBody": "Body không phải JSON '{ … }'",
     "errRateLimited": "Gọi quá nhiều trong một phút",
     "errTooLarge": "Topic quá nhiều người theo dõi",

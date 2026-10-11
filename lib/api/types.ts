@@ -413,6 +413,8 @@ export type IncomingCallDto = {
   publicationId: string | null
   recipientCount: number | null
   errorCode: string | null
+  /** Tên trường gắn với lỗi thiếu / sai kiểu (`["service"]`); null với lỗi khác và lần gọi cũ. */
+  errorFields?: string[] | null
 }
 
 export type HookPreviewDto = {

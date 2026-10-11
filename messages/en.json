@@ -1123,7 +1123,7 @@
     "callDuplicate": "Same as before — not sent again",
     "callSkipped": "Skipped",
     "errMissing": "A required field is missing",
-    "errInvalidValue": "A field is not text or a number",
+    "errInvalidValue": "Wrong type (must be text or a number)",
     "errBody": "Body is not a JSON object '{ … }'",
     "errRateLimited": "Too many calls in one minute",
     "errTooLarge": "Topic has too many subscribers",

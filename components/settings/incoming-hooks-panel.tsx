@@ -449,7 +449,11 @@ function CallLog({ appId, hookId }: { appId: string; hookId: string }) {
           {calls.map((c) => (
             <TableRow key={c.id} className="border-[var(--orbit)]">
               <TableCell className="px-2 font-mono whitespace-nowrap">{fmtDateTime(c.at)}</TableCell>
-              <TableCell className={cn('px-2 whitespace-normal', c.outcome === 'rejected' && 'text-[var(--supernova)]')}>{describe(c)}</TableCell>
+              <TableCell className={cn('px-2 whitespace-normal', c.outcome === 'rejected' && 'text-[var(--supernova)]')}>
+                {describe(c)}
+                {/* Trường nào thiếu / sai kiểu — đúng tên như trong Body mẫu, để biết sửa chỗ nào. */}
+                {c.errorFields && c.errorFields.length > 0 && <span className="font-mono">: {c.errorFields.join(', ')}</span>}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
