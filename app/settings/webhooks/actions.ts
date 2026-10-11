@@ -6,6 +6,7 @@ import {
   listIncomingCalls,
   listIncomingHooks,
   previewIncomingHook,
+  revealIncomingHookUrl,
   rotateIncomingHookToken,
   updateIncomingHook,
 } from '@/lib/api/incoming'
@@ -101,11 +102,16 @@ export async function loadIncomingAction(appId: string): Promise<
   })
 }
 
-/** Biến của bản ĐANG XUẤT BẢN — mỗi biến `payload.*` một dòng ánh xạ. Chưa xuất bản -> `version: null`. */
+/**
+ * Biến `payload.*` của bản ĐANG XUẤT BẢN — thành các trường của body JSON mẫu (kèm giá trị mẫu + mô tả
+ * người soạn template đã khai). Chưa xuất bản -> `version: null`.
+ */
 export async function loadTemplateVariablesAction(
   appId: string,
   templateId: string,
-): Promise<ActionResult<{ version: number | null; variables: { name: string; required: boolean }[] }>> {
+): Promise<
+  ActionResult<{ version: number | null; variables: { name: string; required: boolean; sample: string | null; description: string | null }[] }>
+> {
   return toResult(async () => {
     const detail = await getTemplate(appId, templateId)
     const published = detail.versions.find((v) => v.status === 'published') ?? null
@@ -113,7 +119,7 @@ export async function loadTemplateVariablesAction(
       version: published?.version ?? null,
       variables: (published?.variables ?? [])
         .filter((v) => v.name.startsWith('payload.'))
-        .map((v) => ({ name: v.name, required: v.required })),
+        .map((v) => ({ name: v.name, required: v.required, sample: v.sample ?? null, description: v.description ?? null })),
     }
   })
 }
@@ -128,6 +134,14 @@ export async function updateIncomingHookAction(
   input: { config?: IncomingHookConfigInput; status?: 'active' | 'disabled' },
 ): Promise<ActionResult<IncomingHookDto>> {
   return toResult(() => updateIncomingHook(appId, hookId, input))
+}
+
+/** URL đầy đủ để sao chép — backend ghi audit mỗi lần lấy. */
+export async function revealIncomingHookUrlAction(appId: string, hookId: string): Promise<ActionResult<string>> {
+  return toResult(async () => {
+    const r = await revealIncomingHookUrl(appId, hookId)
+    return r.url ?? r.path
+  })
 }
 
 export async function rotateIncomingHookTokenAction(appId: string, hookId: string): Promise<ActionResult<IssuedHookUrlDto>> {

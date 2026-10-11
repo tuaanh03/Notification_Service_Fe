@@ -69,7 +69,7 @@ webservice/ews-astrolink/
 │   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
 │   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend)
-│   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-dialog (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
@@ -545,17 +545,21 @@ nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đ�
 
 **Tab "Nhận vào" — incoming webhook (ADR-0030 của backend).** `lib/api/incoming.ts` ->
 `/admin/apps/:appId/incoming-webhooks/*`; action chung file `app/settings/webhooks/actions.ts`.
-*   **Bảng ánh xạ dựng từ biến của bản template ĐANG XUẤT BẢN** (`loadTemplateVariablesAction` đọc
-    `getTemplate`), một dòng mỗi biến `payload.*`, nguồn mặc định "Trường cùng tên" (không gửi dòng ánh xạ).
-    Đổi template giữ cấu hình của biến trùng tên; ánh xạ cũ không còn trong template hiện cảnh báo và BỎ
-    khi lưu. Template chưa xuất bản -> không có dòng nào + `<Alert>`.
-*   **Xem trước** gửi cấu hình ĐANG SOẠN (chưa lưu) + JSON mẫu lên backend — không tự rút biến ở client
-    (luật đường dẫn chỉ có một nơi: backend). Thư xem trước hiện bản chữ thường (`text`), không dựng HTML.
-*   **URL hiện một lần** qua `<WebhookSecretDialog variant="hookUrl">`: đầy đủ nếu Super Admin đã khai domain
-    API công khai, không thì chỉ `/hooks/…` + `<Alert>` chỉ chỗ khai. Danh sách chỉ có `tokenHint`.
-*   Cảnh báo của từng hook (`warnings`, mã -> câu qua `WARNING_KEY`) hiện ngay dưới tên — mọi lần gọi sẽ
-    lỗi nếu bỏ qua. Nhật ký gọi: kết cục qua `<StatusPill>` (`published` · `duplicate` · `skipped` ·
-    `rejected` — thêm 3 màu vào `statusColors`), không có body.
+
+**Người dùng chỉ chọn GỬI CHO AI (topic) và NỘI DUNG GÌ (template); ít chữ, không giải thích.** Bản đầu đưa
+ánh xạ đường dẫn JSON, khoá chống trùng, điều kiện phát lên form — người dùng không tự điền nổi. Đừng đưa lại.
+*   **Không hộp thoại**: "Thêm webhook" mở một dòng 2 ô chọn ngay trong danh sách (khoá khi thiếu topic đang
+    hoạt động / template đã xuất bản / khoá ký); mỗi webhook là một `Collapsible` mở tại chỗ (đổi topic /
+    template + Lưu, Sao chép URL, Đổi URL, Tắt / Bật, Xoá). Danh sách nhóm theo topic. Chỉ Đổi URL / Xoá có
+    `<ConfirmDialog>`. Tên hook tự đặt = tên template.
+*   **Sao chép URL bất cứ lúc nào** (`revealIncomingHookUrlAction` -> `GET …/:hookId/url`): backend tính lại
+    token và ghi audit mỗi lần lấy — trách nhiệm theo dõi bằng audit logs, KHÔNG ghi chú trên màn hình.
+    Lỗi `INCOMING_URL_NEEDS_ROTATION` -> câu "bấm Đổi URL".
+*   **Body mẫu** (`<IncomingHookGuide>`, đóng sẵn): khuôn chuẩn EWS không gắn công cụ nào — `POST`,
+    `Content-Type: application/json`, body có trường TRÙNG TÊN biến `payload.*` (giá trị mẫu + mô tả lấy từ
+    template), curl với `[URL]`, thư mẫu (backend `preview`). **Nhật ký** (đóng sẵn): câu ngắn qua `CALL_ERROR_KEY`.
+*   `WARNING_KEY` chỉ gồm cảnh báo topic / template. Câu dịch chứa `{`, `}` phải thoát `'{}'`; chứa `<…>` bị
+    hiểu thành thẻ — dùng `[…]`.
 
 ### 2.14. Cài đặt hệ thống (`/admin/settings`) — chỉ Super Admin
 
@@ -613,8 +617,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source; chỉ có một vế (thêm / gỡ, cấp / thu hồi) thì vẫn hiện vế đó |
 | `<NetworkRulesPanel>` | `components/settings/network-rules-panel.tsx` | ✓ | `/settings/origins` — xem / thêm / gỡ IP & Origin của app đang xem (mục 2.10) |
-| `<WebhooksPage>` / `<WebhooksPanel embedded?>` / `<WebhookFormDialog>` / `<WebhookSecretDialog variant?>` | `components/settings/webhooks-page.tsx`, `webhooks-panel.tsx`, `webhook-dialogs.tsx` | ✓ | `/settings/webhooks` — tab Gửi đi (outgoing: URL, gửi thử, nhật ký); hộp thêm / đổi sự kiện; giá trị hiện một lần — `variant="secret"` (whsec_) hoặc `"hookUrl"` (URL incoming) (mục 2.13) |
-| `<IncomingHooksPanel>` / `<IncomingHookDialog>` | `components/settings/incoming-hooks-panel.tsx`, `incoming-hook-dialog.tsx` | ✓ | tab Nhận vào: danh sách hook kèm cảnh báo, nhật ký gọi; hộp thêm / sửa có bảng ánh xạ (một dòng / biến `payload.*` của bản đang xuất bản) + xem trước bằng JSON mẫu (mục 2.13) |
+| `<WebhooksPage>` / `<WebhooksPanel embedded?>` / `<WebhookFormDialog>` / `<WebhookSecretDialog>` | `components/settings/webhooks-page.tsx`, `webhooks-panel.tsx`, `webhook-dialogs.tsx` | ✓ | `/settings/webhooks` — tab Gửi đi (outgoing: URL, gửi thử, nhật ký); hộp thêm / đổi sự kiện; secret `whsec_` hiện một lần (mục 2.13) |
+| `<IncomingHooksPanel>` / `<IncomingHookGuide>` | `components/settings/incoming-hooks-panel.tsx`, `incoming-hook-guide.tsx` | ✓ | tab Nhận vào: danh sách mở tại chỗ, thêm / sửa chỉ topic + template, Sao chép URL bất cứ lúc nào; Body mẫu + Nhật ký đóng sẵn (mục 2.13) |
 | `<SystemSettingsPanel initial>` | `components/admin/system-settings-panel.tsx` | ✓ | `/admin/settings` — Cài đặt hệ thống, mỗi dòng lưu riêng + Về mặc định (mục 2.14) |
 | `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |

@@ -33,6 +33,11 @@ export async function updateIncomingHook(
   return adminFetch<IncomingHookDto>(one(appId, hookId), { method: 'PATCH', body: input })
 }
 
+/** URL đầy đủ, lấy bất cứ lúc nào (người quản lý app) — backend ghi audit mỗi lần lấy. */
+export async function revealIncomingHookUrl(appId: string, hookId: string): Promise<{ path: string; url: string | null }> {
+  return adminFetch<{ path: string; url: string | null }>(`${one(appId, hookId)}/url`)
+}
+
 /** URL cũ chết NGAY. */
 export async function rotateIncomingHookToken(appId: string, hookId: string): Promise<IssuedHookUrlDto> {
   return adminFetch<IssuedHookUrlDto>(`${one(appId, hookId)}/rotate-token`, { method: 'POST' })

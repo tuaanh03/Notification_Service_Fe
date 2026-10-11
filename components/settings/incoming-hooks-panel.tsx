@@ -1,19 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import {
-  AlertTriangle,
-  History,
-  KeyRound,
-  MoreHorizontal,
-  Pencil,
-  PlugZap,
-  Plus,
-  Power,
-  PowerOff,
-  RefreshCw,
-  Trash2,
-  Webhook,
-} from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronRight, Copy, KeyRound, PlugZap, Plus, Power, PowerOff, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
@@ -21,6 +8,7 @@ import {
   deleteIncomingHookAction,
   loadIncomingAction,
   loadIncomingCallsAction,
+  revealIncomingHookUrlAction,
   rotateIncomingHookTokenAction,
   updateIncomingHookAction,
 } from '@/app/settings/webhooks/actions'
@@ -28,19 +16,12 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
-import { IncomingHookDialog } from '@/components/settings/incoming-hook-dialog'
-import { WebhookSecretDialog } from '@/components/settings/webhook-dialogs'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { IncomingHookGuide } from '@/components/settings/incoming-hook-guide'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
 import type { ActionResult } from '@/lib/api/result'
@@ -50,47 +31,65 @@ import {
   type IncomingHookConfigInput,
   type IncomingHookDto,
   type IncomingHookListDto,
-  type IssuedHookUrlDto,
   type TemplateSummaryDto,
   type TopicDto,
 } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
-type Dialog =
-  | { kind: 'create' }
-  | { kind: 'edit'; hook: IncomingHookDto }
-  | { kind: 'disable'; hook: IncomingHookDto }
-  | { kind: 'rotate'; hook: IncomingHookDto }
-  | { kind: 'delete'; hook: IncomingHookDto }
-  | null
+type View = { list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[] }
+type Confirm = { kind: 'rotate' | 'delete'; hook: IncomingHookDto } | null
 
-/** Mã cảnh báo -> khoá câu dịch (nhóm `incoming`). */
+/** Cảnh báo về topic / template -> câu ngắn. Cảnh báo về ánh xạ biến KHÔNG hiện (console không có ánh xạ). */
 const WARNING_KEY: Partial<
-  Record<
-    string,
-    | 'warnTemplateNotPublished'
-    | 'warnTemplateArchived'
-    | 'warnTemplateNotFound'
-    | 'warnTopicNotActive'
-    | 'warnTopicNotFound'
-    | 'warnRequiredUnmapped'
-    | 'warnMappingNotInTemplate'
-  >
+  Record<string, 'warnTemplateNotPublished' | 'warnTemplateArchived' | 'warnTemplateNotFound' | 'warnTopicNotActive' | 'warnTopicNotFound'>
 > = {
   TEMPLATE_NOT_PUBLISHED: 'warnTemplateNotPublished',
   TEMPLATE_ARCHIVED: 'warnTemplateArchived',
   TEMPLATE_NOT_FOUND: 'warnTemplateNotFound',
   TOPIC_NOT_ACTIVE: 'warnTopicNotActive',
   TOPIC_NOT_FOUND: 'warnTopicNotFound',
-  REQUIRED_VARIABLE_UNMAPPED: 'warnRequiredUnmapped',
-  MAPPING_NOT_IN_TEMPLATE: 'warnMappingNotInTemplate',
+}
+
+/** Mã lỗi một lần gọi -> câu (nhật ký). Mã lạ: câu chung kèm mã. */
+const CALL_ERROR_KEY: Partial<
+  Record<
+    string,
+    'errMissing' | 'errInvalidValue' | 'errBody' | 'errRateLimited' | 'errTooLarge' | 'errTopic' | 'errTemplate' | 'errNetwork' | 'errAppInactive'
+  >
+> = {
+  MISSING_VARIABLE: 'errMissing',
+  INVALID_PAYLOAD_VALUE: 'errInvalidValue',
+  INCOMING_BODY_INVALID: 'errBody',
+  INCOMING_HOOK_RATE_LIMITED: 'errRateLimited',
+  PUBLICATION_TOO_LARGE: 'errTooLarge',
+  TOPIC_NOT_ACTIVE: 'errTopic',
+  TOPIC_NOT_FOUND: 'errTopic',
+  TEMPLATE_NOT_PUBLISHED: 'errTemplate',
+  TEMPLATE_ARCHIVED: 'errTemplate',
+  TEMPLATE_NOT_FOUND: 'errTemplate',
+  IP_NOT_ALLOWED: 'errNetwork',
+  ORIGIN_NOT_ALLOWED: 'errNetwork',
+  APP_NOT_ACTIVE: 'errAppInactive',
+}
+
+/** Cấu hình gửi lên khi đổi topic / template — tên tự theo template; phần kỹ thuật (đội EWS đặt qua API) giữ nguyên, trừ ánh xạ khi đổi template. */
+function configOf(hook: IncomingHookDto | null, topicId: string, templateId: string, templates: TemplateSummaryDto[]): IncomingHookConfigInput {
+  const name = templates.find((x) => x.id === templateId)?.name ?? hook?.name ?? 'Incoming webhook'
+  return {
+    name: name.slice(0, 100),
+    topicId,
+    templateId,
+    mappings: hook && hook.template.id === templateId ? hook.mappings : [],
+    dedupePath: hook?.dedupePath ?? null,
+    condition: hook?.condition ?? null,
+  }
 }
 
 /**
- * Tab "Nhận vào" của màn Webhooks — incoming webhook (ADR-0030 của backend): công cụ ngoài (Gatus, JSON
- * tự build…) gọi vào URL bí mật để phát tin vào topic. Mọi người xem; chỉ `canManage(app)` thêm, sửa,
- * tắt, đổi URL, xoá. URL hiện một lần trong `<WebhookSecretDialog variant="hookUrl">`.
+ * Tab "Nhận vào" — incoming webhook (ADR-0030 của backend). Người dùng chỉ chọn GỬI CHO AI (topic) và NỘI
+ * DUNG GÌ (template); mọi thứ khác EWS tự lo. Không hộp thoại: thêm và sửa ngay trong danh sách; URL sao chép
+ * bất cứ lúc nào (backend tính lại token + ghi audit mỗi lần lấy). Ít chữ — trách nhiệm theo dõi bằng audit.
  */
 export function IncomingHooksPanel() {
   const t = useTranslations('incoming')
@@ -99,20 +98,16 @@ export function IncomingHooksPanel() {
   const writable = useRole().canManage(app)
   const appId = app.app_id
 
-  const [view, setView] = useState<{ list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[] } | null>(null)
+  const [view, setView] = useState<View | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [formError, setFormError] = useState<string | null>(null)
-  const [dialog, setDialog] = useState<Dialog>(null)
-  const [issued, setIssued] = useState<{ name: string; url: string; rotated: boolean } | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [calls, setCalls] = useState<IncomingCallDto[] | null>(null)
-  const [callsError, setCallsError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [confirm, setConfirm] = useState<Confirm>(null)
   const [pending, startTransition] = useTransition()
 
   const failText = useCallback(
-    (result: Extract<ActionResult<unknown>, { ok: false }>) =>
-      te('withCode', { message: result.message, code: result.issues?.[0]?.code ?? result.code }),
+    (r: Extract<ActionResult<unknown>, { ok: false }>) => te('withCode', { message: r.message, code: r.issues?.[0]?.code ?? r.code }),
     [te],
   )
 
@@ -121,113 +116,37 @@ export function IncomingHooksPanel() {
     if (result.ok) {
       setView(result.data)
       setLoadError(null)
-      setSelectedId((current) =>
-        result.data.list.hooks.some((h) => h.id === current) ? current : (result.data.list.hooks[0]?.id ?? null),
-      )
     } else {
       setView(null)
       setLoadError(failText(result))
     }
   }, [appId, failText])
 
-  const loadCalls = useCallback(
-    async (hookId: string) => {
-      const result = await loadIncomingCallsAction(appId, hookId)
-      if (result.ok) {
-        setCalls(result.data)
-        setCallsError(null)
-      } else {
-        setCalls(null)
-        setCallsError(failText(result))
-      }
-    },
-    [appId, failText],
-  )
-
   useEffect(() => {
     setView(null)
-    setLoadError(null)
-    setActionError(null)
-    setSelectedId(null)
+    setOpenId(null)
+    setAdding(false)
+    setError(null)
     void load()
   }, [load])
 
-  useEffect(() => {
-    setCalls(null)
-    setCallsError(null)
-    if (selectedId) void loadCalls(selectedId)
-  }, [selectedId, loadCalls])
-
-  const hooks = view?.list.hooks ?? []
-  const atLimit = hooks.length >= MAX_INCOMING_HOOKS
-  const selected = hooks.find((h) => h.id === selectedId) ?? null
-
-  const showUrl = (data: IssuedHookUrlDto, rotated: boolean) =>
-    setIssued({ name: data.hook.name, url: data.url ?? data.path, rotated })
-
-  const run = <T,>(op: () => Promise<ActionResult<T>>, onOk: (data: T) => void, inForm = false) => {
+  const run = <T,>(op: () => Promise<ActionResult<T>>, onOk: (data: T) => void) =>
     startTransition(async () => {
       const result = await op()
-      if (!result.ok) {
-        if (inForm) setFormError(failText(result))
-        else setActionError(failText(result))
-        return
-      }
-      setActionError(null)
-      setFormError(null)
+      if (!result.ok) return setError(failText(result))
+      setError(null)
       onOk(result.data)
       await load()
     })
-  }
 
-  const create = (config: IncomingHookConfigInput) =>
-    run(
-      () => createIncomingHookAction(appId, config),
-      (data) => {
-        setDialog(null)
-        setSelectedId(data.hook.id)
-        showUrl(data, false)
-      },
-      true,
-    )
-
-  const edit = (hook: IncomingHookDto, config: IncomingHookConfigInput) =>
-    run(
-      () => updateIncomingHookAction(appId, hook.id, { config }),
-      () => {
-        setDialog(null)
-        toast.success(t('savedToast'))
-      },
-      true,
-    )
-
-  const setStatus = (hook: IncomingHookDto, status: 'active' | 'disabled') =>
-    run(
-      () => updateIncomingHookAction(appId, hook.id, { status }),
-      () => {
-        setDialog(null)
-        toast.success(status === 'active' ? t('enabledToast') : t('disabledToast'))
-      },
-    )
-
-  const rotate = (hook: IncomingHookDto) =>
-    run(
-      () => rotateIncomingHookTokenAction(appId, hook.id),
-      (data) => {
-        setDialog(null)
-        showUrl(data, true)
-      },
-    )
-
-  const remove = (hook: IncomingHookDto) =>
-    run(
-      () => deleteIncomingHookAction(appId, hook.id),
-      () => {
-        setDialog(null)
-        if (selectedId === hook.id) setSelectedId(null)
-        toast.success(t('deletedToast'))
-      },
-    )
+  const copyUrl = (hook: IncomingHookDto) =>
+    startTransition(async () => {
+      const result = await revealIncomingHookUrlAction(appId, hook.id)
+      if (!result.ok) return setError(result.code === 'INCOMING_URL_NEEDS_ROTATION' ? t('needsRotation') : failText(result))
+      setError(null)
+      await navigator.clipboard?.writeText(result.data)
+      toast.success(t('urlCopied'))
+    })
 
   if (loadError) {
     return (
@@ -245,266 +164,296 @@ export function IncomingHooksPanel() {
       </Panel>
     )
   }
+  if (view === null) return null
 
-  const addButton = (
-    <Button
-      variant="outline"
-      disabled={atLimit || pending || view === null}
-      onClick={() => {
-        setFormError(null)
-        setDialog({ kind: 'create' })
-      }}
-    >
-      <Plus />
-      {t('add')}
-    </Button>
-  )
+  const hooks = view.list.hooks
+  const activeTopics = view.topics.filter((x) => x.status === 'active')
+  const publishedTemplates = view.templates.filter((x) => x.status !== 'archived' && x.publishedVersion !== null)
+  const cannotAdd = !view.list.configured
+    ? t('notConfigured')
+    : activeTopics.length === 0 || publishedTemplates.length === 0
+      ? t('needTopicAndTemplate')
+      : hooks.length >= MAX_INCOMING_HOOKS
+        ? t('atLimit', { max: MAX_INCOMING_HOOKS })
+        : null
+  const topicName = (id: string, key: string | null) => {
+    const topic = view.topics.find((x) => x.id === id)
+    return topic ? topic.name : (key ?? '—')
+  }
+  const groups = [...new Set(hooks.map((h) => h.topic.id))].map((topicId) => ({
+    topicId,
+    hooks: hooks.filter((h) => h.topic.id === topicId),
+  }))
 
   return (
-    <>
-      {view !== null && view.list.publicBaseUrl === null && (
-        <Alert className="mb-5">
-          <AlertTriangle />
-          <AlertTitle>{t('noBaseUrlTitle')}</AlertTitle>
-          <AlertDescription>{t('noBaseUrlBody')}</AlertDescription>
-        </Alert>
-      )}
-
-      {actionError && (
-        <Alert variant="destructive" className="mb-5">
-          <AlertTriangle />
-          <AlertTitle>{t('actionFailed')}</AlertTitle>
-          <AlertDescription>{actionError}</AlertDescription>
-        </Alert>
-      )}
-
-      <Panel className="p-5" ring>
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <h2 className="text-sm font-semibold">{t('hooks')}</h2>
-            <p className="mt-2 text-xs text-[var(--text-secondary)]">{t('intro')}</p>
-            <p className="mt-1 font-mono text-[11px] tabular-nums text-[var(--text-muted)]">
-              {t('count', { count: hooks.length, max: MAX_INCOMING_HOOKS })}
-            </p>
-          </div>
-          {!writable ? null : atLimit ? (
-            <Tooltip>
-              <TooltipTrigger render={<span className="inline-flex" />}>{addButton}</TooltipTrigger>
-              <TooltipContent>{t('atLimit', { max: MAX_INCOMING_HOOKS })}</TooltipContent>
-            </Tooltip>
-          ) : (
-            addButton
-          )}
+    <div className="space-y-5">
+      {writable && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            disabled={cannotAdd !== null || adding || pending}
+            onClick={() => {
+              setAdding(true)
+              setOpenId(null)
+            }}
+          >
+            <Plus /> {t('add')}
+          </Button>
+          {cannotAdd && <span className="text-xs text-[var(--text-muted)]">{cannotAdd}</span>}
         </div>
-
-        <div className="overflow-x-auto">
-          <Table className="text-[13px]">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="px-3">{t('colName')}</TableHead>
-                <TableHead className="px-3">{t('colTopic')}</TableHead>
-                <TableHead className="px-3">{t('colTemplate')}</TableHead>
-                <TableHead className="px-3">{t('colUrl')}</TableHead>
-                <TableHead className="px-3">{t('colStatus')}</TableHead>
-                <TableHead className="px-3" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hooks.map((h) => (
-                <TableRow
-                  key={h.id}
-                  className={cn('cursor-pointer border-[var(--orbit)] align-top', h.id === selectedId && 'bg-[var(--orbit)]/40')}
-                  onClick={() => setSelectedId(h.id)}
-                >
-                  <TableCell className="min-w-[180px] px-3 py-2.5 whitespace-normal">
-                    <span className="font-medium">{h.name}</span>
-                    {h.warnings.map((w, i) => (
-                      <span key={i} className="mt-1 flex items-start gap-1 text-[11px] text-[var(--solar)]">
-                        <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-                        {t(WARNING_KEY[w.code] ?? 'warnOther', { variable: w.variable ?? '', code: w.code })}
-                      </span>
-                    ))}
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 font-mono text-xs">{h.topic.key ?? '—'}</TableCell>
-                  <TableCell className="px-3 py-2.5 text-xs">
-                    {h.template.name ?? '—'}
-                    {h.template.version !== null && <span className="ml-1 font-mono text-[var(--text-muted)]">v{h.template.version}</span>}
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 font-mono text-[11px] text-[var(--text-secondary)]">/hooks/{h.tokenHint}</TableCell>
-                  <TableCell className="px-3 py-2.5">
-                    <StatusPill status={h.status} />
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                    {writable && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              aria-label={t('actionsFor', { name: h.name })}
-                              className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
-                            >
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          }
-                        />
-                        <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 bg-popover border border-border shadow-md">
-                          <DropdownMenuItem
-                            className="text-xs cursor-pointer"
-                            onClick={() => {
-                              setFormError(null)
-                              setDialog({ kind: 'edit', hook: h })
-                            }}
-                          >
-                            <Pencil className="size-3.5 mr-1.5" /> {t('edit')}
-                          </DropdownMenuItem>
-                          {h.status === 'active' ? (
-                            <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => setDialog({ kind: 'disable', hook: h })}>
-                              <PowerOff className="size-3.5 mr-1.5" /> {t('disable')}
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => setStatus(h, 'active')}>
-                              <Power className="size-3.5 mr-1.5" /> {t('enable')}
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => setDialog({ kind: 'rotate', hook: h })}>
-                            <KeyRound className="size-3.5 mr-1.5" /> {t('rotate')}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem variant="destructive" className="text-xs cursor-pointer" onClick={() => setDialog({ kind: 'delete', hook: h })}>
-                            <Trash2 className="size-3.5 mr-1.5" /> {t('delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {view !== null && hooks.length === 0 && (
-            <EmptyState icon={Webhook} title={t('emptyTitle')} description={t('emptyBody', { app: app.name })} />
-          )}
-        </div>
-      </Panel>
-
-      {selected && <CallsPanel hook={selected} calls={calls} error={callsError} onRefresh={() => void loadCalls(selected.id)} />}
-
-      {view && (dialog?.kind === 'create' || dialog?.kind === 'edit') && (
-        <IncomingHookDialog
-          key={dialog.kind === 'edit' ? `edit:${dialog.hook.id}` : 'create'}
-          appId={appId}
-          hook={dialog.kind === 'edit' ? dialog.hook : null}
-          topics={view.topics}
-          templates={view.templates}
-          pending={pending}
-          error={formError}
-          onCancel={() => setDialog(null)}
-          onSubmit={(config) => (dialog.kind === 'edit' ? edit(dialog.hook, config) : create(config))}
-        />
       )}
 
-      <ConfirmDialog
-        open={dialog?.kind === 'disable'}
-        title={t('disableTitle')}
-        description={t('disableBody')}
-        facts={dialog?.kind === 'disable' ? [[t('factHook'), dialog.hook.name]] : undefined}
-        confirmLabel={pending ? t('working') : t('disable')}
-        confirmDisabled={pending}
-        onConfirm={() => dialog?.kind === 'disable' && setStatus(dialog.hook, 'disabled')}
-        onCancel={() => setDialog(null)}
-      />
-      <ConfirmDialog
-        open={dialog?.kind === 'rotate'}
-        title={t('rotateTitle')}
-        description={t('rotateBody')}
-        facts={dialog?.kind === 'rotate' ? [[t('factHook'), dialog.hook.name], ['url', `/hooks/${dialog.hook.tokenHint}`]] : undefined}
-        confirmLabel={pending ? t('working') : t('rotate')}
-        confirmDisabled={pending}
-        onConfirm={() => dialog?.kind === 'rotate' && rotate(dialog.hook)}
-        onCancel={() => setDialog(null)}
-      />
-      <ConfirmDialog
-        open={dialog?.kind === 'delete'}
-        tone="blocking"
-        title={t('deleteTitle')}
-        description={t('deleteBody')}
-        facts={dialog?.kind === 'delete' ? [[t('factHook'), dialog.hook.name]] : undefined}
-        confirmLabel={pending ? t('working') : t('delete')}
-        confirmDisabled={pending}
-        onConfirm={() => dialog?.kind === 'delete' && remove(dialog.hook)}
-        onCancel={() => setDialog(null)}
-      />
-
-      {issued && (
-        <WebhookSecretDialog variant="hookUrl" url={issued.name} secret={issued.url} rotated={issued.rotated} onClose={() => setIssued(null)} />
-      )}
-    </>
-  )
-}
-
-/** Nhật ký 50 lần gọi gần nhất của MỘT hook — chỉ đọc. */
-function CallsPanel({
-  hook,
-  calls,
-  error,
-  onRefresh,
-}: {
-  hook: IncomingHookDto
-  calls: IncomingCallDto[] | null
-  error: string | null
-  onRefresh: () => void
-}) {
-  const t = useTranslations('incoming')
-  return (
-    <Panel className="mt-5 p-5">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <History className="size-4" /> {t('callsTitle')}
-          </h2>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">{hook.name} · {t('callsRetention')}</p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onRefresh}>
-          <RefreshCw /> {t('refresh')}
-        </Button>
-      </div>
-      {error ? (
+      {error && (
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      ) : calls === null ? null : calls.length === 0 ? (
-        <p className="text-xs text-[var(--text-muted)]">{t('callsEmpty')}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table className="text-[13px]">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="px-3">{t('colTime')}</TableHead>
-                <TableHead className="px-3">{t('colOutcome')}</TableHead>
-                <TableHead className="px-3 text-right">HTTP</TableHead>
-                <TableHead className="px-3 text-right">{t('colRecipients')}</TableHead>
-                <TableHead className="px-3">{t('colError')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {calls.map((c) => (
-                <TableRow key={c.id} className="h-11 border-[var(--orbit)]">
-                  <TableCell className="px-3 font-mono text-xs">{fmtDateTime(c.at)}</TableCell>
-                  <TableCell className="px-3">
-                    <StatusPill status={c.outcome} />
-                  </TableCell>
-                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums">{c.httpStatus}</TableCell>
-                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums">{c.recipientCount ?? '—'}</TableCell>
-                  <TableCell className="px-3 font-mono text-xs text-[var(--text-secondary)]">{c.errorCode ?? '—'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
       )}
-    </Panel>
+
+      {adding && (
+        <Panel className="p-4" ring>
+          <HookForm
+            topics={activeTopics}
+            templates={publishedTemplates}
+            initialTopicId={activeTopics[0]?.id ?? ''}
+            initialTemplateId={publishedTemplates[0]?.id ?? ''}
+            submitLabel={t('create')}
+            pending={pending}
+            onCancel={() => setAdding(false)}
+            onSubmit={(topicId, templateId) =>
+              run(
+                () => createIncomingHookAction(appId, configOf(null, topicId, templateId, view.templates)),
+                (data) => {
+                  setAdding(false)
+                  setOpenId(data.hook.id)
+                },
+              )
+            }
+          />
+        </Panel>
+      )}
+
+      {hooks.length === 0 && !adding && (
+        <Panel className="overflow-hidden">
+          <EmptyState icon={PlugZap} title={t('emptyTitle')} description={t('emptyBody')} />
+        </Panel>
+      )}
+
+      {groups.map((group) => (
+        <section key={group.topicId} className="space-y-2">
+          <h3 className="text-sm font-semibold">{t('sendsTo', { topic: topicName(group.topicId, group.hooks[0]?.topic.key ?? null) })}</h3>
+          {group.hooks.map((hook) => (
+            <Panel key={hook.id} className="overflow-hidden">
+              <Collapsible open={openId === hook.id} onOpenChange={(open) => setOpenId(open ? hook.id : null)}>
+                <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[var(--orbit)]/30">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{hook.template.name ?? hook.name}</span>
+                    {hook.warnings
+                      .filter((w) => WARNING_KEY[w.code])
+                      .map((w) => (
+                        <span key={w.code} className="mt-0.5 flex items-center gap-1 text-[11px] text-[var(--solar)]">
+                          <AlertTriangle className="size-3" /> {t(WARNING_KEY[w.code]!)}
+                        </span>
+                      ))}
+                  </span>
+                  <StatusPill status={hook.status} />
+                  {openId === hook.id ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-4 border-t border-[var(--orbit)] px-4 py-4">
+                    {writable && (
+                      <HookForm
+                        key={`${hook.id}:${hook.updatedAt}`}
+                        topics={view.topics}
+                        templates={view.templates.filter((x) => x.status !== 'archived')}
+                        initialTopicId={hook.topic.id}
+                        initialTemplateId={hook.template.id}
+                        submitLabel={t('save')}
+                        pending={pending}
+                        onSubmit={(topicId, templateId) =>
+                          run(
+                            () => updateIncomingHookAction(appId, hook.id, { config: configOf(hook, topicId, templateId, view.templates) }),
+                            () => toast.success(t('saved')),
+                          )
+                        }
+                      />
+                    )}
+                    {writable && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" disabled={pending || !view.list.configured} onClick={() => copyUrl(hook)}>
+                          <Copy /> {t('copyUrl')}
+                        </Button>
+                        <Button size="sm" variant="outline" disabled={pending || !view.list.configured} onClick={() => setConfirm({ kind: 'rotate', hook })}>
+                          <KeyRound /> {t('rotate')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={pending}
+                          onClick={() =>
+                            run(
+                              () => updateIncomingHookAction(appId, hook.id, { status: hook.status === 'active' ? 'disabled' : 'active' }),
+                              () => undefined,
+                            )
+                          }
+                        >
+                          {hook.status === 'active' ? <PowerOff /> : <Power />}
+                          {hook.status === 'active' ? t('disable') : t('enable')}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-[var(--supernova)]" disabled={pending} onClick={() => setConfirm({ kind: 'delete', hook })}>
+                          <Trash2 /> {t('delete')}
+                        </Button>
+                      </div>
+                    )}
+                    <Section title={t('bodySample')}>
+                      <IncomingHookGuide appId={appId} topicId={hook.topic.id} templateId={hook.template.id} />
+                    </Section>
+                    <Section title={t('callsTitle')}>
+                      <CallLog appId={appId} hookId={hook.id} />
+                    </Section>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </Panel>
+          ))}
+        </section>
+      ))}
+
+      <ConfirmDialog
+        open={confirm !== null}
+        tone={confirm?.kind === 'delete' ? 'blocking' : 'warning'}
+        title={confirm?.kind === 'delete' ? t('deleteTitle') : t('rotateTitle')}
+        description={confirm?.kind === 'delete' ? t('deleteBody') : t('rotateBody')}
+        confirmLabel={pending ? t('working') : confirm?.kind === 'delete' ? t('delete') : t('rotate')}
+        confirmDisabled={pending}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          if (!confirm) return
+          const { kind, hook } = confirm
+          run(
+            () => (kind === 'delete' ? deleteIncomingHookAction(appId, hook.id) : rotateIncomingHookTokenAction(appId, hook.id)),
+            () => {
+              setConfirm(null)
+              toast.success(kind === 'delete' ? t('deleted') : t('rotated'))
+            },
+          )
+        }}
+      />
+    </div>
+  )
+}
+
+/** Hai ô chọn + nút — dùng cho dòng "Thêm" và phần sửa trong hook. */
+function HookForm({
+  topics,
+  templates,
+  initialTopicId,
+  initialTemplateId,
+  submitLabel,
+  pending,
+  onCancel,
+  onSubmit,
+}: {
+  topics: TopicDto[]
+  templates: TemplateSummaryDto[]
+  initialTopicId: string
+  initialTemplateId: string
+  submitLabel: string
+  pending: boolean
+  onCancel?: () => void
+  onSubmit: (topicId: string, templateId: string) => void
+}) {
+  const t = useTranslations('incoming')
+  const [topicId, setTopicId] = useState(initialTopicId)
+  const [templateId, setTemplateId] = useState(initialTemplateId)
+  const changed = topicId !== initialTopicId || templateId !== initialTemplateId
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <label className="min-w-[12rem] flex-1 space-y-1 text-xs">
+        <span className="text-[var(--text-muted)]">{t('topicLabel')}</span>
+        <NativeSelect value={topicId} onChange={(e) => setTopicId(e.target.value)} className="w-full">
+          {topics.map((x) => (
+            <NativeSelectOption key={x.id} value={x.id}>
+              {x.name}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      </label>
+      <label className="min-w-[12rem] flex-1 space-y-1 text-xs">
+        <span className="text-[var(--text-muted)]">{t('templateLabel')}</span>
+        <NativeSelect value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="w-full">
+          {templates.map((x) => (
+            <NativeSelectOption key={x.id} value={x.id}>
+              {x.name}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      </label>
+      <div className="flex gap-2">
+        <Button size="sm" disabled={pending || !topicId || !templateId || (onCancel === undefined && !changed)} onClick={() => onSubmit(topicId, templateId)}>
+          {submitLabel}
+        </Button>
+        {onCancel && (
+          <Button size="sm" variant="ghost" onClick={onCancel}>
+            {t('cancel')}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Collapsible>
+      <CollapsibleTrigger className="group/sec flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-foreground">
+        <ChevronRight className="size-3.5 transition-transform group-data-[panel-open]/sec:rotate-90" />
+        {title}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-3">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
+
+/** Nhật ký 50 lần gọi gần nhất — nạp khi mở mục, viết bằng lời. */
+function CallLog({ appId, hookId }: { appId: string; hookId: string }) {
+  const t = useTranslations('incoming')
+  const [calls, setCalls] = useState<IncomingCallDto[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    void loadIncomingCallsAction(appId, hookId).then((r) => alive && setCalls(r.ok ? r.data : []))
+    return () => {
+      alive = false
+    }
+  }, [appId, hookId])
+  if (calls === null) return null
+  if (calls.length === 0) return <p className="text-xs text-[var(--text-muted)]">{t('callsEmpty')}</p>
+  const describe = (c: IncomingCallDto) => {
+    if (c.outcome === 'published') return t('callPublished', { count: c.recipientCount ?? 0 })
+    if (c.outcome === 'duplicate') return t('callDuplicate')
+    if (c.outcome === 'skipped') return t('callSkipped')
+    const key = c.errorCode ? CALL_ERROR_KEY[c.errorCode] : undefined
+    return key ? t(key) : t('errOther', { code: c.errorCode ?? String(c.httpStatus) })
+  }
+  return (
+    <div className="overflow-x-auto">
+      <Table className="text-xs">
+        <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="px-2">{t('colTime')}</TableHead>
+            <TableHead className="px-2">{t('colOutcome')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {calls.map((c) => (
+            <TableRow key={c.id} className="border-[var(--orbit)]">
+              <TableCell className="px-2 font-mono whitespace-nowrap">{fmtDateTime(c.at)}</TableCell>
+              <TableCell className={cn('px-2 whitespace-normal', c.outcome === 'rejected' && 'text-[var(--supernova)]')}>{describe(c)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

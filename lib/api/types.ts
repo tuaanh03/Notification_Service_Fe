@@ -389,7 +389,8 @@ export type IncomingHookDto = {
   updatedAt: string
 }
 
-export type IncomingHookListDto = { publicBaseUrl: string | null; hooks: IncomingHookDto[] }
+/** `configured = false`: server thiếu `WEBHOOK_SIGNING_KEY` — không tạo / lấy URL được. */
+export type IncomingHookListDto = { configured: boolean; publicBaseUrl: string | null; hooks: IncomingHookDto[] }
 
 /** Body tạo / sửa hook. */
 export type IncomingHookConfigInput = {
