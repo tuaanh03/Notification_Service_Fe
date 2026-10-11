@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { SecretText } from '@/components/secret-text'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -157,7 +158,7 @@ export function WebhookSecretDialog({
           <div className="rounded-lg border border-[var(--supernova)]/30 p-4">
             <div className="flex items-center justify-between gap-3">
               <code className="break-all font-mono text-xs text-[var(--supernova)]">
-                {visible ? secret : `whsec_${'•'.repeat(32)}`}
+                <SecretText value={secret} visible={visible} />
               </code>
               <div className="flex shrink-0 gap-1">
                 <Button variant="ghost" size="sm" onClick={() => setVisible(!visible)}>

@@ -2,19 +2,35 @@
 import { Copy } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { Fragment } from 'react'
 import { Button } from '@/components/ui/button'
 import { Panel } from './panel'
+import { SecretText } from './secret-text'
+
+/** Thay mọi chỗ xuất hiện `secret.value` trong một dòng bằng <SecretText>; chép vẫn chép chuỗi thật. */
+function withSecret(text: string, secret: { value: string; visible: boolean } | undefined) {
+  if (!secret || !secret.value) return text
+  return text.split(secret.value).map((part, i) => (
+    <Fragment key={i}>
+      {i > 0 && <SecretText value={secret.value} visible={secret.visible} />}
+      {part}
+    </Fragment>
+  ))
+}
 
 export function CodeBlock({
   language,
   value,
   copyable = true,
   lineNumbers = false,
+  secret,
 }: {
   language: string
   value: string
   copyable?: boolean
   lineNumbers?: boolean
+  /** Khoá nằm trong `value` cần che bằng lớp dạ quang khi `visible = false`. */
+  secret?: { value: string; visible: boolean }
 }) {
   const tc = useTranslations('common')
   return (
@@ -42,10 +58,10 @@ export function CodeBlock({
                 <span className="mr-4 select-none tabular-nums text-[var(--text-muted)]">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                {line}
+                {withSecret(line, secret)}
               </div>
             ))
-          : value}
+          : withSecret(value, secret)}
       </pre>
     </Panel>
   )

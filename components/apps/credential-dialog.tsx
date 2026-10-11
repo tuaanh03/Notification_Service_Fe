@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { CodeBlock } from '@/components/code-block'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { SecretText } from '@/components/secret-text'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -79,7 +80,7 @@ export function CredentialDialog({
               </p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <code className="break-all font-mono text-xs text-[var(--supernova)]">
-                  {visible ? apiKey : `ews_${'•'.repeat(32)}`}
+                  <SecretText value={apiKey} visible={visible} />
                 </code>
                 <div className="flex shrink-0 gap-1">
                   <Button variant="ghost" size="sm" onClick={() => setVisible(!visible)}>
@@ -99,10 +100,10 @@ export function CredentialDialog({
               <TabsTrigger value="token">{t('tabCall')}</TabsTrigger>
             </TabsList>
             <TabsContent value="config" className="mt-3">
-              <CodeBlock language="env" value={configSnippetFor(app, apiKey)} />
+              <CodeBlock language="env" value={configSnippetFor(app, apiKey)} secret={{ value: apiKey, visible }} />
             </TabsContent>
             <TabsContent value="token" className="mt-3">
-              <CodeBlock language="http" value={sendSnippetFor(apiKey)} />
+              <CodeBlock language="http" value={sendSnippetFor(apiKey)} secret={{ value: apiKey, visible }} />
             </TabsContent>
           </Tabs>
           <div className="flex items-center gap-2">

@@ -604,6 +604,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<RepeatableInput values onChange validate>` | `components/repeatable-input.tsx` | ✓ | ô nhập lặp (origin / IP) → chip mono có nút bỏ; dùng ở wizard step 1 |
 | `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `user-detail` (bản v0, không còn route nào dùng) và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
+| `<SecretText value visible>` | `components/secret-text.tsx` | ✓ | khoá bí mật phủ lớp dạ quang, hiện thì tan dần; dùng trong `<CredentialDialog>`, `<WebhookSecretDialog>`, `<CodeBlock secret>` (mục 4) |
 | `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
 | `<PreviewBanner>` | `components/preview-banner.tsx` | ✓ | dải băng "Bản xem trước — số liệu minh hoạ" cho route ngoài `WIRED_ROUTES`; bọc shadcn `<Alert>`, không prop, không tắt được (mục 2.4) |
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
@@ -656,6 +657,10 @@ chuyện thẩm mỹ. Nguồn: `../../use_case_template/use_case_*.md`, `../../u
     dạng `ews_<32 hex>_<43 ký tự>`; `/v1/*` xác thực THẲNG bằng `Authorization: Bearer <khoá>`,
     **không** có bước đổi token. Cấp khoá mới **không** thu hồi khoá cũ — tối đa 2 khoá active
     đúng để xoay vòng không mất kết nối.
+*   **Khoá bí mật đang hiện luôn qua `<SecretText>`** (`components/secret-text.tsx` — lớp dạ quang
+    `--highlighter`). Một nút Hiện / Ẩn điều khiển MỌI chỗ khoá xuất hiện trong hộp: dòng secret và
+    khối code (`<CodeBlock secret={{ value, visible }}>` chỉ che đúng đoạn khoá). Đang ẩn thì DOM
+    chỉ có ký tự giả; nút Sao chép vẫn chép chuỗi thật. Đừng in khoá thẳng vào snippet / `<pre>`.
 *   **Ô tick trước khi duyệt app CŨ**: "đội này đã có màn Cài đặt nhận thông báo". Backend không
     lưu, không vào audit — nó là **gờ giảm tốc, không phải hàng rào**. App mới không qua duyệt nên
     trách nhiệm dựng màn đó nằm ở đội app (tài liệu tích hợp, Bước 4).
