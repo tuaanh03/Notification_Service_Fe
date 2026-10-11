@@ -7,7 +7,7 @@
  *
  * Đây là NƠI DUY NHẤT giữ danh sách này. Đấu xong một màn thì thêm một dòng, không sửa chỗ khác.
  */
-export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/templates', '/settings/credentials', '/settings/origins', '/settings/webhooks'] as const
+export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/topics', '/templates', '/settings/credentials', '/settings/origins', '/settings/webhooks', '/admin/settings'] as const
 
 /**
  * Đã đấu nhưng CHỈ chính nó — route con vẫn là bản xem trước.

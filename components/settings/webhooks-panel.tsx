@@ -73,7 +73,7 @@ type Dialog =
  *
  * Secret chỉ hiện một lần trong `<WebhookSecretDialog>` rồi mất — giống khoá API (UC-001 BR-4).
  */
-export function WebhooksPanel() {
+export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
   const t = useTranslations('webhooks')
   const te = useTranslations('errors')
   const { app } = useApp()
@@ -226,7 +226,8 @@ export function WebhooksPanel() {
       },
     )
 
-  const header = <PageHeader title={t('title')} subtitle={t('subtitle', { app: app.slug })} />
+  // `embedded`: nằm trong tab "Gửi đi" của `<WebhooksPage>` — tiêu đề trang do trang lo.
+  const header = embedded ? null : <PageHeader title={t('title')} subtitle={t('subtitle', { app: app.slug })} />
 
   if (loadError) {
     return (

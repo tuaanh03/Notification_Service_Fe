@@ -40,6 +40,10 @@ export const statusColors: Record<string, string> = {
   disabled: '#64748B',
   delivered: '#34D399',
   pending: '#22D3EE',
+  // Incoming webhook (ADR-0030): kết cục một lần gọi vào (`published` dùng màu ở trên)
+  duplicate: '#A855F7',
+  skipped: '#64748B',
+  rejected: '#FB7185',
 }
 
 export const notificationStatuses = [

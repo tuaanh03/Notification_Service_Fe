@@ -356,3 +356,94 @@ export type AiComposeResultDto = {
   text: string
   issues: { code: string; message?: string; path?: string }[]
 }
+
+/**
+ * Incoming webhook (ADR-0030 của backend). Sao đúng `IncomingHookDto` / `IssuedHookUrlDto` / `IncomingCallDto`
+ * / `HookPreviewDto`. Token `ewshk_…` CHỈ có trong response tạo / đổi URL.
+ */
+export type IncomingVariableMapping =
+  | { variable: string; kind: 'path'; path: string; defaultValue: string | null }
+  | { variable: string; kind: 'fixed'; value: string }
+
+export type IncomingCondition = { path: string; values: string[] }
+
+/** Tối đa 10 hook mỗi app — backend chặn `INCOMING_HOOK_LIMIT_REACHED`; console chỉ khoá nút. */
+export const MAX_INCOMING_HOOKS = 10
+
+export type IncomingHookDto = {
+  id: string
+  name: string
+  topic: { id: string; key: string | null }
+  template: { id: string; name: string | null; status: string | null; version: number | null }
+  mappings: IncomingVariableMapping[]
+  dedupePath: string | null
+  condition: IncomingCondition | null
+  /** active | disabled */
+  status: string
+  /** `ewshk_abcd…wxyz` */
+  tokenHint: string
+  /** TEMPLATE_NOT_PUBLISHED · TEMPLATE_ARCHIVED · TEMPLATE_NOT_FOUND · TOPIC_NOT_ACTIVE · TOPIC_NOT_FOUND
+   *  · REQUIRED_VARIABLE_UNMAPPED · MAPPING_NOT_IN_TEMPLATE */
+  warnings: { code: string; variable?: string }[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type IncomingHookListDto = { publicBaseUrl: string | null; hooks: IncomingHookDto[] }
+
+/** Body tạo / sửa hook. */
+export type IncomingHookConfigInput = {
+  name: string
+  topicId: string
+  templateId: string
+  mappings: IncomingVariableMapping[]
+  dedupePath: string | null
+  condition: IncomingCondition | null
+}
+
+export type IssuedHookUrlDto = { hook: IncomingHookDto; token: string; path: string; url: string | null }
+
+export type IncomingCallDto = {
+  id: string
+  at: string
+  httpStatus: number
+  /** published | duplicate | skipped | rejected */
+  outcome: string
+  publicationId: string | null
+  recipientCount: number | null
+  errorCode: string | null
+}
+
+export type HookPreviewDto = {
+  conditionMet: boolean
+  dedupe: { source: 'header' | 'path' | 'body_hash'; value: string | null; windowMinutes: number }
+  variables: {
+    variable: string
+    required: boolean
+    source: 'path' | 'fixed' | 'same_name' | 'none'
+    path: string | null
+    value: string | number | boolean | null
+    usedDefault: boolean
+    missing: boolean
+  }[]
+  unusedMappings: string[]
+  issues: { code: string; message?: string; path?: string }[]
+  template: { name: string | null; status: string | null; version: number | null }
+  rendered: { subject: string; html: string; text: string } | null
+  renderIssues: { code: string; message?: string; path?: string }[]
+}
+
+/** Một dòng Cài đặt hệ thống (ADR-0030). `value` = giá trị hiệu lực (đã gộp mặc định). */
+export type SystemSettingDto = {
+  key: string
+  /** int | url */
+  kind: string
+  value: number | string | null
+  default: number | string | null
+  min: number | null
+  max: number | null
+  /** false = đang dùng mặc định */
+  customized: boolean
+  updatedBy: string | null
+  updatedAt: string | null
+}

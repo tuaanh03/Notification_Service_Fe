@@ -1,5 +1,5 @@
-import { WebhooksPanel } from '@/components/settings/webhooks-panel'
+import { WebhooksPage } from '@/components/settings/webhooks-page'
 
 export default function Page() {
-  return <WebhooksPanel />
+  return <WebhooksPage />
 }

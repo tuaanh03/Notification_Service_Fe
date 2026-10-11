@@ -109,20 +109,26 @@ export function WebhookFormDialog({
 }
 
 /**
- * Secret `whsec_…` hiện ĐÚNG MỘT LẦN (tạo URL / đổi secret) — backend không lưu, đóng hộp là mất.
- * Cùng cách với `<CredentialDialog>` của khoá API: phải tick "đã lưu" mới đóng được, chưa sao chép mà
- * đóng thì hỏi lại.
+ * Giá trị bí mật hiện ĐÚNG MỘT LẦN — backend không lưu, đóng hộp là mất. Cùng cách với
+ * `<CredentialDialog>` của khoá API: phải tick "đã lưu" mới đóng được, chưa sao chép mà đóng thì hỏi lại.
+ *
+ *   variant `secret`  — secret `whsec_…` của URL outgoing webhook (tạo URL / đổi secret)
+ *   variant `hookUrl` — URL incoming webhook `…/hooks/ewshk_…` (tạo hook / đổi URL, ADR-0030)
  */
 export function WebhookSecretDialog({
   url,
   secret,
   rotated,
+  variant = 'secret',
   onClose,
 }: {
+  /** Dòng phụ dưới tiêu đề: URL outgoing, hoặc tên hook. */
   url: string
+  /** Giá trị bí mật cần sao chép. */
   secret: string
-  /** true = vừa đổi secret (secret cũ đã hết hiệu lực) — câu mở đầu khác. */
+  /** true = vừa đổi (giá trị cũ đã hết hiệu lực) — câu mở đầu khác. */
   rotated: boolean
+  variant?: 'secret' | 'hookUrl'
   onClose: () => void
 }) {
   const t = useTranslations('webhooks')
@@ -150,31 +156,41 @@ export function WebhookSecretDialog({
             <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full border border-[var(--starlight)] text-[var(--starlight)]">
               <Webhook className="size-5" />
             </div>
-            <DialogTitle className="font-heading text-xl">{rotated ? t('secretRotatedTitle') : t('secretTitle')}</DialogTitle>
-            <DialogDescription>{t('secretBody')}</DialogDescription>
+            <DialogTitle className="font-heading text-xl">
+              {variant === 'hookUrl'
+                ? rotated
+                  ? t('hookUrlRotatedTitle')
+                  : t('hookUrlTitle')
+                : rotated
+                  ? t('secretRotatedTitle')
+                  : t('secretTitle')}
+            </DialogTitle>
+            <DialogDescription>{variant === 'hookUrl' ? t('hookUrlBody') : t('secretBody')}</DialogDescription>
           </DialogHeader>
           <p className="break-all text-center font-mono text-xs text-[var(--text-secondary)]">{url}</p>
           <div className="rounded-lg border border-[var(--supernova)]/30 p-4">
             <div className="flex items-center justify-between gap-3">
               <code className="break-all font-mono text-xs text-[var(--supernova)]">
-                {visible ? secret : `whsec_${'•'.repeat(32)}`}
+                {visible ? secret : variant === 'hookUrl' ? `${secret.slice(0, secret.indexOf('ewshk_') + 6)}${'•'.repeat(32)}` : `whsec_${'•'.repeat(32)}`}
               </code>
               <div className="flex shrink-0 gap-1">
                 <Button variant="ghost" size="sm" onClick={() => setVisible(!visible)}>
                   {visible ? <EyeOff /> : <Eye />}
                   {visible ? t('hide') : t('show')}
                 </Button>
-                <Button variant="ghost" size="icon-sm" aria-label={t('copySecret')} onClick={copy}>
+                <Button variant="ghost" size="icon-sm" aria-label={variant === 'hookUrl' ? t('copyHookUrl') : t('copySecret')} onClick={copy}>
                   <Copy />
                 </Button>
               </div>
             </div>
           </div>
-          <p className="text-xs text-[var(--text-secondary)]">{t.rich('secretUsage', { mono: (c) => <span className="font-mono">{c}</span> })}</p>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {t.rich(variant === 'hookUrl' ? 'hookUrlUsage' : 'secretUsage', { mono: (c) => <span className="font-mono">{c}</span> })}
+          </p>
           <div className="flex items-center gap-2">
             <Checkbox id="webhook-secret-saved" checked={saved} onCheckedChange={(c) => setSaved(c === true)} />
             <Label htmlFor="webhook-secret-saved" className="text-xs">
-              {t('secretSaved')}
+              {variant === 'hookUrl' ? t('hookUrlSaved') : t('secretSaved')}
             </Label>
           </div>
           <Button variant="outline" disabled={!saved} onClick={requestClose} className="w-full">
@@ -185,8 +201,8 @@ export function WebhookSecretDialog({
       <ConfirmDialog
         open={confirmClose}
         tone="blocking"
-        title={t('secretConfirmTitle')}
-        description={t('secretConfirmBody')}
+        title={variant === 'hookUrl' ? t('hookUrlConfirmTitle') : t('secretConfirmTitle')}
+        description={variant === 'hookUrl' ? t('hookUrlConfirmBody') : t('secretConfirmBody')}
         confirmLabel={t('closeAnyway')}
         cancelLabel={t('back')}
         onCancel={() => setConfirmClose(false)}
