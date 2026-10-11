@@ -18,9 +18,9 @@ export function WebhooksPage() {
     <>
       <PageHeader title={t('title')} subtitle={t('pageSubtitle', { app: app.slug })} />
       <Tabs defaultValue="outgoing">
-        <TabsList className="mb-5 h-auto w-full flex-wrap sm:w-fit">
-          <TabsTrigger value="outgoing" className="px-3">{t('tabOutgoing')}</TabsTrigger>
-          <TabsTrigger value="incoming" className="px-3">{t('tabIncoming')}</TabsTrigger>
+        <TabsList className="mb-5 h-auto w-full flex-wrap gap-1 sm:w-fit">
+          <TabsTrigger value="outgoing" className="px-2.5">{t('tabOutgoing')}</TabsTrigger>
+          <TabsTrigger value="incoming" className="px-2.5">{t('tabIncoming')}</TabsTrigger>
         </TabsList>
         <TabsContent value="outgoing">
           <WebhooksPanel embedded />
