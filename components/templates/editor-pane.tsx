@@ -77,13 +77,13 @@ export function EditorPane({ ed, locked, onAi }: { ed: TemplateEditorState; lock
             </Button>
           </div>
         )}
-        {/* Khung trống: gợi ý nhờ AI. Lớp phủ không chặn bấm vào khung soạn — chỉ nút mới nhận chuột. */}
+        {/* Khung trống: gợi ý nhờ AI. Lớp phủ (kể cả thẻ gợi ý) không chặn bấm vào khung soạn — chỉ nút nhận chuột. */}
         {!ed.html.trim() && !locked && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
-            <div className="pointer-events-auto flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--orbit)] bg-[var(--void)]/80 p-6 shadow-xl backdrop-blur-md">
+            <div className="flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--orbit)] bg-[var(--void)]/80 p-6 shadow-xl backdrop-blur-md">
               <Sparkles className="size-6 text-[var(--pulsar)]" />
               <p className="text-xs text-[var(--text-secondary)]">{t('emptyHint')}</p>
-              <Button size="sm" onClick={onAi} className="border border-[var(--pulsar)]/50 bg-[var(--pulsar)]/20 text-[var(--pulsar)] hover:bg-[var(--pulsar)]/30">
+              <Button size="sm" onClick={onAi} className="pointer-events-auto border border-[var(--pulsar)]/50 bg-[var(--pulsar)]/20 text-[var(--pulsar)] hover:bg-[var(--pulsar)]/30">
                 <Sparkles className="mr-2 size-4" /> {t('ai')}
               </Button>
             </div>
