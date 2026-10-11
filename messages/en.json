@@ -607,8 +607,8 @@
     "modeLabel": "Drafting mode",
     "modeNew": "Write new",
     "modeRevise": "Revise current draft",
-    "onlyDeclared": "The AI may only use declared variables:",
-    "noVariables": "No variables declared — the AI will write fixed content. Declare variables in the variable table first if you need them.",
+    "onlyDeclared": "The AI uses declared variables and suggests new ones when needed:",
+    "noVariables": "No variables declared — the AI will suggest variables if the email needs them.",
     "sentToProvider": "Sent to the AI provider: this description and the names + descriptions of the variables. No sample values, no recipient data.",
     "sentToProviderRevise": "Sent to the AI provider: this description, the names + descriptions of the variables, and the current draft. No sample values, no recipient data.",
     "generating": "AI is drafting… {seconds}s (up to about 60s)",
@@ -618,7 +618,11 @@
     "compose": "Draft",
     "issues": "The suggestion has {count} issues — usable, but fix them before Publishing",
     "passes": "The suggestion passes the publish checks.",
-    "subject": "Subject: "
+    "subject": "Subject: ",
+    "suggested": "The AI suggests {count} new variables — tick the ones to add to the variable table",
+    "required": "required",
+    "optional": "optional",
+    "suggestedUnchecked": "Unticked variables still used in the content must be fixed before Publishing."
   },
   "templates": {
     "title": "Templates",

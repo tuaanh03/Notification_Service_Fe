@@ -11,7 +11,7 @@ import {
 } from '@/app/templates/actions'
 import type { Issue } from '@/lib/api/problem'
 import type { ActionResult } from '@/lib/api/result'
-import type { AiComposeResultDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
+import type { AiComposeResultDto, AiSuggestedVariableDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
 import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
 
 /** Lỗi của thao tác GHI gần nhất — kèm `issues` khi xuất bản bị 422. */
@@ -180,8 +180,17 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
         })),
         ...(mode === 'revise' ? { current: { subject, html, text } } : {}),
       }),
-    /** "Dùng bản này": điền đề xuất vào ô soạn — chưa lưu, người soạn tự Lưu nháp / Xuất bản. */
-    applyAi: (content: { subject: string; html: string; text: string }) => {
+    /**
+     * "Dùng bản này": điền đề xuất vào ô soạn + thêm các biến AI đề xuất mà người soạn ĐÃ TICK (bỏ qua
+     * biến đã có) — chưa lưu, người soạn tự Lưu nháp / Xuất bản.
+     */
+    applyAi: (content: { subject: string; html: string; text: string }, addVariables: readonly AiSuggestedVariableDto[] = []) => {
+      setVariables((vs) => [
+        ...vs,
+        ...addVariables
+          .filter((a) => !vs.some((v) => v.name === a.name))
+          .map((a) => ({ ...a, source: 'payload' as const })),
+      ])
       setSubject(content.subject)
       setHtml(content.html)
       setText(content.text)

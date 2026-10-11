@@ -349,11 +349,18 @@ export type TemplateSummaryDto = {
 /** Sao đúng `TemplateDetailDto`: tóm tắt + mọi version, mới nhất trước. */
 export type TemplateDetailDto = TemplateSummaryDto & { versions: TemplateVersionDto[] }
 
-/** Đề xuất của "Nhờ AI soạn" (`POST …/templates/:id/ai-compose`) — CHƯA lưu gì; `issues` = kiểm như lúc xuất bản. */
+/** Biến AI đề xuất thêm — `name` đã có tiền tố `payload.`; người soạn tick duyệt mới thêm vào bảng biến. */
+export type AiSuggestedVariableDto = { name: string; required: boolean; description?: string; sample?: string }
+
+/**
+ * Đề xuất của "Nhờ AI soạn" (`POST …/templates/:id/ai-compose`) — CHƯA lưu gì; `issues` = kiểm như lúc
+ * xuất bản, coi như MỌI biến đề xuất đã được thêm.
+ */
 export type AiComposeResultDto = {
   subject: string
   html: string
   text: string
+  suggestedVariables?: AiSuggestedVariableDto[]
   issues: { code: string; message?: string; path?: string }[]
 }
 

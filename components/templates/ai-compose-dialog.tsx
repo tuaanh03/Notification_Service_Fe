@@ -5,12 +5,13 @@ import { useTranslations } from 'next-intl'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
-import type { AiComposeResultDto } from '@/lib/api/types'
+import type { AiComposeResultDto, AiSuggestedVariableDto } from '@/lib/api/types'
 import { renderPreview } from '@/lib/template-syntax'
 import { useIssueText } from './issue-text'
 import { EmailPreviewFrame } from './preview-pane'
@@ -23,6 +24,7 @@ type Stage = { kind: 'input' } | { kind: 'loading' } | { kind: 'result'; result:
  * "Nhờ AI soạn" (ADR-0020 §7 của backend). AI chạy ở BACKEND; hộp thoại chỉ gửi mô tả + biến đã khai
  * (+ nội dung đang soạn khi Sửa) rồi hiện ĐỀ XUẤT: xem thử + lỗi kiểm tra. "Dùng bản này" mới điền vào
  * khung soạn — không lưu, không xuất bản; người soạn tự làm hai việc đó như với mọi nội dung.
+ * Biến AI đề xuất thêm hiện có ô tick (mặc định tick hết) — chỉ biến ĐÃ TICK được thêm vào bảng biến.
  */
 export function AiComposeDialog({ open, ed, onClose }: { open: boolean; ed: TemplateEditorState; onClose: () => void }) {
   const t = useTranslations('aiCompose')
@@ -33,6 +35,8 @@ export function AiComposeDialog({ open, ed, onClose }: { open: boolean; ed: Temp
   const [stage, setStage] = useState<Stage>({ kind: 'input' })
   const [error, setError] = useState<{ message: string; code: string } | null>(null)
   const [elapsed, setElapsed] = useState(0)
+  /** Tên các biến đề xuất đang được tick. */
+  const [picked, setPicked] = useState<string[]>([])
 
   useEffect(() => {
     if (stage.kind !== 'loading') return
@@ -46,6 +50,7 @@ export function AiComposeDialog({ open, ed, onClose }: { open: boolean; ed: Temp
     setStage({ kind: 'loading' })
     const result = await ed.aiCompose(instruction.trim(), mode)
     if (result.ok) {
+      setPicked((result.data.suggestedVariables ?? []).map((v) => v.name))
       setStage({ kind: 'result', result: result.data })
     } else {
       setError({ message: result.message, code: result.code })
@@ -71,7 +76,12 @@ export function AiComposeDialog({ open, ed, onClose }: { open: boolean; ed: Temp
         </DialogHeader>
 
         {stage.kind === 'result' ? (
-          <ResultView result={stage.result} ed={ed} />
+          <ResultView
+            result={stage.result}
+            ed={ed}
+            picked={picked}
+            onPick={(name, on) => setPicked((p) => (on ? [...p, name] : p.filter((n) => n !== name)))}
+          />
         ) : (
           <div className="space-y-4">
             {error && (
@@ -141,7 +151,7 @@ export function AiComposeDialog({ open, ed, onClose }: { open: boolean; ed: Temp
               </Button>
               <Button
                 onClick={() => {
-                  ed.applyAi(stage.result)
+                  ed.applyAi(stage.result, (stage.result.suggestedVariables ?? []).filter((v) => picked.includes(v.name)))
                   close()
                 }}
               >
@@ -159,10 +169,25 @@ export function AiComposeDialog({ open, ed, onClose }: { open: boolean; ed: Temp
   )
 }
 
-/** Đề xuất: lỗi kiểm tra (nếu có) trước, rồi tiêu đề + xem thử bằng giá trị mẫu của bảng biến. */
-function ResultView({ result, ed }: { result: AiComposeResultDto; ed: TemplateEditorState }) {
+/**
+ * Đề xuất: lỗi kiểm tra (nếu có), biến đề xuất (có ô tick), rồi tiêu đề + xem thử bằng giá trị mẫu của
+ * bảng biến cộng giá trị mẫu AI đưa cho biến đề xuất.
+ */
+function ResultView({
+  result,
+  ed,
+  picked,
+  onPick,
+}: {
+  result: AiComposeResultDto
+  ed: TemplateEditorState
+  picked: string[]
+  onPick: (name: string, on: boolean) => void
+}) {
   const t = useTranslations('aiCompose')
   const issueText = useIssueText()
+  const suggested = result.suggestedVariables ?? []
+  const previewVars = [...ed.variables, ...suggested.map((v) => ({ ...v, source: 'payload' as const }))]
   return (
     <div className="min-w-0 space-y-3" data-testid="ai-result">
       {result.issues.length > 0 ? (
@@ -183,13 +208,56 @@ function ResultView({ result, ed }: { result: AiComposeResultDto; ed: TemplateEd
       ) : (
         <p className="text-xs text-[var(--aurora)]">{t('passes')}</p>
       )}
+      {suggested.length > 0 && <SuggestedVariables variables={suggested} picked={picked} onPick={onPick} />}
       <div className="rounded-xl border border-[var(--orbit)]">
         <div className="border-b border-[var(--orbit)] px-4 py-2 text-xs">
           <span className="text-[var(--text-muted)]">{t('subject')}</span>
-          <span className="font-medium">{renderPreview(result.subject, ed.variables, { escape: false })}</span>
+          <span className="font-medium">{renderPreview(result.subject, previewVars, { escape: false })}</span>
         </div>
-        <EmailPreviewFrame html={renderPreview(result.html, ed.variables, { escape: true })} className="h-[45vh] w-full rounded-b-xl border-0 bg-white" />
+        <EmailPreviewFrame html={renderPreview(result.html, previewVars, { escape: true })} className="h-[45vh] w-full rounded-b-xl border-0 bg-white" />
       </div>
+    </div>
+  )
+}
+
+function SuggestedVariables({
+  variables,
+  picked,
+  onPick,
+}: {
+  variables: AiSuggestedVariableDto[]
+  picked: string[]
+  onPick: (name: string, on: boolean) => void
+}) {
+  const t = useTranslations('aiCompose')
+  return (
+    <div className="space-y-2 rounded-xl border border-[var(--pulsar)]/30 p-3" data-testid="ai-suggested-variables">
+      <p className="text-xs font-semibold">{t('suggested', { count: variables.length })}</p>
+      <ul className="space-y-1.5">
+        {variables.map((v) => (
+          <li key={v.name}>
+            <label htmlFor={`ai-var-${v.name}`} className="flex items-start gap-2 text-xs">
+              <Checkbox
+                id={`ai-var-${v.name}`}
+                checked={picked.includes(v.name)}
+                onCheckedChange={(c) => onPick(v.name, c === true)}
+                className="mt-0.5"
+              />
+              <span className="min-w-0">
+                <span className="font-mono">{`{{ ${v.name} }}`}</span>
+                <Badge variant="outline" className="ml-2 text-[10px]">{v.required ? t('required') : t('optional')}</Badge>
+                {(v.description || v.sample) && (
+                  <span className="block text-[var(--text-secondary)]">
+                    {v.description}
+                    {v.sample && <span className="font-mono text-[var(--text-muted)]">{v.description ? ' · ' : ''}{v.sample}</span>}
+                  </span>
+                )}
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      {picked.length < variables.length && <p className="text-[11px] text-[var(--solar)]">{t('suggestedUnchecked')}</p>}
     </div>
   )
 }

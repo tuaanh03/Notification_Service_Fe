@@ -518,6 +518,9 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     AI, không có route `/api/ai/*`. `<AiComposeDialog>` gửi mô tả + biến đã khai (+ nội dung đang soạn khi
     "Sửa"), KHÔNG gửi giá trị mẫu; hiện đề xuất + `issues`; "Dùng bản này" chỉ điền vào ô soạn, không lưu.
     Lời gọi này chờ 70 giây (`timeoutMs` của `adminFetch`), mọi lời gọi khác vẫn 10 giây.
+    AI thiếu biến thì trả `suggestedVariables`: hộp hiện có ô tick (mặc định tick hết), "Dùng bản này"
+    chỉ thêm biến ĐÃ TICK vào bảng biến (`applyAi(content, addVariables)`). Không bao giờ thêm biến ngầm —
+    biến là khuôn body mà app và incoming webhook phải gửi.
 *   Lịch sử gửi có cột **Template** ("tên · vN", "—" = nội dung viết thẳng) — `templateLabelOf()` trong
     `notification-outcome.tsx`, dùng chung bảng và panel.
 *   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).

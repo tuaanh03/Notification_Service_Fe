@@ -607,8 +607,8 @@
     "modeLabel": "Cách soạn",
     "modeNew": "Soạn mới",
     "modeRevise": "Sửa bản đang soạn",
-    "onlyDeclared": "AI chỉ được dùng các biến đã khai:",
-    "noVariables": "Chưa khai biến nào — AI sẽ viết nội dung cố định. Muốn có biến thì khai ở bảng biến trước.",
+    "onlyDeclared": "AI dùng các biến đã khai, thiếu thì đề xuất thêm:",
+    "noVariables": "Chưa khai biến nào — AI sẽ đề xuất biến nếu thư cần.",
     "sentToProvider": "Gửi tới nhà cung cấp AI: mô tả này, tên + mô tả các biến. Không gửi giá trị mẫu, không gửi dữ liệu người nhận.",
     "sentToProviderRevise": "Gửi tới nhà cung cấp AI: mô tả này, tên + mô tả các biến, nội dung đang soạn. Không gửi giá trị mẫu, không gửi dữ liệu người nhận.",
     "generating": "AI đang soạn… {seconds}s (tối đa khoảng 60s)",
@@ -618,7 +618,11 @@
     "compose": "Soạn",
     "issues": "Đề xuất còn {count} lỗi — dùng được nhưng phải sửa trước khi Xuất bản",
     "passes": "Đề xuất qua được kiểm tra lúc xuất bản.",
-    "subject": "Tiêu đề: "
+    "subject": "Tiêu đề: ",
+    "suggested": "AI đề xuất thêm {count} biến — tick biến muốn thêm vào bảng biến",
+    "required": "bắt buộc",
+    "optional": "tuỳ chọn",
+    "suggestedUnchecked": "Biến bỏ tick mà nội dung vẫn dùng thì phải sửa trước khi Xuất bản."
   },
   "templates": {
     "title": "Templates",
