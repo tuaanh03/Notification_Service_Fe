@@ -100,8 +100,8 @@ export function PreviewBlock({
           {topic === 'hypervisor.warning_resources' && content.mode === 'template' ? (
             <Tabs defaultValue="action">
               <TabsList>
-                <TabsTrigger value="action">{t('actionVersion')}</TabsTrigger>
-                <TabsTrigger value="readonly">{t('readonlyVersion')}</TabsTrigger>
+                <TabsTrigger value="action" className="px-3">{t('actionVersion')}</TabsTrigger>
+                <TabsTrigger value="readonly" className="px-3">{t('readonlyVersion')}</TabsTrigger>
               </TabsList>
               <p className="mt-2 text-xs text-[var(--text-muted)]">{t.rich('audienceSplit', { mono })}</p>
               <TabsContent value="action" className="mt-3">

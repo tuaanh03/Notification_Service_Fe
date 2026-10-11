@@ -97,8 +97,8 @@ export function CredentialDialog({
           </div>
           <Tabs defaultValue="config">
             <TabsList>
-              <TabsTrigger value="config">{t('tabConfig')}</TabsTrigger>
-              <TabsTrigger value="token">{t('tabCall')}</TabsTrigger>
+              <TabsTrigger value="config" className="px-3">{t('tabConfig')}</TabsTrigger>
+              <TabsTrigger value="token" className="px-3">{t('tabCall')}</TabsTrigger>
             </TabsList>
             <TabsContent value="config" className="mt-3">
               <CodeBlock language="env" value={configSnippetFor(app, apiKey)} secret={{ value: apiKey, visible }} />

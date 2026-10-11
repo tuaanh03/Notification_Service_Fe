@@ -58,7 +58,7 @@ export function ContentPanel({ notification }: { notification: Notification }) {
         <Tabs defaultValue={variants[0].key}>
           <TabsList className="h-auto w-full flex-wrap justify-start">
             {variants.map((t, i) => (
-              <TabsTrigger key={t.key} value={t.key} className="font-mono">
+              <TabsTrigger key={t.key} value={t.key} className="px-3 font-mono">
                 {templateLabel(t)}
                 <span className="ml-1 tabular-nums text-[var(--text-muted)]">· {i === 0 ? c.sent - Math.floor(c.sent / 3) : Math.floor(c.sent / 3)}</span>
               </TabsTrigger>
