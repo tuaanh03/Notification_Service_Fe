@@ -18,6 +18,20 @@ export type MemberCandidateDto = { adminId: string; email: string; displayName: 
 /** Kết quả một lượt đồng bộ danh bạ M365 — chỉ con số (ADR-0027). */
 export type DirectorySyncDto = { total: number; created: number; linked: number; renamed: number; unchanged: number; conflicts: number }
 
+/** Một dòng màn Danh bạ — sao đúng `DirectoryPersonDto` của backend (ADR-0027, bổ sung). */
+export type DirectoryPersonDto = {
+  adminId: string
+  email: string
+  displayName: string | null
+  isSuperAdmin: boolean
+  /** Đã gắn tài khoản Microsoft 365. */
+  m365Linked: boolean
+  /** Có hiện trong hộp "Thêm thành viên" của các tổ chức không. */
+  memberListed: boolean
+}
+
+export type DirectoryPeoplePageDto = { items: DirectoryPersonDto[]; total: number; limit: number; offset: number }
+
 /** Vai app còn hiệu lực của một người trên một app của org (ADR-0026). */
 export type OrgAppRoleDto = { adminId: string; appId: string; role: AppRole }
 

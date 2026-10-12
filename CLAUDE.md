@@ -49,6 +49,8 @@ webservice/ews-astrolink/
 │                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
 │                             # apps/ có actions.ts (approveAndIssueKeyAction — chỉ còn cho app CŨ chờ duyệt, mục 2.5)
 │                             # settings/ = Cài đặt hệ thống (ADR-0030 của backend, mục 2.14) — ĐÃ đấu API
+│                             # directory/ = Danh bạ (ADR-0027 của backend) — ĐÃ đấu API: nút Đồng bộ M365 (CHỈ ở đây,
+│                             # không ở màn Thành viên) + tích ai hiện trong hộp "Thêm thành viên" của các org
 │                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
@@ -58,7 +60,8 @@ webservice/ews-astrolink/
 │   ├── apps/*                # wizard step-*, orbit-stepper, credential-dialog (UC-001)
 │   │                         # grant-fields (quyền cấp lúc duyệt, dùng chung), approve-app-dialog,
 │   │                         # app-transition-dialog (Tạm ngưng / Mở lại / Thu hồi — mục 2.6)
-│   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table
+│   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table,
+│                             # system-settings-panel, directory-page (màn Danh bạ)
 │   ├── notifications/*       # notifications-table (ĐÃ đấu API) + notification-outcome (panel chi tiết);
 │   │                         # notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel) còn mock cho /notifications/[id];
 │   │                         # scheduled-cards, error-codes-table, origin-badge
@@ -437,8 +440,13 @@ hiện dữ liệu của app khác mà không báo gì.
     vai app (`lib/api/organizations.ts`), ghi qua Server Action (`app/orgs/actions.ts`) rồi
     `router.refresh()`. Mọi thành viên xem; Owner / Org Admin thêm, đổi vai, cấp vai app, gỡ. Hộp Thêm
     là DANH SÁCH CHỌN (ADR-0027 của backend): mỗi lần mở gọi `listCandidatesAction` (người cùng công ty
-    chưa thuộc org, có tên từ M365), lọc tại chỗ theo tên / email. Danh sách đến từ nút **Đồng bộ M365**
-    (chỉ Super Admin thấy, `syncDirectoryAction`, chờ tối đa 2 phút) hoặc lần đăng nhập M365 đầu tiên.
+    Super Admin đã cho hiện, chưa thuộc org, có tên từ M365), lọc tại chỗ theo tên / email. Danh sách đến
+    từ nút **Đồng bộ M365** ở màn **Danh bạ** của khu Quản trị (`/admin/directory`, `syncDirectoryAction`
+    trong `app/admin/directory/actions.ts`, chờ tối đa 2 phút) hoặc lần đăng nhập M365 đầu tiên. Người mới
+    từ đồng bộ mặc định ẨN — Super Admin tích ở màn Danh bạ; thêm người chưa tích -> 422 `ADMIN_NOT_LISTED`.
+*   **Màn Danh bạ** (`/admin/directory`, `components/admin/directory-page.tsx`): bảng mọi tài khoản phân
+    trang phía máy chủ (50 / trang, tìm theo tên / email, lọc Đang hiện / Đang ẩn), ô tích ghi ngay
+    (`setMemberListedAction`, hiện trước rồi trả lại nếu backend từ chối), "Hiện / Ẩn cả trang" gửi một lô.
     Bảng hiện tên (`displayName`) kèm email; chưa có tên thì chỉ email. Lựa chọn vai Owner chỉ hiện với
     Owner / Super Admin — backend vẫn chặn (`OWNER_REQUIRED`). Owner / Org Admin hiện "Mọi app" và không có hộp Quyền app (ngầm là App Admin).
     Vào từ sidebar khung Tổ chức (Apps · Thành viên) hoặc mục "Thành viên" của ô chuyển app/org.

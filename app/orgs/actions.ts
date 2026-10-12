@@ -7,10 +7,9 @@ import {
   removeMember,
   revokeAppRole,
   setMember,
-  syncDirectory,
 } from '@/lib/api/organizations'
 import { toResult, type ActionResult } from '@/lib/api/result'
-import type { AppRole, DirectorySyncDto, MemberCandidateDto, OrganizationDto, OrgMemberDto, OrgRole } from '@/lib/api/types'
+import type { AppRole, MemberCandidateDto, OrganizationDto, OrgMemberDto, OrgRole } from '@/lib/api/types'
 
 /**
  * Lớp BFF của trang Tổ chức. Server Action: token phiên chỉ ở phía server. Lỗi trả về
@@ -25,11 +24,6 @@ export async function createOrganizationAction(name: string): Promise<ActionResu
 /** Người có thể thêm vào org — hộp "Thêm thành viên" đọc khi mở (ADR-0027 của backend). */
 export async function listCandidatesAction(orgId: string): Promise<ActionResult<MemberCandidateDto[]>> {
   return toResult(() => listMemberCandidates(orgId))
-}
-
-/** Đồng bộ danh bạ M365 thành tài khoản EWS — chỉ Super Admin (ADR-0027 của backend). */
-export async function syncDirectoryAction(): Promise<ActionResult<DirectorySyncDto>> {
-  return toResult(() => syncDirectory())
 }
 
 /** Thêm người (đã có tài khoản) vào org, hoặc đổi vai của họ (ADR-0026 của backend). */

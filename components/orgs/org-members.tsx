@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { KeyRound, MoreHorizontal, Pencil, Plus, RefreshCw, TriangleAlert, UserMinus, Users } from 'lucide-react'
+import { KeyRound, MoreHorizontal, Pencil, Plus, TriangleAlert, UserMinus, Users } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { consoleOrgs } from '@/lib/access'
@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { removeMemberAction, setAppRolesAction, setMemberAction, syncDirectoryAction } from '@/app/orgs/actions'
+import { removeMemberAction, setAppRolesAction, setMemberAction } from '@/app/orgs/actions'
 import { AddMemberDialog, AppRolesDialog, ChangeRoleDialog, RemoveMemberDialog } from './member-dialogs'
 
 type Row = OrgMemberDto & { access: string; apps: number }
@@ -59,7 +59,6 @@ export function OrgMembers({
   const [open, setOpen] = useState<Open>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const [syncing, startSync] = useTransition()
 
   const org = consoleOrgs(me).find((o) => o.id === orgId) ?? null
   if (!org) return <EmptyState icon={Users} title={t('notFoundTitle')} description={t('notFoundBody')} />
@@ -81,16 +80,6 @@ export function OrgMembers({
       if (!res.ok) return setActionError(res.message)
       setOpen(null)
       toast.success(done)
-      router.refresh()
-    })
-
-  /** Đồng bộ danh bạ M365 (ADR-0027 của backend) — việc cấp hệ thống, chỉ Super Admin thấy nút. */
-  const sync = () =>
-    startSync(async () => {
-      const res = await syncDirectoryAction()
-      if (!res.ok) return void toast.error(res.message)
-      toast.success(t('synced', res.data))
-      if (res.data.conflicts > 0) toast.warning(t('syncConflicts', { count: res.data.conflicts }))
       router.refresh()
     })
 
@@ -165,18 +154,10 @@ export function OrgMembers({
         subtitle={canManage ? t('subtitleManage') : t('subtitleRead')}
         actions={
           canManage ? (
-            <div className="flex items-center gap-2">
-              {isSuperAdmin && (
-                <Button variant="outline" onClick={sync} disabled={syncing}>
-                  <RefreshCw className={syncing ? 'animate-spin' : undefined} />
-                  {syncing ? t('syncing') : t('sync')}
-                </Button>
-              )}
-              <Button onClick={() => setOpen({ kind: 'add' })}>
-                <Plus />
-                {t('add')}
-              </Button>
-            </div>
+            <Button onClick={() => setOpen({ kind: 'add' })}>
+              <Plus />
+              {t('add')}
+            </Button>
           ) : undefined
         }
       />
