@@ -16,7 +16,7 @@ export function consoleOrgs(me: AdminProfileDto): AdminProfileDto['orgs'] {
   return me.isSuperAdmin ? me.orgs : me.orgs.filter((o) => o.role !== null)
 }
 
-/** Cấu hình được app: topic, template, khoá API, IP / Origin, gửi duyệt. */
+/** Cấu hình được app: topic, template, khoá API, gửi duyệt. */
 export function canManageApp(me: AdminProfileDto, app: { app_id: string; org_id?: string | undefined }): boolean {
   if (me.isSuperAdmin) return true
   const orgRole = orgRoleOf(me, app.org_id)

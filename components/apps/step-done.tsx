@@ -24,7 +24,7 @@ export function StepDone({
   onCloseSecret,
 }: {
   app: App
-  created: { rulesAdded: number; topicsCreated: number; stoppedAt: ActionStop | null }
+  created: { topicsCreated: number; stoppedAt: ActionStop | null }
   secret: IssuedAppSecretDto | null
   onCloseSecret: () => void
 }) {
@@ -49,7 +49,7 @@ export function StepDone({
         <h2 className="mt-4 text-2xl font-semibold">{app.name}</h2>
         <p className="mt-2 font-mono text-xs text-[var(--text-muted)]">{app.app_id}</p>
         <p className="mx-auto mt-3 max-w-md text-xs text-[var(--text-secondary)]">
-          {t('createdSummary', { topics: created.topicsCreated, rules: created.rulesAdded })}
+          {t('createdSummary', { topics: created.topicsCreated })}
         </p>
       </div>
 

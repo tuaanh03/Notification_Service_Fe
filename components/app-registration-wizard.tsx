@@ -64,10 +64,6 @@ export function AppRegistrationWizard() {
           namespace: profile.namespace,
           origin: profile.origin,
         },
-        rules: [
-          ...profile.origins.map((value) => ({ kind: 'origin', value })),
-          ...profile.ipAllowlist.map((value) => ({ kind: 'ip', value })),
-        ],
         topics: topics.map((t) => ({ ...t, name: t.name.trim() })),
       })
       if (!result.ok) return setError(result.message)

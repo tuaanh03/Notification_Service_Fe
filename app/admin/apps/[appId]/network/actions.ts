@@ -7,8 +7,8 @@ import type { NetworkRuleDto } from '@/lib/api/types'
 import type { AuditEntry } from '@/lib/mock-data'
 
 /**
- * BFF của màn IP & Origin — allowlist nguồn gọi `/v1/*` của app đang xem. Server Action như
- * `/settings/credentials` (CLAUDE.md mục 2.2): token phiên không rời phía server.
+ * BFF của màn Giới hạn IP (Quản trị EWS, chỉ Super Admin) — allowlist IP gọi `/v1/*` và `/hooks/*` của
+ * một app. Server Action như `/settings/credentials` (CLAUDE.md mục 2.2): token phiên không rời phía server.
  */
 
 export type NetworkRulesView = { rules: NetworkRuleDto[]; audit: AuditEntry[] }

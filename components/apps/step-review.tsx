@@ -51,8 +51,6 @@ export function StepReview({
             <Fact label="slug" value={profile.slug} />
             <Fact label="namespace" value={profile.namespace} />
             <Fact label="origin" value={profile.origin} />
-            <Fact label="allowed_origins" value={profile.origins.join(', ')} />
-            <Fact label="ip_allowlist" value={profile.ipAllowlist.join(', ')} />
           </dl>
         </Panel>
         <Panel className="p-4">

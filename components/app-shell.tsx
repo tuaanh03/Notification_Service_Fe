@@ -87,7 +87,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
     { href: '/settings/profile', name: 'profile', group: 'appSettings' },
     { href: '/settings/credentials', name: 'credentials', group: 'appSettings' },
     { href: '/settings/quota', name: 'quota', group: 'appSettings' },
-    { href: '/settings/origins', name: 'origins', group: 'appSettings' },
     { href: '/settings/webhooks', name: 'webhooks', group: 'appSettings' },
     { href: '/settings/sync', name: 'sync', group: 'appSettings' },
   ] as const
@@ -264,11 +263,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/quota" />} isActive={path === '/settings/quota'}>
                             <span>{tn('quota')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/settings/origins" />} isActive={path === '/settings/origins'}>
-                            <span>{tn('origins')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>

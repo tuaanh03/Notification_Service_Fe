@@ -1,12 +1,12 @@
 'use server'
 
-import { addNetworkRule, createApp, issueSecret, toApp, type CreateAppInput } from '@/lib/api/apps'
+import { createApp, issueSecret, toApp, type CreateAppInput } from '@/lib/api/apps'
 import { createTopic, type CreateTopicInput } from '@/lib/api/topics'
 import { toResult, type ActionResult, type ActionStop } from '@/lib/api/result'
 import { getTranslations } from 'next-intl/server'
 import { messageOf } from '@/lib/api/error-message'
 import { ApiError } from '@/lib/api/problem'
-import type { IssuedAppSecretDto, NetworkRuleDto } from '@/lib/api/types'
+import type { IssuedAppSecretDto } from '@/lib/api/types'
 import type { App } from '@/lib/mock-data'
 
 /**
@@ -25,7 +25,6 @@ import type { App } from '@/lib/mock-data'
 export type RegisterResult = {
   /** View model `App` (qua `toApp`) — cùng model mà app switcher và `<CredentialDialog>` đang đọc. */
   app: App
-  rulesAdded: number
   topicsCreated: number
   /** Khoá API đầu tiên — plaintext CHỈ có ở đây, hiện đúng một lần. `null` = chưa cấp được. */
   secret: IssuedAppSecretDto | null
@@ -35,12 +34,11 @@ export type RegisterResult = {
 
 export type RegisterAppInput = {
   profile: CreateAppInput
-  rules: readonly NetworkRuleDto[]
   topics: readonly CreateTopicInput[]
 }
 
 /**
- * Tạo app -> allowlist -> topic -> cấp khoá API đầu tiên.
+ * Tạo app -> topic -> cấp khoá API đầu tiên.
  *
  * Quy ước quan trọng: CHỈ lỗi ở lời gọi đầu (tạo app) mới trả `ok: false` — lúc đó chưa có gì
  * trong hệ thống. Sau khi app đã tồn tại, mọi lỗi đều trả `ok: true` kèm `stoppedAt`, vì nói
@@ -53,7 +51,6 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
   if (!created.ok) return created
   const app = toApp(created.data)
 
-  let rulesAdded = 0
   let topicsCreated = 0
   const stop = async (step: string, run: () => Promise<unknown>): Promise<ActionStop | null> => {
     try {
@@ -65,14 +62,9 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
     }
   }
 
-  for (const rule of input.rules) {
-    const failed = await stop(t('stopRule', { value: rule.value }), () => addNetworkRule(app.app_id, rule))
-    if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, secret: null, stoppedAt: failed } }
-    rulesAdded += 1
-  }
   for (const topic of input.topics) {
     const failed = await stop(t('stopTopic', { key: topic.key }), () => createTopic(app.app_id, topic))
-    if (failed) return { ok: true, data: { app, rulesAdded, topicsCreated, secret: null, stoppedAt: failed } }
+    if (failed) return { ok: true, data: { app, topicsCreated, secret: null, stoppedAt: failed } }
     topicsCreated += 1
   }
 
@@ -80,5 +72,5 @@ export async function registerAppAction(input: RegisterAppInput): Promise<Action
   const failed = await stop(t('stopIssueKey'), async () => {
     secret = await issueSecret(app.app_id)
   })
-  return { ok: true, data: { app, rulesAdded, topicsCreated, secret, stoppedAt: failed } }
+  return { ok: true, data: { app, topicsCreated, secret, stoppedAt: failed } }
 }

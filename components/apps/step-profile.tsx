@@ -6,12 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { RepeatableInput } from '@/components/repeatable-input'
-import { useNetworkValidators } from './use-network-validators'
 import { APP_SLUG, APP_SLUG_TEXT, type ProfileDraft } from './wizard-types'
 
 /**
- * Bước 1 — hồ sơ app: các field của `POST /admin/apps` + allowlist đi kèm. `orgs` = org người này được
+ * Bước 1 — hồ sơ app: các field của `POST /admin/apps`. `orgs` = org người này được
  * tạo app (ADR-0022); một org thì chỉ hiện tên, nhiều org thì bắt chọn.
  */
 export function StepProfile({
@@ -25,10 +23,8 @@ export function StepProfile({
 }) {
   const t = useTranslations('wizard')
   const mono = (chunks: React.ReactNode) => <span className="font-mono">{chunks}</span>
-  const { validateIp, validateOrigin } = useNetworkValidators()
   const slugInvalid = draft.slug.length > 0 && !APP_SLUG.test(draft.slug)
   const nsInvalid = draft.namespace.length > 0 && !APP_SLUG.test(draft.namespace)
-  const external = draft.origin === 'external'
 
   return (
     <div className="space-y-5">
@@ -114,36 +110,6 @@ export function StepProfile({
           <ToggleGroupItem value="external" className="font-mono">external</ToggleGroupItem>
         </ToggleGroup>
         <p className="text-xs text-[var(--text-secondary)]">{t.rich('originNote', { mono })}</p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="wz-origins" className="font-mono text-xs">allowed_origins</Label>
-          <RepeatableInput
-            id="wz-origins"
-            values={draft.origins}
-            onChange={(origins) => onChange({ ...draft, origins })}
-            placeholder="https://service.enterprise.vn"
-            validate={validateOrigin}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="wz-ip" className="font-mono text-xs">
-            ip_allowlist {external && <span className="text-[var(--supernova)]">*</span>}
-          </Label>
-          <RepeatableInput
-            id="wz-ip"
-            values={draft.ipAllowlist}
-            onChange={(ipAllowlist) => onChange({ ...draft, ipAllowlist })}
-            placeholder="10.20.0.15"
-            validate={validateIp}
-            invalid={external && draft.ipAllowlist.length === 0}
-          />
-          {external && draft.ipAllowlist.length === 0 && (
-            <p className="text-xs text-[var(--supernova)]">{t('externalNeedsIp')}</p>
-          )}
-          <p className="text-xs text-[var(--text-muted)]">{t('ipNote')}</p>
-        </div>
       </div>
 
       <p className="text-xs text-[var(--text-muted)]">

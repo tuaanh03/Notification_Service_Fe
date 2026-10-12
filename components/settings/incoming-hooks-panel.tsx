@@ -69,7 +69,6 @@ const CALL_ERROR_KEY: Partial<
   TEMPLATE_ARCHIVED: 'errTemplate',
   TEMPLATE_NOT_FOUND: 'errTemplate',
   IP_NOT_ALLOWED: 'errNetwork',
-  ORIGIN_NOT_ALLOWED: 'errNetwork',
   APP_NOT_ACTIVE: 'errAppInactive',
 }
 

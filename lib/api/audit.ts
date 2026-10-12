@@ -29,7 +29,7 @@ export async function listAudit(
 /** Event của app liên quan tới khoá API — dùng lọc riêng cho màn Credentials (UC-001 §E). */
 export const SECRET_AUDIT_ACTIONS = ['AppSecretIssued', 'AppSecretRevoked'] as const
 
-/** Event thêm / gỡ allowlist IP & Origin — cho màn `/settings/origins`. */
+/** Event thêm / gỡ giới hạn IP — cho màn `/admin/apps/<appId>/network`. */
 export const NETWORK_RULE_AUDIT_ACTIONS = ['AppNetworkRuleAdded', 'AppNetworkRuleRemoved'] as const
 
 /** Lấy phần đáng hiện của `before`/`after`: hint của khoá, `kind value` của nguồn gọi, hoặc trạng thái. */

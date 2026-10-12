@@ -17,17 +17,11 @@ export const APP_SLUG_TEXT = '^[a-z0-9][a-z0-9-]{1,62}$'
 export const TOPIC_KEY = /^[a-z][a-z0-9_.-]{1,127}$/
 
 /**
- * Giá trị của network rule. Backend chỉ kiểm độ dài 1–255, hai regex này là ràng buộc của
- * RIÊNG console để người nhập không gõ nhầm — đừng nói là backend ép.
+ * Giá trị IP của màn Giới hạn IP (Quản trị EWS). Backend chỉ kiểm độ dài 1–255 — đây là ràng buộc của
+ * RIÊNG console để người nhập không gõ nhầm, đừng nói là backend ép. Trả MÃ lỗi (khoá trong nhóm
+ * `validation` của `messages/*.json`), không trả câu — màn hình dịch qua `useNetworkValidators()`.
  */
-export const ORIGIN_RE = /^https?:\/\/[a-z0-9.-]+(:\d+)?$/i
-/**
- * Hai hàm kiểm trả MÃ lỗi (khoá trong nhóm `validation` của `messages/*.json`), không trả câu —
- * file này không phải component nên không biết ngôn ngữ. Màn hình dịch qua `useNetworkValidators()`.
- */
-export type NetworkValueError = 'originInvalid' | 'ipRange' | 'ipInvalid'
-
-export const originError = (v: string): NetworkValueError | null => (ORIGIN_RE.test(v) ? null : 'originInvalid')
+export type NetworkValueError = 'ipRange' | 'ipInvalid'
 
 /** IPv4 đơn, mỗi phần 0–255. */
 const IPV4_RE = /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/
@@ -51,11 +45,11 @@ function isIpv6(v: string): boolean {
 export const ipError = (v: string): NetworkValueError | null =>
   v.includes('/') ? 'ipRange' : IPV4_RE.test(v) || isIpv6(v) ? null : 'ipInvalid'
 
-/** Bước 1. `origins` / `ipAllowlist` đi thành `POST /apps/:id/network-rules`, không nằm trong body tạo app. */
-export type ProfileDraft = CreateAppInput & {
-  origins: string[]
-  ipAllowlist: string[]
-}
+/**
+ * Bước 1 — đúng body của `POST /admin/apps`. Không còn ô IP / Origin: giới hạn IP do Super Admin khai ở
+ * Quản trị EWS (bổ sung ADR-0023 của backend), Origin đã bỏ hẳn.
+ */
+export type ProfileDraft = CreateAppInput
 
 /** Bước 2 — đúng 4 field của `POST /admin/apps/:appId/topics`. */
 export type TopicDraft = CreateTopicInput
@@ -69,8 +63,6 @@ export const EMPTY_PROFILE: ProfileDraft = {
   name: '',
   namespace: '',
   origin: 'internal',
-  origins: [],
-  ipAllowlist: [],
 }
 
 export const EMPTY_TOPIC: TopicDraft = { key: '', name: '', mandatory: false, defaultMode: 'opt_out' }
@@ -83,18 +75,9 @@ export const DEFAULT_GRANT: GrantDraft = {
 
 export const toGrant = (g: GrantDraft): ApproveAppInput => ({ ...g })
 
-/**
- * Đủ điều kiện sang bước 2.
- *
- * Luật "app ngoài mạng bắt buộc ≥ 1 IP" là của console (UC-001), backend KHÔNG ép — nhưng
- * app `external` không khai IP thì ai cầm được khoá cũng gọi được, nên giữ.
- */
+/** Đủ điều kiện sang bước 2. */
 export const profileValid = (p: ProfileDraft) =>
-  p.orgId !== '' &&
-  APP_SLUG.test(p.slug) &&
-  APP_SLUG.test(p.namespace) &&
-  p.name.trim().length > 0 &&
-  (p.origin === 'internal' || p.ipAllowlist.length > 0)
+  p.orgId !== '' && APP_SLUG.test(p.slug) && APP_SLUG.test(p.namespace) && p.name.trim().length > 0
 
 /** Đủ điều kiện sang bước 3: ≥ 1 topic, mọi topic hợp lệ, không trùng key. */
 export const topicsValid = (topics: readonly TopicDraft[]) =>

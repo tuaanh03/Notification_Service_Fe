@@ -3,7 +3,7 @@ import { AppLink, useAppRouter } from '@/components/app-link'
 import { useAppSelection } from '@/components/app-context'
 import { appKey } from '@/lib/app-routes'
 import { useState, useTransition } from 'react'
-import { Ban, Check, Copy, Database, MoreHorizontal, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
+import { Ban, Check, Copy, Database, MoreHorizontal, Network, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import type { AppDto } from '@/lib/api/types'
@@ -111,6 +111,7 @@ const actionColumn = (
   t: ReturnType<typeof useTranslations<'allApps'>>,
   onApprove: (app: AppDto) => void,
   onTransition: (app: AppDto, action: AppAction) => void,
+  onNetwork: (app: AppDto) => void,
 ): Column<AppDto> => ({
   key: 'id',
   label: t('colActions'),
@@ -165,6 +166,9 @@ const actionColumn = (
                 <DropdownMenuSeparator />
               </>
             )}
+            <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => onNetwork(app)}>
+              <Network className="size-3.5 mr-1.5" /> {t('network')}
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-xs cursor-pointer"
               onClick={() => {
@@ -260,7 +264,15 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
       )}
 
       <DataTable<AppDto>
-        columns={[...columns, actionColumn(t, setTarget, (app, action) => setTransitionTarget({ app, action }))]}
+        columns={[
+          ...columns,
+          actionColumn(
+            t,
+            setTarget,
+            (app, action) => setTransitionTarget({ app, action }),
+            (app) => router.push(`/admin/apps/${encodeURIComponent(app.id)}/network`),
+          ),
+        ]}
         rows={rows}
         onRowClick={(row) => {
           const key = keyOf(row.id)

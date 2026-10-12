@@ -41,13 +41,14 @@ webservice/ews-astrolink/
 │   │                         # /templates/[id] màn soạn (id = templateId, UUID)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
-│   ├── settings/{credentials,origins,webhooks,profile,quota,sync}/
-│   │                         # credentials/, origins/, webhooks/ có actions.ts (đã đấu API); còn lại vẫn mock
+│   ├── settings/{credentials,webhooks,profile,quota,sync}/
+│   │                         # credentials/, webhooks/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   ├── orgs/                 # /orgs, /orgs/[orgId], /orgs/[orgId]/members — trang Tổ chức + màn Thành viên (mục 2.9)
 │   └── admin/{apps,audit,directory,settings,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
 │                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
 │                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
 │                             # apps/ có actions.ts (approveAndIssueKeyAction — chỉ còn cho app CŨ chờ duyệt, mục 2.5)
+│                             # apps/[appId]/network/ = Giới hạn IP của một app (mục 2.10) — ĐÃ đấu API
 │                             # settings/ = Cài đặt hệ thống (ADR-0030 của backend, mục 2.14) — ĐÃ đấu API
 │                             # directory/ = Danh bạ (ADR-0027 của backend) — ĐÃ đấu API: nút Đồng bộ M365 (CHỈ ở đây,
 │                             # không ở màn Thành viên) + tích ai hiện trong hộp "Thêm thành viên" của các org
@@ -61,7 +62,7 @@ webservice/ews-astrolink/
 │   │                         # grant-fields (quyền cấp lúc duyệt, dùng chung), approve-app-dialog,
 │   │                         # app-transition-dialog (Tạm ngưng / Mở lại / Thu hồi — mục 2.6)
 │   ├── admin/*               # approval-review (+ adjust-form: form điều chỉnh + diff), send-approval-review, send-approvals-table,
-│                             # system-settings-panel, directory-page (màn Danh bạ)
+│                             # system-settings-panel, directory-page (màn Danh bạ), network-rules-panel (Giới hạn IP)
 │   ├── notifications/*       # notifications-table (ĐÃ đấu API) + notification-outcome (panel chi tiết);
 │   │                         # notification-detail (+ counters-row, recipients-tabs, content-panel, payload-panel) còn mock cho /notifications/[id];
 │   │                         # scheduled-cards, error-codes-table, origin-badge
@@ -72,7 +73,7 @@ webservice/ews-astrolink/
 │   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
 │   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend)
-│   ├── settings/*            # credentials-panel, network-rules-panel (IP & Origin), webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
+│   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
@@ -264,7 +265,7 @@ mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật
 kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
-Tính tới 10/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` · `/settings/credentials` · `/settings/origins` · `/settings/webhooks` · `/admin/settings` (kèm route con),
+Tính tới 10/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` · `/settings/credentials` · `/settings/webhooks` · `/admin/settings` (kèm route con),
 `/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
@@ -279,7 +280,6 @@ Backend không có lệnh gộp "đăng ký app". `registerAppAction` gọi lầ
 
 ```
 POST /admin/apps                      -> active (kênh email)
-POST /admin/apps/:id/network-rules    (mỗi origin / IP một lời gọi — IP ĐƠN, không dải: mục 2.10)
 POST /admin/apps/:id/topics           (mỗi chủ đề một lời gọi)
 POST /admin/apps/:id/secrets          -> khoá API đầu tiên (plaintext CHỈ ở đây, hiện một lần)
 ```
@@ -466,21 +466,21 @@ hiện dữ liệu của app khác mà không báo gì.
 *   **Giá trị `?app=` lấy bằng `appKey(app)`**, không đọc thẳng `slug`: slug chỉ duy nhất trong một
     org, hai org trùng slug thì `appKey` thêm đuôi `~<8 ký tự id>` (`appRouteKeys` trong `lib/app-routes.ts`).
 *   **Nút ghi ẩn theo vai** (`useRole().canManage(app)`): App Viewer không thấy thêm topic, cấp / thu
-    hồi khoá, sửa IP & Origin, soạn / xuất bản template. Chỉ để giao diện gọn — backend vẫn trả 403.
+    hồi khoá, soạn / xuất bản template. Chỉ để giao diện gọn — backend vẫn trả 403.
 
-### 2.10. IP & Origin (`/settings/origins`) — IP đơn, xác nhận khi đổi hẳn hành vi
+### 2.10. Giới hạn IP (`/admin/apps/<appId>/network`) — chỉ Super Admin, IP đơn
 
-Đọc / thêm / gỡ qua `GET|POST|DELETE /admin/apps/:appId/network-rules`; nhật ký lọc
-`AppNetworkRuleAdded` / `AppNetworkRuleRemoved`. Luật ở backend là `checkNetworkAccess`
-(`network-access.ts`): mỗi loại tính riêng, chưa khai dòng nào thì loại đó không giới hạn, Origin
-chỉ kiểm khi request có header Origin.
+Bổ sung ADR-0023 của backend: giới hạn IP do **Super Admin** quản lý (backend đòi `platform.manage`), vào
+từ Quản trị EWS → Tất cả app → menu ⋯ → "Giới hạn IP". Console của end user **không** có màn này, wizard
+tạo app **không** có ô IP. **Không còn Origin** (backend bỏ hẳn — header Origin chỉ trình duyệt gửi, không
+chặn được ai cầm khoá). Đọc / thêm / gỡ qua `GET|POST|DELETE /admin/apps/:appId/network-rules`; nhật ký lọc
+`AppNetworkRuleAdded` / `AppNetworkRuleRemoved`. Luật chặn áp cho cả `/v1` và `/hooks`.
 
-*   **IP ĐƠN, KHÔNG nhận dải** (`validateIp` trong `wizard-types.ts`, dùng chung wizard và màn này).
-    Backend so khớp chính xác và **không kiểm định dạng**: lưu `10.20.0.0/16` là app bị chặn
-    `IP_NOT_ALLOWED` với MỌI IP. Console là chỗ duy nhất đang chặn — đừng nới regex.
-*   **Xác nhận** khi thêm dòng ĐẦU TIÊN của một loại (từ "không giới hạn" thành "chỉ danh sách
-    này") và khi gỡ bất kỳ dòng nào (gỡ dòng cuối = mở cho tất cả). Thêm dòng thứ hai trở đi chỉ nới
-    ra — không hỏi.
+*   **IP ĐƠN, KHÔNG nhận dải** (`ipError` trong `wizard-types.ts`). Backend so khớp chính xác và **không
+    kiểm định dạng**: lưu `10.20.0.0/16` là app bị chặn `IP_NOT_ALLOWED` với MỌI IP. Console là chỗ duy nhất
+    đang chặn — đừng nới regex.
+*   **Xác nhận** khi thêm IP ĐẦU TIÊN (từ "không giới hạn" thành "chỉ danh sách này") và khi gỡ bất kỳ IP
+    nào (gỡ IP cuối = mở cho tất cả). Thêm IP thứ hai trở đi chỉ nới ra — không hỏi.
 *   App `external` chưa có IP nào -> cảnh báo trên màn (luật của console, backend không ép).
 
 ### 2.11. Tổng quan (`/`) — chỉ số thật, bỏ ô không có nguồn
@@ -612,7 +612,6 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<CodeBlock language value copyable>` | `components/code-block.tsx` | ✓ | toast "Đã sao chép" |
 | `<ConfirmDialog title facts confirmLabel onConfirm>` | `components/confirm-dialog.tsx` | ✓ | bọc shadcn `<Dialog>`; `facts` = 3 dòng mono; `confirmLabel` nói rõ hậu quả (`Gửi cho 43 người`); prop `tone="blocking"` / `confirmHref` / `children` / `confirmDisabled` cho modal chặn hoặc có form bên trong |
 | `<QuotaArc used max>` | `components/quota-arc.tsx` | ✓ | vòng quota duy nhất — top bar (size-5) và `/settings/quota` (size-28, có `children` ở giữa); đổi màu solar ≥ 80 %, supernova khi chạm trần |
-| `<RepeatableInput values onChange validate>` | `components/repeatable-input.tsx` | ✓ | ô nhập lặp (origin / IP) → chip mono có nút bỏ; dùng ở wizard step 1 |
 | `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `user-detail` (bản v0, không còn route nào dùng) và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<SecretText value visible>` | `components/secret-text.tsx` | ✓ | khoá bí mật phủ lớp dạ quang, hiện thì tan dần; dùng trong `<CredentialDialog>`, `<WebhookSecretDialog>`, `<CodeBlock secret>` (mục 4) |
@@ -628,7 +627,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<NotificationOutcome notification linkRecipient onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `linkRecipient = false` khi đã ở trang của người đó (không link về chính nó) |
 | `<AppTransitionDialog app action pending error onCancel onConfirm>` | `components/apps/app-transition-dialog.tsx` | ✓ | Tạm ngưng / Mở lại / Thu hồi; bọc `<ConfirmDialog>`, bắt buộc nhập lý do, `tone="blocking"` cho thu hồi; **phải truyền `key`** theo app + hành động (mục 2.6) |
 | `<AuditTrail entries>` | `components/audit-trail.tsx` | ✓ | actor · action · `cũ → mới` · source; chỉ có một vế (thêm / gỡ, cấp / thu hồi) thì vẫn hiện vế đó |
-| `<NetworkRulesPanel>` | `components/settings/network-rules-panel.tsx` | ✓ | `/settings/origins` — xem / thêm / gỡ IP & Origin của app đang xem (mục 2.10) |
+| `<NetworkRulesPanel app>` | `components/admin/network-rules-panel.tsx` | ✓ | `/admin/apps/<appId>/network` — Super Admin xem / thêm / gỡ IP của một app (mục 2.10) |
 | `<WebhooksPage>` / `<WebhooksPanel embedded?>` / `<WebhookFormDialog>` / `<WebhookSecretDialog>` | `components/settings/webhooks-page.tsx`, `webhooks-panel.tsx`, `webhook-dialogs.tsx` | ✓ | `/settings/webhooks` — tab Gửi đi (outgoing: URL, gửi thử, nhật ký); hộp thêm / đổi sự kiện; secret `whsec_` hiện một lần (mục 2.13) |
 | `<IncomingHooksPanel>` / `<IncomingHookGuide>` | `components/settings/incoming-hooks-panel.tsx`, `incoming-hook-guide.tsx` | ✓ | tab Nhận vào: danh sách mở tại chỗ, thêm / sửa chỉ topic + template, Sao chép URL bất cứ lúc nào; Body mẫu + Nhật ký đóng sẵn (mục 2.13) |
 | `<SystemSettingsPanel initial>` | `components/admin/system-settings-panel.tsx` | ✓ | `/admin/settings` — Cài đặt hệ thống, mỗi dòng lưu riêng + Về mặc định (mục 2.14) |
@@ -794,3 +793,4 @@ Tất cả tính từ `webservice/ews-astrolink/`:
     `use_case_compose_send_email.md` (UC-008), `state_machine_notification.md`
 *   Quy trình deploy chung của portal: `../../docs/QUY_TRINH_LAM_VIEC_SUA_CODE_VA_DEPLOY.md`
 *   Port mini-app đang dùng: `grep -h "127.0.0.1:" ../*/docker-compose.yml` — thêm app mới không được trùng
+

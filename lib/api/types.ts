@@ -263,12 +263,11 @@ export type NotificationPageDto = {
 }
 
 /**
- * Sao đúng `NetworkRuleDto` của backend. Đây là allowlist nguồn gọi `/v1/*` của app:
- * `origin` = header Origin của trình duyệt, `ip` = MỘT địa chỉ IP của máy gọi — backend so khớp
- * chính xác, chưa có dải (CIDR).
+ * Sao đúng `NetworkRuleDto` của backend: allowlist IP gọi `/v1/*` và `/hooks/*` của app — MỘT địa chỉ
+ * IP của máy gọi, backend so khớp chính xác, chưa có dải (CIDR). Chỉ Super Admin đọc / ghi.
  */
 export type NetworkRuleDto = {
-  /** NETWORK_RULE_KINDS: ip | origin */
+  /** NETWORK_RULE_KINDS: ip (Origin đã bỏ — bổ sung ADR-0023 của backend) */
   kind: string
   value: string
 }
