@@ -191,7 +191,9 @@
     "IncomingHookDeleted": "xoá incoming webhook",
     "IncomingHookTokenRotated": "đổi URL incoming webhook",
     "IncomingHookUrlRevealed": "xem URL incoming webhook",
-    "SystemSettingsUpdated": "đổi cài đặt hệ thống"
+    "SystemSettingsUpdated": "đổi cài đặt hệ thống",
+    "TopicActivated": "kích hoạt chủ đề",
+    "TopicMandatoryChanged": "đổi chủ đề bắt buộc"
   },
   "exclusion": {
     "no_channel": "chưa khai email",
@@ -758,7 +760,11 @@
     "factApp": "App",
     "factAfter": "Trạng thái sau khi dừng",
     "suspending": "Đang dừng…",
-    "suspendConfirm": "Tạm dừng chủ đề"
+    "suspendConfirm": "Tạm dừng chủ đề",
+    "setMandatory": "Đặt bắt buộc",
+    "unsetMandatory": "Bỏ bắt buộc",
+    "mandatorySet": "\"{key}\" giờ là chủ đề bắt buộc — người nhận không tắt được",
+    "mandatoryUnset": "\"{key}\" không còn bắt buộc — ai từng tắt sẽ không nhận nữa"
   },
   "createTopic": {
     "title": "Thêm chủ đề",
@@ -773,8 +779,7 @@
     "optOut": "Có nhận (opt_out) — người dùng phải tự tắt",
     "optIn": "Không nhận (opt_in) — người dùng phải tự bật",
     "mandatory": "Bắt buộc",
-    "mandatoryHint": "Người dùng không tắt được chủ đề này. Chỉ dành cho thông báo giao dịch bắt buộc.",
-    "mandatorySuperAdminOnly": "Chỉ Super Admin bật được chủ đề bắt buộc — vì nó bỏ qua quyền tắt thư của người nhận."
+    "mandatoryHint": "Người dùng không tắt được chủ đề này. Chỉ dành cho thông báo giao dịch bắt buộc."
   },
   "suppressed": {
     "user_unsubscribe": "người dùng tự ngắt",
@@ -1314,7 +1319,6 @@
     "activeNote": "App đã hoạt động. Chủ đề vừa tạo còn ở trạng thái nháp — sang <link>Chủ đề</link> kích hoạt trước khi app gửi được thư.",
     "org": "Tổ chức (org)",
     "orgPlaceholder": "Chọn org sở hữu app…",
-    "mandatorySuperAdminOnly": "Chỉ Super Admin bật được chủ đề bắt buộc — vì nó bỏ qua quyền tắt thư của người nhận.",
     "noOrgTitle": "Bạn chưa được tạo app",
     "noOrgBody": "Chỉ Owner / Org Admin của một org (hoặc Super Admin) mới đăng ký app được. Nhờ Owner của org nâng vai cho bạn.",
     "stepKey": "Khoá API",
@@ -1537,7 +1541,9 @@
     "pending": "chờ gọi",
     "duplicate": "trùng",
     "skipped": "bỏ qua",
-    "rejected": "bị từ chối"
+    "rejected": "bị từ chối",
+    "mandatory": "bắt buộc",
+    "optional": "không bắt buộc"
   },
   "auditSources": {
     "admin_api": "Console",

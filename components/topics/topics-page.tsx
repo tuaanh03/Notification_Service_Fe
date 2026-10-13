@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { AlertTriangle, Copy, Lock, MoreHorizontal, Pause, Play, Plus, PlugZap, RadioTower } from 'lucide-react'
+import { AlertTriangle, Copy, Lock, LockOpen, MoreHorizontal, Pause, Play, Plus, PlugZap, RadioTower } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
   createTopicAction,
   loadTopicsAction,
+  setTopicMandatoryAction,
   transitionTopicAction,
 } from '@/app/topics/actions'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -116,6 +117,21 @@ export function TopicsPage() {
     })
   }
 
+  // Đặt / bỏ bắt buộc: người quản lý app tự quyết, làm luôn không hỏi lại (lựa chọn cũ của người nhận
+  // không mất — bỏ bắt buộc là họ quay về đúng như trước).
+  const handleMandatory = (topic: TopicDto, mandatory: boolean) => {
+    startTransition(async () => {
+      const result = await setTopicMandatoryAction(appId, topic.key, mandatory)
+      if (!result.ok) {
+        setActionError(te('withCode', { message: result.message, code: result.code }))
+        return
+      }
+      setActionError(null)
+      toast.success(mandatory ? t('mandatorySet', { key: topic.key }) : t('mandatoryUnset', { key: topic.key }))
+      await load()
+    })
+  }
+
   const columns: Column<Row>[] = [
     { key: 'key', label: t('colKey'), mono: true },
     { key: 'name', label: t('colName') },
@@ -187,6 +203,18 @@ export function TopicsPage() {
                       }
                     >
                       <Icon className="size-3.5 mr-1.5" /> {t(next.action)}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {writable && (
+                  <>
+                    <DropdownMenuItem
+                      disabled={pending}
+                      className="text-xs cursor-pointer"
+                      onClick={() => handleMandatory(r, !r.mandatory)}
+                    >
+                      {r.mandatory ? <LockOpen className="size-3.5 mr-1.5" /> : <Lock className="size-3.5 mr-1.5" />}
+                      {r.mandatory ? t('unsetMandatory') : t('setMandatory')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>

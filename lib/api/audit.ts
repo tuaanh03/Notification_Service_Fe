@@ -32,10 +32,12 @@ export const SECRET_AUDIT_ACTIONS = ['AppSecretIssued', 'AppSecretRevoked'] as c
 /** Event thêm / gỡ giới hạn IP — cho màn `/admin/apps/<appId>/network`. */
 export const NETWORK_RULE_AUDIT_ACTIONS = ['AppNetworkRuleAdded', 'AppNetworkRuleRemoved'] as const
 
-/** Lấy phần đáng hiện của `before`/`after`: hint của khoá, `kind value` của nguồn gọi, hoặc trạng thái. */
+/** Lấy phần đáng hiện của `before`/`after`: hint của khoá, `kind value` của nguồn gọi, bắt buộc hay không, hoặc trạng thái. */
 function summarize(payload: Record<string, unknown> | null): string | undefined {
   if (!payload) return undefined
   if (typeof payload.kind === 'string' && typeof payload.value === 'string') return `${payload.kind} ${payload.value}`
+  // Đặt / bỏ chủ đề bắt buộc (`TopicMandatoryChanged`) -> nhãn `mandatory` / `optional` (nhóm `status`).
+  if (typeof payload.mandatory === 'boolean') return payload.mandatory ? 'mandatory' : 'optional'
   const value = payload.hint ?? payload.status
   return typeof value === 'string' ? value : undefined
 }

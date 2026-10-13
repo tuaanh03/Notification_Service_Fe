@@ -191,7 +191,9 @@
     "IncomingHookDeleted": "deleted incoming webhook",
     "IncomingHookTokenRotated": "changed incoming webhook URL",
     "IncomingHookUrlRevealed": "viewed incoming webhook URL",
-    "SystemSettingsUpdated": "changed system settings"
+    "SystemSettingsUpdated": "changed system settings",
+    "TopicActivated": "activated topic",
+    "TopicMandatoryChanged": "changed topic mandatory"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -758,7 +760,11 @@
     "factApp": "App",
     "factAfter": "Status after suspending",
     "suspending": "Suspending…",
-    "suspendConfirm": "Suspend topic"
+    "suspendConfirm": "Suspend topic",
+    "setMandatory": "Make mandatory",
+    "unsetMandatory": "Make optional",
+    "mandatorySet": "\"{key}\" is now mandatory — recipients cannot turn it off",
+    "mandatoryUnset": "\"{key}\" is no longer mandatory — people who turned it off stop receiving it"
   },
   "createTopic": {
     "title": "Add topic",
@@ -773,8 +779,7 @@
     "optOut": "Receives (opt_out) — users must turn it off themselves",
     "optIn": "Does not receive (opt_in) — users must turn it on themselves",
     "mandatory": "Mandatory",
-    "mandatoryHint": "Users cannot turn this topic off. Only for required transactional notifications.",
-    "mandatorySuperAdminOnly": "Only a Super Admin can make a topic mandatory — it overrides recipients’ opt-out."
+    "mandatoryHint": "Users cannot turn this topic off. Only for required transactional notifications."
   },
   "suppressed": {
     "user_unsubscribe": "user unsubscribed",
@@ -1314,7 +1319,6 @@
     "activeNote": "The app is active. The new topics are still <mono>draft</mono> — go to <link>Topics</link> and activate them before the app can send.",
     "org": "Organization",
     "orgPlaceholder": "Choose the organization that owns this app…",
-    "mandatorySuperAdminOnly": "Only a Super Admin can make a topic mandatory — it overrides recipients’ opt-out.",
     "noOrgTitle": "You cannot register apps",
     "noOrgBody": "Only an organization Owner / Org Admin (or a Super Admin) can register apps. Ask your organization Owner to raise your role.",
     "stepKey": "API key",
@@ -1537,7 +1541,9 @@
     "pending": "pending",
     "duplicate": "duplicate",
     "skipped": "skipped",
-    "rejected": "rejected"
+    "rejected": "rejected",
+    "mandatory": "mandatory",
+    "optional": "optional"
   },
   "auditSources": {
     "admin_api": "Console",

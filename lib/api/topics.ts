@@ -41,3 +41,14 @@ export async function transitionTopic(
     method: 'POST',
   })
 }
+
+/**
+ * PUT /admin/apps/:appId/topics/:key/mandatory — đặt / bỏ bắt buộc (người quản lý app tự quyết).
+ * Bỏ bắt buộc không xoá lựa chọn cũ của người nhận.
+ */
+export async function setTopicMandatory(appId: string, key: string, mandatory: boolean): Promise<TopicDto> {
+  return adminFetch<TopicDto>(`${base(appId)}/${encodeURIComponent(key)}/mandatory`, {
+    method: 'PUT',
+    body: { mandatory },
+  })
+}

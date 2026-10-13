@@ -3,6 +3,7 @@
 import {
   createTopic,
   listTopics,
+  setTopicMandatory,
   transitionTopic,
   type CreateTopicInput,
   type TopicAction,
@@ -39,4 +40,12 @@ export async function transitionTopicAction(
   action: TopicAction,
 ): Promise<ActionResult<TopicDto>> {
   return toResult(() => transitionTopic(appId, key, action))
+}
+
+export async function setTopicMandatoryAction(
+  appId: string,
+  key: string,
+  mandatory: boolean,
+): Promise<ActionResult<TopicDto>> {
+  return toResult(() => setTopicMandatory(appId, key, mandatory))
 }
