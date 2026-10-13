@@ -87,6 +87,8 @@ async function Document({ children }: { children: React.ReactNode }) {
 }
 
 const LOGIN_PATH = '/login'
+/** Hai trang đăng nhập — Microsoft và mật khẩu. Thiếu trang nào ở đây là trang đó bị đá về `/login`. */
+const LOGIN_PAGES: ReadonlySet<string | null> = new Set([LOGIN_PATH, '/login/password'])
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Đường dẫn do `middleware.ts` gắn vào header: layout là server component, tự nó không biết
@@ -102,11 +104,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     đây — đưa thẳng về trang đăng nhập, không hiện màn báo lỗi hạ tầng làm người dùng sửa nhầm chỗ.
   */
   if (admin === null) {
-    if (pathname !== LOGIN_PATH) redirect(LOGIN_PATH)
+    if (!LOGIN_PAGES.has(pathname)) redirect(LOGIN_PATH)
     return <Document>{children}</Document>
   }
-  // Đã đăng nhập mà vẫn ở /login (vừa bấm đăng nhập xong) -> để trang đó tự chuyển vào console.
-  if (pathname === LOGIN_PATH) return <Document>{children}</Document>
+  // Đã đăng nhập mà vẫn ở trang đăng nhập (vừa bấm đăng nhập xong) -> để trang đó tự chuyển vào console.
+  if (LOGIN_PAGES.has(pathname)) return <Document>{children}</Document>
 
   const { me, apps, error, expired } = await loadApps()
   if (expired) redirect(LOGIN_PATH)

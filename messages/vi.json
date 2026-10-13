@@ -13,10 +13,9 @@
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
     "submitting": "Đang kiểm tra…",
-    "forgot": "Quên mật khẩu thì nhờ người quản trị máy chủ đặt lại bằng <code>admin-cli</code> — không có đường tự đặt lại qua email.",
     "microsoft": "Đăng nhập bằng Microsoft",
     "microsoftRedirecting": "Đang chuyển sang Microsoft…",
-    "or": "hoặc dùng mật khẩu"
+    "backToMicrosoft": "← Đăng nhập bằng Microsoft"
   },
   "nav": {
     "ews": "EWS",
@@ -1015,7 +1014,7 @@
     "emptyBody": "{app} chưa đăng ký nhận webhook. Thêm URL để EWS tự báo kết quả gửi thư.",
     "howTitle": "Cách EWS gọi webhook",
     "howCall": "Gọi POST với body JSON gồm id sự kiện, loại sự kiện và kết quả của thư. App trả mã 2xx trong 10 giây là xong.",
-    "howSignature": "Mỗi lần gọi có header <mono>X-EWS-Signature: t=…,v1=…</mono> — app kiểm bằng secret trước khi tin body (tài liệu tích hợp, mục 5).",
+    "howSignature": "Mỗi lần gọi có header <mono>X-EWS-Signature: t=…,v1=…</mono> — app kiểm bằng secret trước khi tin body (tài liệu tích hợp, mục 7).",
     "howRetry": "App lỗi hoặc không trả lời: EWS gọi lại sau 1 phút · 5 phút · 30 phút · 2 giờ · 6 giờ, rồi dừng (tổng 6 lần).",
     "howDuplicate": "Có thể nhận cùng một sự kiện hai lần — app bỏ bản trùng theo <mono>id</mono>.",
     "howPrivacy": "Body không có địa chỉ email và nội dung thư.",

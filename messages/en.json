@@ -13,10 +13,9 @@
     "password": "Password",
     "submit": "Sign in",
     "submitting": "Checking…",
-    "forgot": "Forgot your password? Ask the server administrator to reset it with <code>admin-cli</code> — there is no self-service reset by email.",
     "microsoft": "Sign in with Microsoft",
     "microsoftRedirecting": "Redirecting to Microsoft…",
-    "or": "or use a password"
+    "backToMicrosoft": "← Sign in with Microsoft"
   },
   "nav": {
     "ews": "EWS",
@@ -1015,7 +1014,7 @@
     "emptyBody": "{app} has not registered for webhooks. Add a URL so EWS reports delivery results.",
     "howTitle": "How EWS calls webhooks",
     "howCall": "A POST with a JSON body carrying the event id, event type and the email's outcome. Respond with 2xx within 10 seconds.",
-    "howSignature": "Every call carries <mono>X-EWS-Signature: t=…,v1=…</mono> — verify it with the secret before trusting the body (integration guide, section 5).",
+    "howSignature": "Every call carries <mono>X-EWS-Signature: t=…,v1=…</mono> — verify it with the secret before trusting the body (integration guide, section 7).",
     "howRetry": "If the app fails or does not answer, EWS retries after 1 min · 5 min · 30 min · 2 h · 6 h, then stops (6 calls in total).",
     "howDuplicate": "The same event may arrive twice — drop duplicates by <mono>id</mono>.",
     "howPrivacy": "The body contains no email address and no email content.",

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { signInAction, startMicrosoftSignInAction } from '@/app/login/actions'
@@ -8,31 +9,38 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
 import { safeNext } from '@/lib/safe-next'
 
 /**
- * Form đăng nhập. Mật khẩu chỉ đi trong Server Action — không nằm trong URL, không vào state
- * nào sống lâu hơn lần bấm, và không bao giờ xuống log.
+ * Hai cửa đăng nhập, mỗi cửa một trang:
+ *   - `/login` — CHỈ Microsoft 365. Đây là cửa của mọi người dùng console.
+ *   - `/login/password` — email + mật khẩu, cho tài khoản do `admin-cli` cấp mật khẩu riêng.
+ *     Trang `/login` cố ý KHÔNG trỏ sang đây; ai cần thì được đưa địa chỉ.
  *
- * `router.refresh()` sau khi đăng nhập: cookie vừa được đặt ở phía server, cây server component
- * đang hiển thị vẫn là cây dựng lúc CHƯA có phiên. Không nạp lại thì console hiện dữ liệu rỗng.
+ * Ẩn địa chỉ KHÔNG phải lớp bảo mật — mật khẩu và phiên ở backend mới là chốt.
  */
-/**
- * `microsoftEnabled`: backend đã cấu hình M365 — hiện nút "Đăng nhập bằng Microsoft" lên đầu, form
- * mật khẩu giữ lại bên dưới làm đường dự phòng. `initialError`: câu đã dịch khi lượt đăng nhập
- * Microsoft vừa hỏng (trang callback đưa về kèm `?error=`).
- */
-export function LoginForm({ microsoftEnabled, initialError }: { microsoftEnabled: boolean; initialError: string | null }) {
+
+function LoginHeader() {
   const t = useTranslations('login')
-  const router = useRouter()
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      <img src={BRAND_LOGO_SRC} alt="" className="size-14 rounded-full" />
+      <h1 className="text-lg font-semibold">EWS Notification Service</h1>
+      <p className="text-xs text-[var(--text-secondary)]">{t('subtitle')}</p>
+    </div>
+  )
+}
+
+/**
+ * Đăng nhập Microsoft. `initialError`: câu đã dịch khi lượt đăng nhập Microsoft vừa hỏng (trang
+ * callback đưa về kèm `?error=`).
+ */
+export function MicrosoftSignIn({ initialError }: { initialError: string | null }) {
+  const t = useTranslations('login')
   // `middleware.ts` gắn `?next=` khi đá người dùng về đây — đăng nhập xong quay lại đúng chỗ.
   const next = safeNext(useSearchParams().get('next'))
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(initialError)
-  const [pending, startTransition] = useTransition()
   const [redirecting, startRedirect] = useTransition()
 
   // Thành công thì action chuyển trang sang Microsoft (không trả về); chỉ lỗi mới quay lại đây.
@@ -43,6 +51,40 @@ export function LoginForm({ microsoftEnabled, initialError }: { microsoftEnabled
       if (!result.ok) setError(result.message)
     })
   }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <LoginHeader />
+      <Button type="button" variant="outline" onClick={signInWithMicrosoft} disabled={redirecting}>
+        <MicrosoftLogo />
+        {redirecting ? t('microsoftRedirecting') : t('microsoft')}
+      </Button>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Form mật khẩu. Mật khẩu chỉ đi trong Server Action — không nằm trong URL, không vào state nào
+ * sống lâu hơn lần bấm, và không bao giờ xuống log.
+ *
+ * `router.refresh()` sau khi đăng nhập: cookie vừa được đặt ở phía server, cây server component
+ * đang hiển thị vẫn là cây dựng lúc CHƯA có phiên. Không nạp lại thì console hiện dữ liệu rỗng.
+ *
+ * `microsoftEnabled`: có thì hiện link quay về `/login` (giữ `?next=`).
+ */
+export function PasswordSignInForm({ microsoftEnabled }: { microsoftEnabled: boolean }) {
+  const t = useTranslations('login')
+  const router = useRouter()
+  const next = safeNext(useSearchParams().get('next'))
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -58,25 +100,7 @@ export function LoginForm({ microsoftEnabled, initialError }: { microsoftEnabled
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <img src={BRAND_LOGO_SRC} alt="" className="size-14 rounded-full" />
-        <h1 className="text-lg font-semibold">EWS Notification Service</h1>
-        <p className="text-xs text-[var(--text-secondary)]">{t('subtitle')}</p>
-      </div>
-
-      {microsoftEnabled && (
-        <>
-          <Button type="button" variant="outline" onClick={signInWithMicrosoft} disabled={redirecting || pending}>
-            <MicrosoftLogo />
-            {redirecting ? t('microsoftRedirecting') : t('microsoft')}
-          </Button>
-          <div className="flex items-center gap-3 text-[11px] text-[var(--text-muted)]">
-            <Separator className="flex-1" />
-            {t('or')}
-            <Separator className="flex-1" />
-          </div>
-        </>
-      )}
+      <LoginHeader />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">{t('email')}</Label>
@@ -86,7 +110,7 @@ export function LoginForm({ microsoftEnabled, initialError }: { microsoftEnabled
           type="email"
           autoComplete="username"
           required
-          autoFocus={!microsoftEnabled}
+          autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -111,13 +135,18 @@ export function LoginForm({ microsoftEnabled, initialError }: { microsoftEnabled
         </Alert>
       )}
 
-      <Button type="submit" disabled={pending || redirecting || email === '' || password === ''}>
+      <Button type="submit" disabled={pending || email === '' || password === ''}>
         {pending ? t('submitting') : t('submit')}
       </Button>
 
-      <p className="text-center text-[11px] leading-5 text-[var(--text-muted)]">
-        {t.rich('forgot', { code: (chunks) => <code className="font-mono">{chunks}</code> })}
-      </p>
+      {microsoftEnabled && (
+        <Link
+          href={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`}
+          className="text-center text-xs text-[var(--text-secondary)] hover:underline"
+        >
+          {t('backToMicrosoft')}
+        </Link>
+      )}
     </form>
   )
 }

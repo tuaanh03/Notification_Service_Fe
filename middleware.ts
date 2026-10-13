@@ -13,8 +13,10 @@ import { NextResponse, type NextRequest } from 'next/server'
  */
 const SESSION_COOKIE = 'ews_session'
 const LOGIN_PATH = '/login'
+/** Đăng nhập bằng mật khẩu — trang riêng, `/login` không trỏ sang (`components/login-form.tsx`). */
+const PASSWORD_LOGIN_PATH = '/login/password'
 /** Trùng `M365_CALLBACK_PATH` ở `lib/api/auth.ts` — file đó `server-only`, middleware không import được. */
-const PUBLIC_PATHS = new Set([LOGIN_PATH, '/auth/callback/microsoft'])
+const PUBLIC_PATHS = new Set([LOGIN_PATH, PASSWORD_LOGIN_PATH, '/auth/callback/microsoft'])
 /**
  * Layout là server component nên KHÔNG đọc được đường dẫn. Middleware gắn nó vào header để
  * `app/layout.tsx` biết đang dựng trang đăng nhập — nếu không, lúc phiên hỏng nó sẽ chuyển
