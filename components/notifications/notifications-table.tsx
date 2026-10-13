@@ -9,7 +9,7 @@ import { useApp } from '@/components/app-context'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { Panel } from '@/components/panel'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -97,6 +97,7 @@ export function NotificationsTable({
 }) {
   const t = useTranslations('notifications')
   const tc = useTranslations('common')
+  const statusLabel = useStatusLabel()
   const te = useTranslations('errors')
   const { app } = useApp()
   const appId = app.app_id
@@ -226,7 +227,7 @@ export function NotificationsTable({
             <NativeSelectOption value="">{tc('all')}</NativeSelectOption>
             {MVP_STATUSES.map((s) => (
               <NativeSelectOption key={s} value={s}>
-                {s}
+                {statusLabel(s)}
               </NativeSelectOption>
             ))}
           </NativeSelect>

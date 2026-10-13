@@ -8,7 +8,7 @@ import { useRole } from '@/components/role-context'
 import { useAppRouter } from '@/components/app-link'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateSummaryDto } from '@/lib/api/types'
@@ -48,6 +48,7 @@ function useColumns(): Column<Row>[] {
 export function TemplatesTable() {
   const tt = useTranslations('templates')
   const tc = useTranslations('common')
+  const statusLabel = useStatusLabel()
   const te = useTranslations('errors')
   const columns = useColumns()
   const { app } = useApp()
@@ -92,8 +93,8 @@ export function TemplatesTable() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <ToggleGroup multiple variant="outline" size="sm" value={status} onValueChange={(v) => setStatus(v as string[])} aria-label={tt('colStatus')}>
-          <ToggleGroupItem value="active" className="font-mono">active</ToggleGroupItem>
-          <ToggleGroupItem value="archived" className="font-mono">archived</ToggleGroupItem>
+          <ToggleGroupItem value="active">{statusLabel('active')}</ToggleGroupItem>
+          <ToggleGroupItem value="archived">{statusLabel('archived')}</ToggleGroupItem>
         </ToggleGroup>
         {rows && <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{filtered.length}/{rows.length}</span>}
       </div>

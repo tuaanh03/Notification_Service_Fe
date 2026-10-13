@@ -154,7 +154,7 @@ function OutcomeDetail({ n, linkRecipient }: { n: NotificationSummaryDto; linkRe
         {n.status === 'sent' && (
           <Alert className="mb-4">
             <Info />
-            <AlertDescription>{t.rich('sentNote', { mono })}</AlertDescription>
+            <AlertDescription>{t.rich('sentNote', { mono, b: (chunks) => <b className="font-medium">{chunks}</b> })}</AlertDescription>
           </Alert>
         )}
         {unknown && (

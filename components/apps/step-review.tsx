@@ -46,11 +46,11 @@ export function StepReview({
         <Panel className="p-4">
           <h3 className="mb-4 text-xs font-semibold text-[var(--starlight)]">{t('stepProfile')}</h3>
           <dl className="space-y-3 text-xs">
-            <Fact label="org" value={creatableOrgs.find((o) => o.id === profile.orgId)?.name ?? profile.orgId} />
-            <Fact label="name" value={profile.name.trim()} />
+            <Fact label={t('factOrg')} value={creatableOrgs.find((o) => o.id === profile.orgId)?.name ?? profile.orgId} />
+            <Fact label={t('factName')} value={profile.name.trim()} />
             <Fact label="slug" value={profile.slug} />
             <Fact label="namespace" value={profile.namespace} />
-            <Fact label="origin" value={profile.origin} />
+            <Fact label={t('factOrigin')} value={profile.origin === 'external' ? t('originExternal') : t('originInternal')} />
           </dl>
         </Panel>
         <Panel className="p-4">

@@ -29,6 +29,7 @@ export function DataTable<T extends Record<string, unknown>>({
   empty,
   rowClassName,
   filterKey,
+  chipLabel,
   toolbarActions,
   searchPlaceholder,
   hideSearch,
@@ -41,6 +42,8 @@ export function DataTable<T extends Record<string, unknown>>({
   rowClassName?: (row: T) => string | undefined
   /** cột dùng làm filter chip (01 §2 "per-column filter chips"): chip = giá trị duy nhất của cột, kèm count */
   filterKey?: keyof T
+  /** Chữ trên nút lọc theo giá trị thô (dịch trạng thái / vai). Bỏ trống = hiện nguyên giá trị. */
+  chipLabel?: (value: string) => string
   toolbarActions?: React.ReactNode
   searchPlaceholder?: string
   /**
@@ -95,7 +98,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 className="rounded-full font-mono"
                 onClick={() => setChip(c)}
               >
-                {c} · {rows.filter((r) => String(r[filterKey] ?? '') === c).length}
+                {chipLabel ? chipLabel(c) : c} · {rows.filter((r) => String(r[filterKey] ?? '') === c).length}
               </Button>
             ))}
           </div>

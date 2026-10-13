@@ -122,7 +122,9 @@ Spec & use case nằm **ngoài** thư mục này:
     tên token vẫn giữ metaphor vũ trụ nhưng giá trị là bảng sáng (mục 7). Spec
     `01_prompt_foundation.md` §1 mô tả bảng TỐI; khi hai bên lệch thì **code là nguồn đúng**, đừng
     "sửa" màn sáng thành tối vì tưởng hỏng. Chỉ có một theme — không có biến thể dark song song.
-*   **Shared component là nguồn duy nhất.** `<StatusPill>` là nơi duy nhất định nghĩa màu trạng thái;
+*   **Shared component là nguồn duy nhất.** `<StatusPill>` là nơi duy nhất định nghĩa màu VÀ chữ của trạng thái
+    (màu tra giá trị thô, chữ dịch qua nhóm `status`; chỗ khác cần chữ trạng thái — nút lọc, tuỳ chọn lọc, audit
+    `from → to` — dùng `useStatusLabel()`, không in thẳng `active` / `draft`);
     `<Panel>` là nơi duy nhất định nghĩa glass surface; `<ConfirmDialog>` là dialog xác nhận duy nhất.
     Cần biến thể → thêm prop, **không** tạo component song song.
 *   **Bảo toàn shadcn/ui.** Không viết lại `<Button>`, `<Dialog>`, `<Select>`, `<Tabs>`… Tận dụng props

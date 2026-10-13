@@ -106,10 +106,10 @@ export function StepProfile({
             if (next === 'internal' || next === 'external') onChange({ ...draft, origin: next })
           }}
         >
-          <ToggleGroupItem value="internal" className="font-mono">internal</ToggleGroupItem>
-          <ToggleGroupItem value="external" className="font-mono">external</ToggleGroupItem>
+          <ToggleGroupItem value="internal">{t('originInternal')}</ToggleGroupItem>
+          <ToggleGroupItem value="external">{t('originExternal')}</ToggleGroupItem>
         </ToggleGroup>
-        <p className="text-xs text-[var(--text-secondary)]">{t.rich('originNote', { mono })}</p>
+        <p className="text-xs text-[var(--text-secondary)]">{t.rich('originNote', { b: (chunks) => <b className="font-medium">{chunks}</b> })}</p>
       </div>
 
       <p className="text-xs text-[var(--text-muted)]">

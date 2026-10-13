@@ -4,11 +4,14 @@ import { ArrowRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { tOr } from '@/i18n/dynamic'
 import { SourceBadge } from './source-badge'
+import { useStatusLabel } from './status-pill'
 import type { AuditEntry } from '@/lib/mock-data'
 export function AuditTrail({ entries }: { entries: AuditEntry[] }) {
   // `action` là tên event backend (`AppApproved`…) -> câu theo ngôn ngữ; event chưa có câu dịch
   // (hoặc chữ mock) thì hiện nguyên.
   const t = useTranslations('auditActions')
+  // `from` / `to` thường là trạng thái (`pending_approval` -> `active`) — dịch được thì dịch, còn lại (hint khoá, IP) giữ nguyên.
+  const statusLabel = useStatusLabel()
   return (
     <div className="space-y-4">
       {entries.map((e, i) => (
@@ -23,9 +26,9 @@ export function AuditTrail({ entries }: { entries: AuditEntry[] }) {
               {/* Thêm / cấp chỉ có `to`, gỡ / thu hồi chỉ có `from` — vẫn phải hiện giá trị đó. */}
               {(e.from || e.to) && (
                 <span className="font-mono text-[var(--text-muted)]">
-                  {e.from}
+                  {e.from && statusLabel(e.from)}
                   {e.from && e.to && <ArrowRight className="mx-1 inline size-3" />}
-                  {e.to}
+                  {e.to && statusLabel(e.to)}
                 </span>
               )}
             </div>

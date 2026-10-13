@@ -171,8 +171,28 @@
     "AppRevoked": "revoked app",
     "AppSecretIssued": "issued API key",
     "AppSecretRevoked": "revoked API key",
-    "AppNetworkRuleAdded": "added caller source",
-    "AppNetworkRuleRemoved": "removed caller source"
+    "AppNetworkRuleAdded": "added allowed IP",
+    "AppNetworkRuleRemoved": "removed allowed IP",
+    "AdminAppRoleGranted": "granted app role",
+    "AdminAppRoleRevoked": "revoked app role",
+    "TopicCreated": "created topic",
+    "TopicPublished": "activated topic",
+    "TopicSuspended": "suspended topic",
+    "TemplateCreated": "created template",
+    "TemplateRenamed": "renamed template",
+    "TemplateDraftSaved": "saved template draft",
+    "TemplateVersionPublished": "published template",
+    "TemplateArchived": "archived template",
+    "WebhookEndpointCreated": "added webhook URL",
+    "WebhookEndpointUpdated": "updated webhook URL",
+    "WebhookEndpointDeleted": "deleted webhook URL",
+    "WebhookSecretRotated": "rotated webhook secret",
+    "IncomingHookCreated": "created incoming webhook",
+    "IncomingHookUpdated": "updated incoming webhook",
+    "IncomingHookDeleted": "deleted incoming webhook",
+    "IncomingHookTokenRotated": "changed incoming webhook URL",
+    "IncomingHookUrlRevealed": "viewed incoming webhook URL",
+    "SystemSettingsUpdated": "changed system settings"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -189,7 +209,7 @@
     "accepted": "mail server accepted",
     "sending": "sending",
     "label": "Outcome: ",
-    "sentNote": "<mono>sent</mono> means the mail server accepted the message, not necessarily that it reached the inbox. The system cannot see messages that land in spam or are blocked on the receiving side.",
+    "sentNote": "<b>Sent</b> means the mail server accepted the message, not necessarily that it reached the inbox. The system cannot see messages that land in spam or are blocked on the receiving side.",
     "unknownNote": "It is unclear whether the message went out — the mail server did not respond in time. The system <b>does not resend automatically</b>, so the recipient never gets it twice. To resend, the app service sends a new request.",
     "recipientId": "Recipient ID",
     "recipientGone": "no longer in the recipient list",
@@ -1201,7 +1221,7 @@
   "allApps": {
     "colName": "App name",
     "external": "external",
-    "externalTip": "The app is outside the internal network — ip_allowlist is required",
+    "externalTip": "The app calls EWS from outside the company network",
     "colStatus": "Status",
     "colChannels": "Granted channels",
     "colQuota": "Quota",
@@ -1224,7 +1244,9 @@
     "emptyTitle": "No apps",
     "emptyBody": "No app is in this status.",
     "loadFailed": "Could not read data from the API",
-    "network": "IP restriction"
+    "network": "IP restriction",
+    "colNamespace": "Namespace",
+    "colSlug": "Slug"
   },
   "approveApp": {
     "title": "Approve this app?",
@@ -1268,7 +1290,7 @@
     "mustMatch": "Must match /{pattern}/",
     "namespaceNote": "The namespace is the app’s ownership within the organization; only one app per organization holds it. Treat it as fixed once set.",
     "callerSource": "Caller source",
-    "originNote": "<mono>internal</mono> = a service inside the company network. <mono>external</mono> = called from outside.",
+    "originNote": "<b>Internal</b> = a service inside the company network. <b>External</b> = called from outside.",
     "grantLater": "The sending channel granted by default is <b>email</b>. You get the API key in step 4.",
     "topicsDraftNote": "Topics are created as <mono>draft</mono>; activate them on the Topics screen before sending.",
     "addTopic": "Add topic",
@@ -1297,7 +1319,12 @@
     "noOrgTitle": "You cannot register apps",
     "noOrgBody": "Only an organization Owner / Org Admin (or a Super Admin) can register apps. Ask your organization Owner to raise your role.",
     "stepKey": "API key",
-    "create": "Create app ({count, plural, one {# topic} other {# topics}})"
+    "create": "Create app ({count, plural, one {# topic} other {# topics}})",
+    "originInternal": "Internal",
+    "originExternal": "External",
+    "factOrg": "organization",
+    "factName": "name",
+    "factOrigin": "caller source"
   },
   "repeatable": {
     "add": "Add",
@@ -1482,5 +1509,49 @@
     "emptyBody": "Click \"Sync M365\" to fetch people in the company.",
     "notFound": "Nothing found",
     "noMatch": "No one matches the filters."
+  },
+  "status": {
+    "draft": "draft",
+    "pending_approval": "pending approval",
+    "scheduled": "scheduled",
+    "queued": "queued",
+    "sending": "sending",
+    "sent": "sent",
+    "partially_failed": "partially failed",
+    "no_recipient": "no recipient",
+    "stopped": "stopped",
+    "cancelled": "cancelled",
+    "failed": "failed",
+    "active": "active",
+    "suspended": "suspended",
+    "revoked": "revoked",
+    "published": "published",
+    "superseded": "superseded",
+    "archived": "archived",
+    "unsubscribed": "unsubscribed",
+    "invalid": "invalid",
+    "included": "included",
+    "excluded": "excluded",
+    "broken": "broken",
+    "disabled": "disabled",
+    "delivered": "delivered",
+    "pending": "pending",
+    "duplicate": "duplicate",
+    "skipped": "skipped",
+    "rejected": "rejected"
+  },
+  "auditSources": {
+    "admin_api": "Console",
+    "v1_api": "App API",
+    "incoming_webhook": "Incoming webhook",
+    "worker": "System",
+    "scheduler": "System",
+    "system": "System"
+  },
+  "channels": {
+    "email": "Email",
+    "in_app": "In-app",
+    "sms": "SMS",
+    "push": "Push"
   }
 }

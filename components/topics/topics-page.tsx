@@ -14,7 +14,7 @@ import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
 import { CreateTopicDialog } from '@/components/topics/create-topic-dialog'
@@ -48,6 +48,7 @@ const isKnownMode = (m: string): m is keyof typeof DEFAULT_MODE_KEY => m in DEFA
 
 export function TopicsPage() {
   const t = useTranslations('topics')
+  const statusLabel = useStatusLabel()
   const te = useTranslations('errors')
   const { app } = useApp()
   // App Viewer chỉ xem — ẩn nút ghi (backend vẫn chặn bằng 403, đây chỉ để giao diện gọn).
@@ -258,6 +259,7 @@ export function TopicsPage() {
         rows={(rows ?? []) as Row[]}
         columns={columns}
         filterKey="status"
+        chipLabel={statusLabel}
         searchPlaceholder={t('searchPlaceholder')}
         empty={
           rows === null ? (

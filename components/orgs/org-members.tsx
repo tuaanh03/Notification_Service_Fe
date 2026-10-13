@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { KeyRound, MoreHorizontal, Pencil, Plus, TriangleAlert, UserMinus, Users } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { tOr } from '@/i18n/dynamic'
 import { consoleOrgs } from '@/lib/access'
 import type { AppRole, OrgAppRoleDto, OrgMemberDto, OrgRole } from '@/lib/api/types'
 import { useAppSelection } from '@/components/app-context'
@@ -173,6 +174,7 @@ export function OrgMembers({
         columns={columns}
         rows={rows}
         filterKey="role"
+        chipLabel={(role) => tOr(tr, role)}
         empty={<EmptyState icon={Users} title={t('emptyTitle')} description={t('emptyBody')} />}
       />
 

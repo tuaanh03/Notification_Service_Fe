@@ -1,6 +1,7 @@
 'use client'
 import { AppLink, useAppRouter } from '@/components/app-link'
 import { useAppSelection } from '@/components/app-context'
+import { tOr } from '@/i18n/dynamic'
 import { appKey } from '@/lib/app-routes'
 import { useState, useTransition } from 'react'
 import { Ban, Check, Copy, Database, MoreHorizontal, Network, Pause, Play, Plus, ShieldAlert, TriangleAlert } from 'lucide-react'
@@ -11,7 +12,7 @@ import { fmtDateTime } from '@/lib/time'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ import { approveAndIssueKeyAction, transitionAppAction, type ApproveResult } fro
 /** Cột của bảng — trong hook vì nhãn và định dạng số theo ngôn ngữ đang chọn. */
 function useColumns(): Column<AppDto>[] {
   const t = useTranslations('allApps')
+  const tch = useTranslations('channels')
   const format = useFormatter()
   return [
   {
@@ -55,10 +57,10 @@ function useColumns(): Column<AppDto>[] {
       </span>
     ),
   },
-  { key: 'slug', label: 'slug', mono: true },
+  { key: 'slug', label: t('colSlug'), mono: true },
   {
     key: 'namespace',
-    label: 'topic_namespace',
+    label: t('colNamespace'),
     render: (app) => <span className="font-mono text-xs text-[var(--starlight)]">{app.namespace}</span>,
   },
   { key: 'status', label: t('colStatus'), render: (app) => <StatusPill status={app.status} /> },
@@ -68,8 +70,8 @@ function useColumns(): Column<AppDto>[] {
     render: (app) => (
       <span className="flex gap-1">
         {app.grantedChannels.map((c) => (
-          <Badge key={c} variant="outline" className="font-mono text-[10px]">
-            {c}
+          <Badge key={c} variant="outline" className="text-[10px]">
+            {tOr(tch, c)}
           </Badge>
         ))}
       </span>
@@ -196,6 +198,7 @@ const actionColumn = (
  */
 export function AppAdminList({ rows }: { rows: AppDto[] }) {
   const t = useTranslations('allApps')
+  const statusLabel = useStatusLabel()
   const columns = useColumns()
   const router = useAppRouter()
   // Chỉ mở app mà console app thấy được (`?app=<app_id>`) — app ngoài danh sách thì không có link.
@@ -279,6 +282,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
           if (key) router.push('/', { app: key })
         }}
         filterKey="status"
+        chipLabel={statusLabel}
         empty={<EmptyState icon={Database} title={t('emptyTitle')} description={t('emptyBody')} />}
       />
 

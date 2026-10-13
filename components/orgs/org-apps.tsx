@@ -11,7 +11,7 @@ import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { useRole } from '@/components/role-context'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
  */
 export function OrgApps({ orgId }: { orgId: string }) {
   const t = useTranslations('orgs')
+  const statusLabel = useStatusLabel()
   const router = useAppRouter()
   const { me, creatableOrgs } = useRole()
   const { apps } = useAppSelection()
@@ -52,6 +53,7 @@ export function OrgApps({ orgId }: { orgId: string }) {
         columns={columns}
         rows={rows}
         filterKey="status"
+        chipLabel={statusLabel}
         onRowClick={(a) => router.push('/', { app: appKey(a) })}
         empty={<EmptyState icon={LayoutGrid} title={t('noAppsTitle')} description={t('noAppsBody')} action={createButton} />}
       />
