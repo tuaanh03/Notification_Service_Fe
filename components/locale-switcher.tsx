@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { setLocaleAction } from '@/i18n/actions'
 import { LOCALES, type Locale } from '@/i18n/locales'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { LocaleFlag } from './locale-flag'
 
 /**
  * Đổi ngôn ngữ giao diện: ghi cookie ở server rồi `refresh()` để cây server component dựng lại
@@ -43,7 +44,8 @@ export function LocaleToggle() {
       aria-label={t('label')}
     >
       {LOCALES.map((l) => (
-        <ToggleGroupItem key={l} value={l} aria-label={t(l)} className="font-mono text-xs uppercase">
+        <ToggleGroupItem key={l} value={l} aria-label={t(l)} className="gap-1.5 font-mono text-xs uppercase">
+          <LocaleFlag locale={l} />
           {l}
         </ToggleGroupItem>
       ))}

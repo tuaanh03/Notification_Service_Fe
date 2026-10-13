@@ -5,7 +5,7 @@
   "locale": {
     "label": "Ngôn ngữ",
     "vi": "Tiếng Việt",
-    "en": "English"
+    "en": "Tiếng Anh"
   },
   "login": {
     "subtitle": "Đăng nhập để quản trị",
@@ -49,9 +49,6 @@
     "collapseSidebar": "Thu gọn sidebar (Ctrl + B)",
     "expandSidebar": "Mở rộng sidebar (Ctrl + B)",
     "signOut": "Đăng xuất",
-    "search": "Tìm kiếm",
-    "quotaTitle": "Quota phút: {used}/{max}",
-    "quota": "Quota:",
     "adminArea": "Quản trị EWS",
     "toConsole": "Về console app"
   },

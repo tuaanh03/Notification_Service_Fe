@@ -4,7 +4,7 @@
   },
   "locale": {
     "label": "Language",
-    "vi": "Tiếng Việt",
+    "vi": "Vietnamese",
     "en": "English"
   },
   "login": {
@@ -49,9 +49,6 @@
     "collapseSidebar": "Collapse sidebar (Ctrl + B)",
     "expandSidebar": "Expand sidebar (Ctrl + B)",
     "signOut": "Sign out",
-    "search": "Search",
-    "quotaTitle": "Per-minute quota: {used}/{max}",
-    "quota": "Quota:",
     "adminArea": "EWS Admin",
     "toConsole": "Back to app console"
   },

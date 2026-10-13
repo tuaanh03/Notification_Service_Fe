@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import {
   FileText,
   LayoutDashboard,
-  Search,
   Send,
   Settings,
   Users,
@@ -17,7 +16,6 @@ import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
 import { AppLink } from './app-link'
 import { ADMIN_HOME } from '@/lib/app-routes'
-import { QuotaArc } from '@/components/quota-arc'
 import { useRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
@@ -65,7 +63,6 @@ import {
  */
 export function AppShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
   const path = usePathname()
-  const t = useTranslations('shell')
   const tn = useTranslations('nav')
   const tr = useTranslations('roles')
   const { me, isSuperAdmin } = useRole()
@@ -329,27 +326,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
               </BreadcrumbList>
             </Breadcrumb>
 
-            <div className="ml-auto flex items-center gap-3">
-              <div className="hidden items-center gap-2 rounded-lg border border-[var(--orbit)] bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground sm:flex">
-                <Search className="size-3.5" />
-                <span>{t('search')}</span>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  ⌘K
-                </kbd>
-              </div>
-              {app && (
-                <div
-                  className="hidden items-center gap-2 text-xs md:flex rounded-lg border border-[var(--orbit)] bg-muted/30 px-2.5 py-1"
-                  title={t('quotaTitle', { used: app.quota_used ?? 0, max: app.quota })}
-                >
-                  <QuotaArc used={app.quota_used ?? 0} max={app.quota} className="size-4" />
-                  <span className="text-muted-foreground">{t('quota')}</span>
-                  <span className="font-mono tabular-nums font-semibold text-[var(--starlight)]">
-                    {app.quota_used ?? 0}/{app.quota}
-                  </span>
-                </div>
-              )}
-            </div>
           </header>
 
           <main className="w-full px-4 lg:px-6 py-6 min-w-0">

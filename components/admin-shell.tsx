@@ -49,7 +49,7 @@ const NAV = (
  * Khung của khu Quản trị EWS (`/admin/*`) — CHỈ Super Admin (ADR-0022 của backend).
  *
  * Tách khỏi `<AppShell>` vì việc ở đây là của toàn hệ thống, không của một app: không có ô chọn
- * app, không có vòng quota, không cần `?app=`. Super Admin không thuộc org nào vẫn vào được.
+ * app, không cần `?app=`. Super Admin không thuộc org nào vẫn vào được.
  * `<AppGate>` chọn khung theo đường dẫn; `app/admin/layout.tsx` chặn người không phải Super Admin.
  */
 export function AdminShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {

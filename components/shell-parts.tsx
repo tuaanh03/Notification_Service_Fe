@@ -1,12 +1,13 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Check, ChevronsUpDown, Languages, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import { Check, ChevronsUpDown, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { AppLink } from './app-link'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
 import { LOCALES } from '@/i18n/locales'
+import { LocaleFlag } from './locale-flag'
 import { useLocaleSwitch } from './locale-switcher'
 import { cn } from '@/lib/utils'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar'
@@ -205,7 +206,7 @@ export function AccountMenu({
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <Languages className="size-3.5 text-muted-foreground" />
+                    <LocaleFlag locale={l} />
                     <span>{tl(l)}</span>
                   </div>
                   {l === locale && <Check className="size-3.5 text-[var(--starlight)]" />}

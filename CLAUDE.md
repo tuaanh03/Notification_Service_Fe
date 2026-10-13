@@ -615,7 +615,8 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<EmptyState icon title description action>` | `components/empty-state.tsx` | ✓ | orbit SVG, không emoji |
 | `<CodeBlock language value copyable>` | `components/code-block.tsx` | ✓ | toast "Đã sao chép" |
 | `<ConfirmDialog title facts confirmLabel onConfirm>` | `components/confirm-dialog.tsx` | ✓ | bọc shadcn `<Dialog>`; `facts` = 3 dòng mono; `confirmLabel` nói rõ hậu quả (`Gửi cho 43 người`); prop `tone="blocking"` / `confirmHref` / `children` / `confirmDisabled` cho modal chặn hoặc có form bên trong |
-| `<QuotaArc used max>` | `components/quota-arc.tsx` | ✓ | vòng quota duy nhất — top bar (size-5) và `/settings/quota` (size-28, có `children` ở giữa); đổi màu solar ≥ 80 %, supernova khi chạm trần |
+| `<QuotaArc used max>` | `components/quota-arc.tsx` | ✓ | vòng quota duy nhất — `/settings/quota` (size-28, có `children` ở giữa); top bar không còn ô Quota / Tìm kiếm; đổi màu solar ≥ 80 %, supernova khi chạm trần |
+| `<LocaleFlag locale>` | `components/locale-flag.tsx` | ✓ | cờ SVG của ngôn ngữ (vi = Việt Nam, en = Anh) cạnh tên ngôn ngữ ở menu tài khoản và nút VI / EN trang đăng nhập — không dùng emoji cờ (Windows hiện thành chữ). Tên ngôn ngữ dịch theo ngôn ngữ đang dùng (`locale.vi` / `locale.en`) |
 | `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `user-detail` (bản v0, không còn route nào dùng) và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<SecretText value visible>` | `components/secret-text.tsx` | ✓ | khoá bí mật phủ lớp dạ quang, hiện thì tan dần; dùng trong `<CredentialDialog>`, `<WebhookSecretDialog>`, `<CodeBlock secret>` (mục 4) |
