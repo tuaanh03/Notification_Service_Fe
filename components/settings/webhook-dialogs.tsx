@@ -78,6 +78,7 @@ export function WebhookFormDialog({
             placeholder="https://app.example.com/ews-webhook"
             className="font-mono text-xs"
             autoComplete="off"
+            spellCheck={false}
           />
           {mode === 'create' && <p className="text-[11px] text-[var(--text-muted)]">{t('urlHint')}</p>}
         </div>
