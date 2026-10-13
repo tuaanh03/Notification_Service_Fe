@@ -932,9 +932,6 @@
     "issue": "Issue new key",
     "actionFailed": "The action failed",
     "keys": "API keys",
-    "hashOnly": "The system stores only a SHA-256 hash. A lost key cannot be recovered — issue a new one.",
-    "activeCount": "{active}/{max} active keys",
-    "atLimit": "There are already {max} active keys — revoke an old key before issuing another.",
     "revokeAria": "Revoke {hint}",
     "revoke": "Revoke",
     "emptyTitle": "No API keys yet",
@@ -942,16 +939,20 @@
     "auditTitle": "API key audit",
     "auditEmpty": "No events yet. Audit is written asynchronously, so a just-finished action may not show yet.",
     "issueTitle": "Issue a new API key?",
-    "issueBody": "The old key STILL works — issuing does not revoke anything. Move the app service to the new key, then come back and revoke the old one. The new key is shown exactly once.",
-    "factActiveNow": "active now",
-    "factActiveAfter": "active after issuing",
+    "issueBody": "Existing keys keep working. The new key is shown exactly once.",
     "issuing": "Issuing…",
     "revokeTitle": "Revoke this key?",
     "revokeBody": "Every /v1 call using this key fails immediately. This cannot be undone.",
     "factKey": "key",
     "factCreated": "created",
-    "factActiveLeft": "active remaining",
-    "revoking": "Revoking…"
+    "revoking": "Revoking…",
+    "colName": "Name",
+    "colLastUsed": "Last used",
+    "neverUsed": "Never",
+    "nameLabel": "Key name",
+    "namePlaceholder": "e.g. backend prod",
+    "factName": "name",
+    "factLastUsed": "last used"
   },
   "credentialDialog": {
     "title": "Shown only once",
@@ -1148,7 +1149,11 @@
     "outOfRange": "Enter a whole number from {min} to {max}.",
     "save": "Save",
     "reset": "Reset to default",
-    "propagation": "New values take effect on every API server within 30 seconds."
+    "propagation": "New values take effect on every API server within 30 seconds.",
+    "appsTitle": "Apps",
+    "maxKeysLabel": "Maximum active API keys per app",
+    "maxKeysHelp": "At this number a key must be revoked before another is issued.",
+    "unitKeys": "keys"
   },
   "quota": {
     "title": "Channels & Quota",

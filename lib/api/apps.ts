@@ -65,11 +65,15 @@ export async function listSecrets(appId: string): Promise<AppSecretDto[]> {
 /**
  * POST /admin/apps/:appId/secrets — response DUY NHẤT chứa `apiKey` plaintext.
  *
- * Cấp khoá mới KHÔNG thu hồi khoá cũ: backend cho tối đa `MAX_ACTIVE_SECRETS` khoá
- * active đúng để xoay vòng không mất kết nối (cấp mới -> app đổi sang -> thu hồi cũ).
+ * Cấp khoá mới KHÔNG thu hồi khoá cũ. Số khoá active tối đa do Super Admin chỉnh ở Cài đặt
+ * hệ thống (`apps.max_active_api_keys`); vượt -> 422 `ACTIVE_SECRET_LIMIT`. Khoá đầu tiên cấp
+ * từ wizard không có tên (`name` bỏ trống).
  */
-export async function issueSecret(appId: string): Promise<IssuedAppSecretDto> {
-  return adminFetch<IssuedAppSecretDto>(`/apps/${encodeURIComponent(appId)}/secrets`, { method: 'POST' })
+export async function issueSecret(appId: string, name?: string): Promise<IssuedAppSecretDto> {
+  return adminFetch<IssuedAppSecretDto>(`/apps/${encodeURIComponent(appId)}/secrets`, {
+    method: 'POST',
+    body: name === undefined ? {} : { name },
+  })
 }
 
 /** DELETE /admin/apps/:appId/secrets/:secretId — không hoàn tác được. */

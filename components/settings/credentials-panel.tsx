@@ -18,23 +18,26 @@ import { StatusPill } from '@/components/status-pill'
 import { CredentialDialog } from '@/components/apps/credential-dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
 import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
-import { MAX_ACTIVE_SECRETS } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
 
-const HEADERS = ['colHint', 'colStatus', 'colCreated', 'colRevoked', null] as const
+const HEADERS = ['colName', 'colHint', 'colStatus', 'colCreated', 'colLastUsed', 'colRevoked', null] as const
+
+/** Trùng `SECRET_NAME_MAX_LENGTH` của backend. */
+const NAME_MAX = 100
 
 /**
  * UC-001 §E — vòng đời khoá API của app đang chọn. Bảng chỉ có hint; plaintext chỉ hiện
  * đúng một lần ngay sau khi cấp, trong `<CredentialDialog>` (BR-4).
  *
- * `MAX_ACTIVE_SECRETS` = 2 ở cả hai phía (backend `app-secret.ts`, `lib/mock-data.ts`):
- * hai khoá cùng sống để xoay vòng KHÔNG mất kết nối — cấp khoá mới, chuyển app service
- * sang, rồi mới thu hồi khoá cũ. Cấp mới KHÔNG tự thu hồi khoá cũ.
+ * Mỗi nơi gọi `/v1` nên có khoá riêng, đặt tên để biết khoá dùng ở đâu. Trần số khoá active do
+ * Super Admin chỉnh ở Cài đặt hệ thống (`apps.max_active_api_keys`) — console không biết con số,
+ * vượt trần thì backend trả 422 `ACTIVE_SECRET_LIMIT`. Cấp mới KHÔNG tự thu hồi khoá cũ.
  */
 export function CredentialsPanel() {
   const t = useTranslations('credentials')
@@ -46,6 +49,7 @@ export function CredentialsPanel() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [issueOpen, setIssueOpen] = useState(false)
+  const [keyName, setKeyName] = useState('')
   const [revoking, setRevoking] = useState<AppSecretDto | null>(null)
   /** Khoá vừa cấp — chỉ nằm ở đây cho tới khi người dùng đóng modal, rồi mất hẳn. */
   const [issued, setIssued] = useState<IssuedAppSecretDto | null>(null)
@@ -72,12 +76,16 @@ export function CredentialsPanel() {
   }, [load])
 
   const secrets = view?.secrets ?? []
-  const activeCount = secrets.filter((s) => s.status === 'active').length
-  const atLimit = activeCount >= MAX_ACTIVE_SECRETS
+  const trimmedName = keyName.trim()
+
+  const openIssue = () => {
+    setKeyName('')
+    setIssueOpen(true)
+  }
 
   const issue = () => {
     startTransition(async () => {
-      const result = await issueSecretAction(appId)
+      const result = await issueSecretAction(appId, trimmedName)
       if (!result.ok) {
         setActionError(te('withCode', { message: result.message, code: result.code }))
         return
@@ -127,13 +135,6 @@ export function CredentialsPanel() {
     )
   }
 
-  const issueButton = (
-    <Button variant="outline" disabled={atLimit || pending} onClick={() => setIssueOpen(true)}>
-      <RotateCcw />
-      {t('issue')}
-    </Button>
-  )
-
   return (
     <>
       {header}
@@ -148,25 +149,13 @@ export function CredentialsPanel() {
 
       <Panel className="p-5" ring>
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold">{t('keys')}</h2>
-            {/* UC-001 BR-4: không bao giờ hiện khoá đầy đủ ở đây */}
-            <p className="mt-2 text-xs text-[var(--text-secondary)]">
-              {t('hashOnly')}
-            </p>
-            <p className="mt-1 font-mono text-[11px] tabular-nums text-[var(--text-muted)]">
-              {t('activeCount', { active: activeCount, max: MAX_ACTIVE_SECRETS })}
-            </p>
-          </div>
-          {!writable ? null : atLimit ? (
-            <Tooltip>
-              <TooltipTrigger render={<span className="inline-flex" />}>{issueButton}</TooltipTrigger>
-              <TooltipContent>
-                {t('atLimit', { max: MAX_ACTIVE_SECRETS })}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            issueButton
+          {/* UC-001 BR-4: không bao giờ hiện khoá đầy đủ ở đây */}
+          <h2 className="text-sm font-semibold">{t('keys')}</h2>
+          {writable && (
+            <Button variant="outline" disabled={pending} onClick={openIssue}>
+              <RotateCcw />
+              {t('issue')}
+            </Button>
           )}
         </div>
         <div className="overflow-x-auto">
@@ -183,6 +172,9 @@ export function CredentialsPanel() {
             <TableBody>
               {secrets.map((s) => (
                 <TableRow key={s.id} className="h-11 border-[var(--orbit)]" data-status={s.status}>
+                  <TableCell className="max-w-56 truncate px-3" title={s.name ?? undefined}>
+                    {s.name ?? '—'}
+                  </TableCell>
                   <TableCell className="px-3 font-mono text-xs text-[var(--starlight)]">
                     <KeyRound className="mr-2 inline size-3.5" />
                     {s.hint}
@@ -191,6 +183,9 @@ export function CredentialsPanel() {
                     <StatusPill status={s.status} />
                   </TableCell>
                   <TableCell className="px-3 font-mono text-xs">{fmtDateTime(s.createdAt)}</TableCell>
+                  <TableCell className="px-3 font-mono text-xs">
+                    {s.lastUsedAt ? fmtDateTime(s.lastUsedAt) : t('neverUsed')}
+                  </TableCell>
                   <TableCell className="px-3 font-mono text-xs">
                     {s.revokedAt ? fmtDateTime(s.revokedAt) : '—'}
                   </TableCell>
@@ -201,7 +196,7 @@ export function CredentialsPanel() {
                         size="xs"
                         disabled={pending}
                         onClick={() => setRevoking(s)}
-                        aria-label={t('revokeAria', { hint: s.hint })}
+                        aria-label={t('revokeAria', { hint: s.name ?? s.hint })}
                       >
                         <ShieldOff /> {t('revoke')}
                       </Button>
@@ -237,16 +232,25 @@ export function CredentialsPanel() {
         tone="warning"
         title={t('issueTitle')}
         description={t('issueBody')}
-        facts={[
-          ['app_id', app.app_id],
-          [t('factActiveNow'), `${activeCount}/${MAX_ACTIVE_SECRETS}`],
-          [t('factActiveAfter'), `${activeCount + 1}/${MAX_ACTIVE_SECRETS}`],
-        ]}
         confirmLabel={pending ? t('issuing') : t('issue')}
-        confirmDisabled={pending}
+        confirmDisabled={pending || trimmedName === '' || trimmedName.length > NAME_MAX}
         onConfirm={issue}
         onCancel={() => setIssueOpen(false)}
-      />
+      >
+        <div className="space-y-2">
+          <Label htmlFor="api-key-name" className="text-xs">
+            {t('nameLabel')}
+          </Label>
+          <Input
+            id="api-key-name"
+            value={keyName}
+            maxLength={NAME_MAX}
+            autoFocus
+            onChange={(e) => setKeyName(e.target.value)}
+            placeholder={t('namePlaceholder')}
+          />
+        </div>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={revoking !== null}
@@ -256,9 +260,9 @@ export function CredentialsPanel() {
         facts={
           revoking
             ? [
+                ...(revoking.name ? [[t('factName'), revoking.name] as [string, string]] : []),
                 [t('factKey'), revoking.hint],
-                [t('factCreated'), fmtDateTime(revoking.createdAt)],
-                [t('factActiveLeft'), `${activeCount - 1}/${MAX_ACTIVE_SECRETS}`],
+                [t('factLastUsed'), revoking.lastUsedAt ? fmtDateTime(revoking.lastUsedAt) : t('neverUsed')],
               ]
             : undefined
         }

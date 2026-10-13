@@ -908,14 +908,7 @@ export const ungrantedChannelTopics = (granted: Channel[], topicKeys: string[]) 
     .map((t) => ({ topic_key: t.topic_key, channels: (t.default_channels ?? []).filter((c) => !granted.includes(c)) }))
     .filter((t) => t.channels.length > 0)
 
-/* ---- UC-001 §E Credentials: chỉ có hint, không bao giờ có bản gốc ---- */
-/**
- * Màn `/settings/credentials` đã đọc khoá và audit THẬT (`AppSecretDto`, `/admin/audit`),
- * nên fixture khoá mock đã bỏ. Giữ lại đúng hằng số nghiệp vụ, trùng khít backend
- * (`ews-astrolink-api/src/modules/apps/domain/entities/app-secret.ts`): hai khoá cùng
- * active để xoay vòng không mất kết nối.
- */
-export const MAX_ACTIVE_SECRETS = 2
+/* ---- UC-001 §E Credentials: màn `/settings/credentials` đọc khoá và audit THẬT ---- */
 /**
  * Khoá giả cho các màn CHƯA đấu backend (wizard đăng ký app, duyệt app). Đúng định dạng thật
  * `ews_<32 hex>_<43 ký tự base64url>` để không dạy sai người đọc.

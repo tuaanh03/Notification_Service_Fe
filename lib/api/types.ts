@@ -106,10 +106,14 @@ export type AppSecretDto = {
   id: string
   /** `ews_<8 hex>…<4 ký tự cuối>` — đủ để nhận ra khoá, không đủ để dùng. */
   hint: string
+  /** Tên người cấp đặt (≤ 100 ký tự). Khoá cấp trước khi có tên -> `null`. */
+  name: string | null
   /** APP_SECRET_STATUSES: active | revoked */
   status: string
   createdAt: string
   revokedAt: string | null
+  /** Lần cuối khoá gọi `/v1` thành công — chính xác tới khoảng 5 phút. `null` = chưa dùng. */
+  lastUsedAt: string | null
 }
 
 /**

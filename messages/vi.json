@@ -932,9 +932,6 @@
     "issue": "Cấp khoá mới",
     "actionFailed": "Thao tác không thành công",
     "keys": "Khoá API",
-    "hashOnly": "Hệ thống chỉ lưu SHA-256 hash. Mất khoá thì phải cấp khoá mới, không lấy lại được.",
-    "activeCount": "{active}/{max} khoá active",
-    "atLimit": "Đã có {max} khoá active — thu hồi khoá cũ trước khi cấp thêm.",
     "revokeAria": "Thu hồi {hint}",
     "revoke": "Thu hồi",
     "emptyTitle": "Chưa có khoá API",
@@ -942,16 +939,20 @@
     "auditTitle": "Audit khoá API",
     "auditEmpty": "Chưa có sự kiện nào. Audit được ghi bất đồng bộ nên thao tác vừa xong có thể chưa hiện ngay.",
     "issueTitle": "Cấp khoá API mới?",
-    "issueBody": "Khoá cũ VẪN hoạt động — cấp mới không thu hồi gì cả. Chuyển app service sang khoá mới xong thì quay lại thu hồi khoá cũ. Khoá mới chỉ hiện đúng một lần.",
-    "factActiveNow": "active hiện tại",
-    "factActiveAfter": "active sau khi cấp",
+    "issueBody": "Khoá cũ vẫn hoạt động. Khoá mới chỉ hiện đúng một lần.",
     "issuing": "Đang cấp…",
     "revokeTitle": "Thu hồi khoá này?",
     "revokeBody": "Mọi lời gọi /v1 dùng khoá này hỏng ngay lập tức. Không hoàn tác được.",
     "factKey": "khoá",
     "factCreated": "tạo lúc",
-    "factActiveLeft": "active còn lại",
-    "revoking": "Đang thu hồi…"
+    "revoking": "Đang thu hồi…",
+    "colName": "Tên",
+    "colLastUsed": "Dùng lần cuối",
+    "neverUsed": "Chưa dùng",
+    "nameLabel": "Tên khoá",
+    "namePlaceholder": "Ví dụ: backend prod",
+    "factName": "tên",
+    "factLastUsed": "dùng lần cuối"
   },
   "credentialDialog": {
     "title": "Chỉ hiển thị một lần",
@@ -1148,7 +1149,11 @@
     "outOfRange": "Nhập số nguyên từ {min} đến {max}.",
     "save": "Lưu",
     "reset": "Về mặc định",
-    "propagation": "Giá trị mới có hiệu lực trên mọi máy chủ API trong tối đa 30 giây."
+    "propagation": "Giá trị mới có hiệu lực trên mọi máy chủ API trong tối đa 30 giây.",
+    "appsTitle": "Ứng dụng",
+    "maxKeysLabel": "Số khoá API đang hoạt động tối đa mỗi app",
+    "maxKeysHelp": "Đủ số này thì phải thu hồi một khoá trước khi cấp thêm.",
+    "unitKeys": "khoá"
   },
   "quota": {
     "title": "Kênh & Quota",

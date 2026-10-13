@@ -665,8 +665,9 @@ chuyện thẩm mỹ. Nguồn: `../../use_case_template/use_case_*.md`, `../../u
 *   **Footer opt-out do hệ thống chèn**, hiển thị read-only có khoá (UC-006 BR-10).
 *   **Credential chỉ hiện một lần**; trang credentials chỉ hiện hint (UC-001 BR-4). Khoá thật có
     dạng `ews_<32 hex>_<43 ký tự>`; `/v1/*` xác thực THẲNG bằng `Authorization: Bearer <khoá>`,
-    **không** có bước đổi token. Cấp khoá mới **không** thu hồi khoá cũ — tối đa 2 khoá active
-    đúng để xoay vòng không mất kết nối.
+    **không** có bước đổi token. Cấp khoá mới **không** thu hồi khoá cũ. Mỗi khoá có tên (hỏi lúc cấp)
+    và "Dùng lần cuối"; trần số khoá active là cài đặt hệ thống `apps.max_active_api_keys` (mặc định 20)
+    — console không biết con số, vượt trần thì backend trả 422 `ACTIVE_SECRET_LIMIT`.
 *   **Khoá bí mật đang hiện luôn qua `<SecretText>`** (`components/secret-text.tsx` — lớp dạ quang
     `--highlighter`). Một nút Hiện / Ẩn điều khiển MỌI chỗ khoá xuất hiện trong hộp: dòng secret và
     khối code (`<CodeBlock secret={{ value, visible }}>` chỉ che đúng đoạn khoá). Đang ẩn thì DOM

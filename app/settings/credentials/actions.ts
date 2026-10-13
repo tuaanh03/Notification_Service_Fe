@@ -31,8 +31,8 @@ export async function loadCredentialsAction(appId: string): Promise<ActionResult
   })
 }
 
-export async function issueSecretAction(appId: string): Promise<ActionResult<IssuedAppSecretDto>> {
-  return toResult(() => issueSecret(appId))
+export async function issueSecretAction(appId: string, name: string): Promise<ActionResult<IssuedAppSecretDto>> {
+  return toResult(() => issueSecret(appId, name))
 }
 
 export async function revokeSecretAction(
