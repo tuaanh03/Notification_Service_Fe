@@ -1,7 +1,6 @@
 import 'server-only'
 import { type App, type Channel } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
-import { appRouteKeys } from '@/lib/app-routes'
 import { adminFetch } from './client'
 import type { AdminProfileDto, AppDto, AppSecretDto, IssuedAppSecretDto, NetworkRuleDto } from './types'
 
@@ -20,10 +19,7 @@ export async function listVisibleApps(orgs: AdminProfileDto['orgs']): Promise<Ap
   const perOrg = await Promise.all(
     orgs.map(async (org) => (await listApps(org.id)).map((dto) => ({ ...toApp(dto), org_id: org.id, org_name: org.name }))),
   )
-  const apps = perOrg.flat()
-  // Slug chỉ duy nhất TRONG một org: hai org trùng slug thì `?app=` phải phân biệt được.
-  const keys = appRouteKeys(apps)
-  return apps.map((a) => ({ ...a, route_key: keys.get(a.app_id) ?? a.slug }))
+  return perOrg.flat()
 }
 
 /** GET /admin/apps/:appId */

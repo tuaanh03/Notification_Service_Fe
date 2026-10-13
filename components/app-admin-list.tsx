@@ -198,7 +198,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
   const t = useTranslations('allApps')
   const columns = useColumns()
   const router = useAppRouter()
-  // `?app=` của một app lấy từ danh sách của console app (có thể kèm đuôi khi hai org trùng slug).
+  // Chỉ mở app mà console app thấy được (`?app=<app_id>`) — app ngoài danh sách thì không có link.
   const { apps } = useAppSelection()
   const keyOf = (appId: string) => {
     const found = apps.find((a) => a.app_id === appId)

@@ -5,7 +5,7 @@ import { APP_PARAM, appKey } from '@/lib/app-routes'
 import type { App } from '@/lib/mock-data'
 
 /**
- * App đang xem — ĐỌC TỪ ĐƯỜNG DẪN (`?app=<slug>`), không giữ trong state (`lib/app-routes.ts`).
+ * App đang xem — ĐỌC TỪ ĐƯỜNG DẪN (`?app=<app_id>`), không giữ trong state (`lib/app-routes.ts`).
  * Ô chọn app trên AppShell chỉ hiển thị và đổi tham số đó.
  *
  * Danh sách app do `app/layout.tsx` (server component) nạp từ `/admin/apps` rồi truyền
@@ -41,15 +41,15 @@ export function AppProvider({ apps, children }: { apps: App[]; children: React.R
     [apps, requested],
   )
 
-  const slug = value.app ? appKey(value.app) : undefined
+  const key = value.app ? appKey(value.app) : undefined
   useEffect(() => {
-    if (!slug) return
+    if (!key) return
     try {
-      window.localStorage.setItem(LAST_APP_KEY, slug)
+      window.localStorage.setItem(LAST_APP_KEY, key)
     } catch {
       // Trình duyệt chặn lưu trữ: chỉ mất nhãn "dùng gần nhất".
     }
-  }, [slug])
+  }, [key])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

@@ -1,5 +1,5 @@
 /**
- * App nằm TRÊN ĐƯỜNG DẪN (`?app=<slug>`) — nguồn duy nhất cho câu hỏi "đang xem app nào".
+ * App nằm TRÊN ĐƯỜNG DẪN (`?app=<app_id>`) — nguồn duy nhất cho câu hỏi "đang xem app nào".
  *
  * Giữ app trong state client thì tải lại / mở tab mới / gửi link cho đồng nghiệp đều rơi về app
  * khác mà màn hình không báo gì. Đường dẫn thiếu app thì BẮT CHỌN (`<AppGate>`), không đoán.
@@ -76,25 +76,18 @@ export const APP_DETAIL_ROUTES: ReadonlyArray<{ base: string; static: readonly s
   { base: '/notifications', static: ['/notifications/errors'] },
 ]
 
-/** Giá trị `?app=` của một app — LUÔN đi qua hàm này, không đọc thẳng `slug`. */
-export function appKey(app: { slug: string; route_key?: string | undefined }): string {
-  return app.route_key ?? app.slug
-}
-
 /**
- * Slug chỉ duy nhất trong MỘT org (`uq_apps_org_slug` của backend). Một người thấy app của nhiều
- * org thì hai app có thể trùng slug — khi đó `?app=` thêm 8 ký tự đầu của id để không mở nhầm app.
- * App không trùng giữ slug trơn: link cũ vẫn chạy.
+ * Giá trị `?app=` của một app — LUÔN đi qua hàm này. Là `app_id`: không trùng giữa các org, không
+ * bao giờ đổi, nên link gửi cho ai cũng mở đúng app. Không dùng slug — slug chỉ duy nhất trong
+ * MỘT org, hai org trùng slug thì cùng một link mở ra app khác nhau tuỳ người xem.
  */
-export function appRouteKeys(apps: readonly { app_id: string; slug: string }[]): Map<string, string> {
-  const count = new Map<string, number>()
-  for (const a of apps) count.set(a.slug, (count.get(a.slug) ?? 0) + 1)
-  return new Map(apps.map((a) => [a.app_id, (count.get(a.slug) ?? 0) > 1 ? `${a.slug}~${a.app_id.slice(0, 8)}` : a.slug]))
+export function appKey(app: { app_id: string }): string {
+  return app.app_id
 }
 
-/** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `slug = null`, link ngoài, khu Quản trị EWS hoặc `/orgs` -> để nguyên. */
-export function withApp(href: string, slug: string | null): string {
-  if (slug === null || !href.startsWith('/')) return href
+/** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `key = null`, link ngoài, khu Quản trị EWS hoặc `/orgs` -> để nguyên. */
+export function withApp(href: string, key: string | null): string {
+  if (key === null || !href.startsWith('/')) return href
   const hashAt = href.indexOf('#')
   const hash = hashAt === -1 ? '' : href.slice(hashAt)
   const beforeHash = hashAt === -1 ? href : href.slice(0, hashAt)
@@ -103,7 +96,7 @@ export function withApp(href: string, slug: string | null): string {
   // Khu Quản trị EWS và trang Tổ chức không thuộc app nào: link tới đó không mang `?app=`.
   if (isAdminRoute(path) || isOrgsRoute(path)) return href
   const params = new URLSearchParams(queryAt === -1 ? '' : beforeHash.slice(queryAt + 1))
-  params.set(APP_PARAM, slug)
+  params.set(APP_PARAM, key)
   return `${path}?${params.toString()}${hash}`
 }
 

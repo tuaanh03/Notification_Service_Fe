@@ -9,8 +9,6 @@ export type App = {
   /** Org sở hữu — app thật luôn có (`listVisibleApps`); mock để trống. */
   org_id?: string
   org_name?: string
-  /** Giá trị `?app=` (`appKey()` trong `lib/app-routes.ts`): slug, hoặc slug kèm đuôi khi hai org trùng slug. */
-  route_key?: string
   status: AppStatus
   namespace: string
   origin: 'internal' | 'external'

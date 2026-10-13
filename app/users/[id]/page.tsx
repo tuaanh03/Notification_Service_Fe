@@ -12,6 +12,6 @@ export default async function Page({
   const { id } = await params
   const { app } = await searchParams
   const externalId = decodeURIComponent(id)
-  const appSlug = typeof app === 'string' ? app : null
-  return <RecipientDetail key={`${appSlug}:${externalId}`} externalId={externalId} />
+  const appKey = typeof app === 'string' ? app : null
+  return <RecipientDetail key={`${appKey}:${externalId}`} externalId={externalId} />
 }

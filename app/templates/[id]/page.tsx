@@ -12,6 +12,6 @@ export default async function Page({
   const { id } = await params
   const { app } = await searchParams
   const templateId = decodeURIComponent(id)
-  const appSlug = typeof app === 'string' ? app : null
-  return <TemplateEditor key={`${appSlug}:${templateId}`} templateId={templateId} />
+  const appKey = typeof app === 'string' ? app : null
+  return <TemplateEditor key={`${appKey}:${templateId}`} templateId={templateId} />
 }

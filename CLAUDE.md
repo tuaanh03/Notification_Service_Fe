@@ -341,7 +341,7 @@ chính app đang có vấn đề.
 ### 2.7. Màn Người nhận — chỉ đọc, và vì sao
 
 `/users` đọc `GET /admin/apps/:appId/users`. Bấm một dòng -> trang chi tiết
-`/users/[externalId]?app=<slug>`, đọc `.../users/:externalId` + `.../users/:externalId/preferences`
+`/users/[externalId]?app=<app_id>`, đọc `.../users/:externalId` + `.../users/:externalId/preferences`
 + lịch sử gửi của người đó (`implementation_plan.md` §5 — bề mặt đọc cho vận hành, ĐX-0004).
 
 *   **Trang chi tiết trả lời cả hai câu hỏi hỗ trợ trên một màn**, xếp dọc, không chia tab:
@@ -401,7 +401,7 @@ chặn không". Hai màn nối nhau: cột **Mã người nhận** là link sang
 `/subscriptions` (còn mock) **đã gỡ khỏi menu**: nó hiện đúng dữ liệu mà màn Người nhận giờ hiện
 bằng số thật. Cùng lý do với `/admin/approvals` ở mục 2.5. Thư mục route giữ nguyên.
 
-### 2.9. App trên đường dẫn (`?app=<slug>`) — không đoán, bắt chọn
+### 2.9. App trên đường dẫn (`?app=<app_id>`) — không đoán, bắt chọn
 
 **Đường dẫn là nguồn DUY NHẤT** cho câu hỏi "đang xem app nào" (`lib/app-routes.ts`).
 `<AppProvider>` đọc `?app=`, không giữ state; ô chọn app chỉ hiển thị và đổi tham số đó. Trước
@@ -464,11 +464,12 @@ hiện dữ liệu của app khác mà không báo gì.
 *   `useApp()` (luôn có app) cho màn của một app; `useAppSelection()` (app có thể null) cho khung
     — sidebar, ô chọn app, `<AppLink>`. Gọi `useApp()` trong màn `/admin` là ném lỗi.
 *   **Danh sách app nạp ở `layout.tsx` (server)**: thêm / duyệt app xong phải `router.refresh()`,
-    không thì app mới không có trong danh sách và link `?app=<slug mới>` rơi vào trang chọn app.
+    không thì app mới không có trong danh sách và link `?app=<app_id mới>` rơi vào trang chọn app.
 *   **Danh sách app đã lọc theo vai ở backend** (ADR-0022): mọi org người này thuộc về, Member chỉ
     thấy app được cấp vai. Nhiều org thì trang chọn app và ô chọn app chia nhóm theo org.
-*   **Giá trị `?app=` lấy bằng `appKey(app)`**, không đọc thẳng `slug`: slug chỉ duy nhất trong một
-    org, hai org trùng slug thì `appKey` thêm đuôi `~<8 ký tự id>` (`appRouteKeys` trong `lib/app-routes.ts`).
+*   **Giá trị `?app=` lấy bằng `appKey(app)` = `app_id`**, không dùng slug: slug chỉ duy nhất trong một
+    org, hai org trùng slug thì cùng một link mở ra app khác nhau tuỳ người xem. id không trùng, không
+    đổi. Link cũ dạng `?app=<slug>` không còn chạy — rơi vào trang chọn app.
 *   **Nút ghi ẩn theo vai** (`useRole().canManage(app)`): App Viewer không thấy thêm topic, cấp / thu
     hồi khoá, soạn / xuất bản template. Chỉ để giao diện gọn — backend vẫn trả 403.
 
