@@ -247,6 +247,10 @@ màn đó** — người trực không phân biệt được "hệ thống yên"
 Cách làm: `lib/preview-routes.ts` giữ **`WIRED_ROUTES`** — danh sách route ĐÃ đọc dữ liệu thật.
 `<PreviewBanner>` render **một lần** trong `<AppShell>` và tự ẩn ở những route đó.
 
+*   **Mục menu trỏ tới màn bản xem trước bị ẩn** (`<AppShell>` và `<AdminShell>` lọc bằng
+    `isPreviewRoute`) — người dùng không thấy màn số giả. Gõ thẳng URL vẫn vào được, kèm dải băng.
+    Đấu xong một màn thì thêm vào `WIRED_ROUTES` là mục tự hiện lại.
+
 *   Liệt kê theo chiều **ngược** là có chủ đích: route mới mặc định là "chưa thật". Quên cập nhật
     thì sai về phía an toàn, thay vì im lặng hiện số giả.
 *   Đấu xong một màn -> **thêm một dòng vào `WIRED_ROUTES`**, không sửa chỗ nào khác, không gắn

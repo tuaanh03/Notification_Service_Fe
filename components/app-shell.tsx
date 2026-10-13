@@ -21,6 +21,7 @@ import { QuotaArc } from '@/components/quota-arc'
 import { useRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
+import { isPreviewRoute } from '@/lib/preview-routes'
 import { AppSwitcher } from './app-switcher'
 import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
 import { cn } from '@/lib/utils'
@@ -58,6 +59,9 @@ import {
 /**
  * Khung của console APP (đội app service): ô chọn app + menu của một app. Màn Quản trị EWS
  * (`/admin/*`, chỉ Super Admin) có khung riêng — `<AdminShell>`; `<AppGate>` chọn khung.
+ *
+ * Mục menu trỏ tới màn còn là bản xem trước (`lib/preview-routes.ts`) bị ẩn — số liệu minh hoạ
+ * không được hiện cho người dùng. Đấu xong màn nào thì thêm vào `WIRED_ROUTES`, mục tự hiện lại.
  */
 export function AppShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
   const path = usePathname()
@@ -147,21 +151,25 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                     />
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/compose" />} isActive={path === '/compose'}>
-                            <span>{tn('compose')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        {!isPreviewRoute('/compose') && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton render={<AppLink href="/compose" />} isActive={path === '/compose'}>
+                              <span>{tn('compose')}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/notifications" />} isActive={path.startsWith('/notifications')}>
                             <span>{tn('history')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/scheduled" />} isActive={path === '/scheduled'}>
-                            <span>{tn('scheduled')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        {!isPreviewRoute('/scheduled') && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton render={<AppLink href="/scheduled" />} isActive={path === '/scheduled'}>
+                              <span>{tn('scheduled')}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
@@ -250,31 +258,37 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                     />
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/settings/profile" />} isActive={path === '/settings/profile'}>
-                            <span>{tn('profile')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        {!isPreviewRoute('/settings/profile') && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton render={<AppLink href="/settings/profile" />} isActive={path === '/settings/profile'}>
+                              <span>{tn('profile')}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/credentials" />} isActive={path === '/settings/credentials'}>
                             <span>{tn('credentials')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/settings/quota" />} isActive={path === '/settings/quota'}>
-                            <span>{tn('quota')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        {!isPreviewRoute('/settings/quota') && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton render={<AppLink href="/settings/quota" />} isActive={path === '/settings/quota'}>
+                              <span>{tn('quota')}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/webhooks" />} isActive={path === '/settings/webhooks'}>
                             <span>{tn('webhooks')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/settings/sync" />} isActive={path === '/settings/sync'}>
-                            <span>{tn('sync')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        {!isPreviewRoute('/settings/sync') && (
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton render={<AppLink href="/settings/sync" />} isActive={path === '/settings/sync'}>
+                              <span>{tn('sync')}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>

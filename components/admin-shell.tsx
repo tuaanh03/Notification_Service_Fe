@@ -8,6 +8,7 @@ import { ADMIN_HOME } from '@/lib/app-routes'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
+import { isPreviewRoute } from '@/lib/preview-routes'
 import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
 import {
   Sidebar,
@@ -30,14 +31,19 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 
-/** Menu của khu Quản trị EWS. `/admin/approvals` (còn mock) vẫn gỡ khỏi menu — app tự phục vụ, không còn hàng chờ duyệt (ADR-0023). */
-const NAV = [
-  { href: ADMIN_HOME, name: 'allApps', icon: Layers },
-  { href: '/admin/send-approvals', name: 'sendApprovals', icon: Send },
-  { href: '/admin/audit', name: 'audit', icon: History },
-  { href: '/admin/directory', name: 'directory', icon: Database },
-  { href: '/admin/settings', name: 'systemSettings', icon: SlidersHorizontal },
-] as const
+/**
+ * Menu của khu Quản trị EWS. `/admin/approvals` (còn mock) vẫn gỡ khỏi menu — app tự phục vụ, không còn
+ * hàng chờ duyệt (ADR-0023). Mục trỏ tới màn còn là bản xem trước bị lọc ra — đấu xong thì tự hiện.
+ */
+const NAV = (
+  [
+    { href: ADMIN_HOME, name: 'allApps', icon: Layers },
+    { href: '/admin/send-approvals', name: 'sendApprovals', icon: Send },
+    { href: '/admin/audit', name: 'audit', icon: History },
+    { href: '/admin/directory', name: 'directory', icon: Database },
+    { href: '/admin/settings', name: 'systemSettings', icon: SlidersHorizontal },
+  ] as const
+).filter((l) => !isPreviewRoute(l.href))
 
 /**
  * Khung của khu Quản trị EWS (`/admin/*`) — CHỈ Super Admin (ADR-0022 của backend).
