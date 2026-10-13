@@ -129,9 +129,6 @@ export type IssuedAppSecretDto = AppSecretDto & { apiKey: string }
 export const WEBHOOK_EVENT_TYPES = ['notification.sent', 'notification.failed', 'notification.no_recipient'] as const
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number]
 
-/** Tối đa 2 URL mỗi app — backend chặn bằng `WEBHOOK_LIMIT_REACHED`; console chỉ khoá nút cho gọn. */
-export const MAX_WEBHOOK_ENDPOINTS = 2
-
 /** Sao đúng `WebhookEndpointDto`. KHÔNG có secret — secret chỉ có trong response tạo / đổi secret. */
 export type WebhookEndpointDto = {
   id: string
@@ -390,9 +387,6 @@ export type IncomingVariableMapping =
   | { variable: string; kind: 'fixed'; value: string }
 
 export type IncomingCondition = { path: string; values: string[] }
-
-/** Tối đa 10 hook mỗi app — backend chặn `INCOMING_HOOK_LIMIT_REACHED`; console chỉ khoá nút. */
-export const MAX_INCOMING_HOOKS = 10
 
 export type IncomingHookDto = {
   id: string

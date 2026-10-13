@@ -548,8 +548,9 @@ nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đ�
     Thêm / Gửi thử / Đổi secret. Đừng giấu cả màn: URL đã có vẫn phải xem được.
 *   **Secret `whsec_…` hiện MỘT lần** trong `<WebhookSecretDialog>` (tạo URL, đổi secret) — cùng luật với khoá
     API (UC-001 BR-4): tick "đã lưu" mới đóng, chưa sao chép mà đóng thì hỏi lại. Backend không lưu secret.
-*   **Tối đa `MAX_WEBHOOK_ENDPOINTS` = 2 URL** (`lib/api/types.ts`, sao backend) — nút Thêm khoá + tooltip;
-    backend vẫn chặn `WEBHOOK_LIMIT_REACHED`. URL không đổi được — muốn đổi thì xoá rồi thêm.
+*   **Trần số URL / số incoming hook là cài đặt hệ thống** (`webhooks.max_endpoints_per_app`,
+    `incoming.max_hooks_per_app`) — console không biết con số, không đếm, nút Thêm luôn bấm được; vượt trần
+    thì backend trả `WEBHOOK_LIMIT_REACHED` / `INCOMING_HOOK_LIMIT_REACHED`. URL không đổi được — muốn đổi thì xoá rồi thêm.
 *   **Lỗi 422 hiện mã trong `issues`** (`WEBHOOK_URL_INVALID`…), không hiện `VALIDATION`; lỗi của hộp thêm /
     sửa hiện NGAY TRONG hộp, hộp không đóng.
 *   **Gửi thử** gọi ngay, kết quả là `<Alert>` trên đầu màn (không phải toast) kèm mã ngắn của backend

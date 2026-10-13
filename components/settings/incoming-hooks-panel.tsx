@@ -26,7 +26,6 @@ import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
 import type { ActionResult } from '@/lib/api/result'
 import {
-  MAX_INCOMING_HOOKS,
   type IncomingCallDto,
   type IncomingHookConfigInput,
   type IncomingHookDto,
@@ -172,9 +171,7 @@ export function IncomingHooksPanel() {
     ? t('notConfigured')
     : activeTopics.length === 0 || publishedTemplates.length === 0
       ? t('needTopicAndTemplate')
-      : hooks.length >= MAX_INCOMING_HOOKS
-        ? t('atLimit', { max: MAX_INCOMING_HOOKS })
-        : null
+      : null
   const topicName = (id: string, key: string | null) => {
     const topic = view.topics.find((x) => x.id === id)
     return topic ? topic.name : (key ?? '—')

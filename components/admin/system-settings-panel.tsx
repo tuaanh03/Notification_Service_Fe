@@ -18,20 +18,22 @@ const LABEL: Partial<
   Record<
     string,
     {
-      label: 'dedupeLabel' | 'rateLabel' | 'baseUrlLabel' | 'maxKeysLabel'
-      help: 'dedupeHelp' | 'rateHelp' | 'baseUrlHelp' | 'maxKeysHelp'
-      unit?: 'unitMinutes' | 'unitPerMinute' | 'unitKeys'
+      label: 'dedupeLabel' | 'rateLabel' | 'maxHooksLabel' | 'baseUrlLabel' | 'maxKeysLabel' | 'maxEndpointsLabel'
+      help: 'dedupeHelp' | 'rateHelp' | 'maxHooksHelp' | 'baseUrlHelp' | 'maxKeysHelp' | 'maxEndpointsHelp'
+      unit?: 'unitMinutes' | 'unitPerMinute' | 'unitKeys' | 'unitHooks' | 'unitUrls'
     }
   >
 > = {
   'incoming.dedupe_window_minutes': { label: 'dedupeLabel', help: 'dedupeHelp', unit: 'unitMinutes' },
   'incoming.max_publications_per_minute': { label: 'rateLabel', help: 'rateHelp', unit: 'unitPerMinute' },
+  'incoming.max_hooks_per_app': { label: 'maxHooksLabel', help: 'maxHooksHelp', unit: 'unitHooks' },
   'api.public_base_url': { label: 'baseUrlLabel', help: 'baseUrlHelp' },
   'apps.max_active_api_keys': { label: 'maxKeysLabel', help: 'maxKeysHelp', unit: 'unitKeys' },
+  'webhooks.max_endpoints_per_app': { label: 'maxEndpointsLabel', help: 'maxEndpointsHelp', unit: 'unitUrls' },
 }
 
-/** Cài đặt `apps.*` nằm ở nhóm Ứng dụng; còn lại thuộc nhóm Incoming webhook. */
-const isAppsSetting = (key: string) => key.startsWith('apps.')
+/** Cài đặt `apps.*` / `webhooks.*` nằm ở nhóm Ứng dụng; còn lại thuộc nhóm Incoming webhook. */
+const isAppsSetting = (key: string) => key.startsWith('apps.') || key.startsWith('webhooks.')
 
 /**
  * Cài đặt hệ thống (ADR-0030 của backend) — con số vận hành Super Admin chỉnh không cần deploy. Mỗi

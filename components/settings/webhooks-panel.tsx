@@ -43,12 +43,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
 import type { ActionResult } from '@/lib/api/result'
 import {
-  MAX_WEBHOOK_ENDPOINTS,
   type WebhookDeliveryDto,
   type WebhookEndpointDto,
   type WebhookEventType,
@@ -147,7 +145,6 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
 
   const endpoints = view?.endpoints ?? []
   const configured = view?.configured ?? true
-  const atLimit = endpoints.length >= MAX_WEBHOOK_ENDPOINTS
   const selected = endpoints.find((e) => e.id === selectedId) ?? null
 
   /** Chạy một lệnh ghi; thành công thì nạp lại danh sách (và nhật ký của URL đang xem). */
@@ -249,13 +246,6 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
     )
   }
 
-  const addButton = (
-    <Button variant="outline" disabled={atLimit || pending || !configured} onClick={() => setDialog({ kind: 'create' })}>
-      <Plus />
-      {t('add')}
-    </Button>
-  )
-
   return (
     <>
       {header}
@@ -283,17 +273,13 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
           <div className="max-w-2xl">
             <h2 className="text-sm font-semibold">{t('endpoints')}</h2>
             <p className="mt-2 text-xs text-[var(--text-secondary)]">{t('intro')}</p>
-            <p className="mt-1 font-mono text-[11px] tabular-nums text-[var(--text-muted)]">
-              {t('count', { count: endpoints.length, max: MAX_WEBHOOK_ENDPOINTS })}
-            </p>
           </div>
-          {!writable ? null : atLimit ? (
-            <Tooltip>
-              <TooltipTrigger render={<span className="inline-flex" />}>{addButton}</TooltipTrigger>
-              <TooltipContent>{t('atLimit', { max: MAX_WEBHOOK_ENDPOINTS })}</TooltipContent>
-            </Tooltip>
-          ) : (
-            addButton
+          {/* Trần số URL là cài đặt hệ thống — console không biết con số; vượt thì backend trả 422 WEBHOOK_LIMIT_REACHED. */}
+          {writable && (
+            <Button variant="outline" disabled={pending || !configured} onClick={() => setDialog({ kind: 'create' })}>
+              <Plus />
+              {t('add')}
+            </Button>
           )}
         </div>
 
