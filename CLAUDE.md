@@ -401,6 +401,11 @@ chặn không". Hai màn nối nhau: cột **Mã người nhận** là link sang
 `/subscriptions` (còn mock) **đã gỡ khỏi menu**: nó hiện đúng dữ liệu mà màn Người nhận giờ hiện
 bằng số thật. Cùng lý do với `/admin/approvals` ở mục 2.5. Thư mục route giữ nguyên.
 
+**"Người nhận" là MỘT mục menu**, không nhóm, không mục con. Kênh mới (SMS, Teams…) là thông tin của từng
+người nhận — thành cột trong danh sách và khối trong trang chi tiết, không thành mục menu. Chỉ dựng lại
+nhóm khi có màn KHÁC HẲN về người nhận (nhập CSV, phân nhóm). Không gọi "Danh bạ": tên đó là tài khoản EWS
+(đồng bộ M365) ở Quản trị EWS — người nhận ≠ tài khoản EWS.
+
 ### 2.9. App trên đường dẫn (`?app=<app_id>`) — không đoán, bắt chọn
 
 **Đường dẫn là nguồn DUY NHẤT** cho câu hỏi "đang xem app nào" (`lib/app-routes.ts`).

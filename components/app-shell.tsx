@@ -82,8 +82,8 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
     { href: '/notifications', name: 'history', group: 'notifications' },
     { href: '/scheduled', name: 'scheduled', group: 'notifications' },
     { href: '/topics', name: 'topics', group: null },
-    { href: '/users', name: 'users', group: 'recipients' },
-    { href: '/subscriptions', name: 'subscriptions', group: 'recipients' },
+    { href: '/users', name: 'recipients', group: null },
+    { href: '/subscriptions', name: 'subscriptions', group: null },
     { href: '/templates', name: 'templates', group: null },
     { href: '/settings/profile', name: 'profile', group: 'appSettings' },
     { href: '/settings/credentials', name: 'credentials', group: 'appSettings' },
@@ -184,37 +184,19 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* Người nhận (Collapsible) */}
-                <Collapsible
-                  defaultOpen={path.startsWith('/users') || path.startsWith('/subscriptions')}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton
-                          tooltip={tn('recipients')}
-                          isActive={path.startsWith('/users') || path.startsWith('/subscriptions')}
-                        >
-                          <Users className="size-4" />
-                          <span>{tn('recipients')}</span>
-                          <ChevronRight className="ml-auto size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-                        </SidebarMenuButton>
-                      }
-                    />
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton render={<AppLink href="/users" />} isActive={path.startsWith('/users')}>
-                            <span>{tn('users')}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        {/* `/subscriptions` (còn mock) đã gỡ khỏi menu: màn Người nhận hiện đúng dữ liệu đó bằng số
-                            thật. Hai cửa, một cửa giả, là cách chắc chắn để người mới bấm nhầm (mục 2.5). */}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                {/* Người nhận — một mục, không nhóm: kênh mới hiện thành cột / khối trong chính màn này, không
+                    thành mục con. `/subscriptions` (còn mock) đã gỡ: hai cửa, một cửa giả, là cách chắc chắn để
+                    người mới bấm nhầm (mục 2.5). Không gọi "Danh bạ" — đó là tài khoản EWS ở Quản trị EWS. */}
+                <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                  <SidebarMenuButton
+                    render={<AppLink href="/users" />}
+                    isActive={path.startsWith('/users')}
+                    tooltip={tn('recipients')}
+                  >
+                    <Users className="size-4" />
+                    <span>{tn('recipients')}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
                 {/* Templates */}
                 <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
