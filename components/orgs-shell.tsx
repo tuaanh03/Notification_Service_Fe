@@ -2,10 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Building2, LayoutGrid, ShieldCheck, Users } from 'lucide-react'
+import { AppWindow, Building2, LayoutGrid, ShieldCheck, Users } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { consoleOrgs } from '@/lib/access'
-import { ADMIN_HOME, ORGS_HOME, orgMembersPath, orgPath } from '@/lib/app-routes'
+import { ADMIN_HOME, ORGS_APPS, ORGS_HOME, orgMembersPath, orgPath } from '@/lib/app-routes'
 import { AppLink } from './app-link'
 import { CosmicBackground } from './cosmic-background'
 import { useRole } from './role-context'
@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/breadcrumb'
 
 /**
- * Khung trang Tổ chức (`/orgs`, `/orgs/<orgId>`, `/orgs/<orgId>/members`) — không thuộc app nào nên không dùng sidebar của
+ * Khung trang Tổ chức (`/orgs`, `/orgs/apps`, `/orgs/<orgId>`, `/orgs/<orgId>/members`) — không thuộc app nào nên không dùng sidebar của
  * `<AppShell>` (mọi mục ở đó cần app). `<AppGate>` chọn khung theo đường dẫn (`isOrgsRoute`).
  */
 export function OrgsShell({ children, admin }: { children: React.ReactNode; admin: AdminDto }) {
@@ -47,7 +47,8 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
   // còn mục "Tổ chức".
   const [, , rawOrgId, section] = path.split('/')
   const orgId = rawOrgId ? decodeURIComponent(rawOrgId) : null
-  const org = orgId ? (consoleOrgs(me).find((o) => o.id === orgId) ?? null) : null
+  const onAllApps = path === ORGS_APPS
+  const org = orgId && !onAllApps ? (consoleOrgs(me).find((o) => o.id === orgId) ?? null) : null
   const onMembers = section === 'members'
   const orgNav = org
     ? [
@@ -55,6 +56,10 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
         { href: orgMembersPath(org.id), label: t('navMembers'), icon: Users, active: onMembers },
       ]
     : []
+  const mainNav = [
+    { href: ORGS_HOME, label: t('title'), icon: Building2, active: org === null && !onAllApps },
+    { href: ORGS_APPS, label: t('navAllApps'), icon: AppWindow, active: onAllApps },
+  ]
   const toAdmin = isSuperAdmin ? { href: ADMIN_HOME, label: tn('ewsAdmin'), icon: ShieldCheck } : undefined
 
   return (
@@ -69,12 +74,14 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
           <SidebarContent className="px-2 py-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-2">
             <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
               <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
-                <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                  <SidebarMenuButton render={<AppLink href={ORGS_HOME} />} isActive={org === null} tooltip={t('title')}>
-                    <Building2 className="size-4" />
-                    <span>{t('title')}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {mainNav.map((item) => (
+                  <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                    <SidebarMenuButton render={<AppLink href={item.href} />} isActive={item.active} tooltip={item.label}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroup>
 
@@ -142,7 +149,7 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
                   </>
                 ) : (
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="font-semibold text-foreground">{t('title')}</BreadcrumbPage>
+                    <BreadcrumbPage className="font-semibold text-foreground">{onAllApps ? t('navAllApps') : t('title')}</BreadcrumbPage>
                   </BreadcrumbItem>
                 )}
               </BreadcrumbList>

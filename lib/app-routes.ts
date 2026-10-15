@@ -37,6 +37,8 @@ export function isAdminRoute(pathname: string): boolean {
  * không cần `?app=`, khung riêng (`<OrgsShell>`). Mở được cả khi org chưa có app.
  */
 export const ORGS_HOME = '/orgs'
+/** `/orgs/apps` — mọi app người đăng nhập thấy, gom từ mọi org. Id org là UUID nên không đụng `/orgs/<orgId>`. */
+export const ORGS_APPS = '/orgs/apps'
 
 export function isOrgsRoute(pathname: string): boolean {
   return pathname === ORGS_HOME || pathname.startsWith(`${ORGS_HOME}/`)

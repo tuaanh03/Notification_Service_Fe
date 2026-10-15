@@ -1423,6 +1423,11 @@
     "creating": "Creating…",
     "createApp": "Create app",
     "navApps": "Apps",
+    "navAllApps": "Apps",
+    "allAppsSubtitle": "Every app you can view, across all organizations. Choose one to open.",
+    "colOrg": "Organization",
+    "allAppsEmptyTitle": "No apps yet",
+    "allAppsEmptyBody": "You cannot view any app yet. Create one in your organization, or ask an Owner for access.",
     "navMembers": "Members",
     "missingApp": "There is no app <mono>«{app}»</mono>, or you cannot view it. The link may be mistyped — choose an app below."
   },
