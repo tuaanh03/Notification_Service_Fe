@@ -1422,13 +1422,13 @@
     "namePlaceholder": "Đội Đơn hàng",
     "creating": "Đang tạo…",
     "createApp": "Tạo app",
-    "navApps": "Apps",
+    "navOrgApps": "Ứng dụng tổ chức",
     "navAllApps": "Ứng dụng",
     "allAppsSubtitle": "Mọi app bạn được xem, ở tất cả tổ chức. Chọn một app để mở.",
     "colOrg": "Tổ chức",
     "allAppsEmptyTitle": "Chưa có app nào",
     "allAppsEmptyBody": "Bạn chưa được xem app nào. Tạo app trong tổ chức của bạn, hoặc nhờ Owner cấp quyền.",
-    "navMembers": "Thành viên",
+    "navOrgMembers": "Thành viên tổ chức",
     "missingApp": "Không có app <mono>«{app}»</mono>, hoặc bạn không được xem app đó. Link có thể gõ sai — chọn lại app bên dưới."
   },
   "members": {

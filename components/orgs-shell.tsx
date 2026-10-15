@@ -1,8 +1,9 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { AppWindow, Building2, LayoutGrid, ShieldCheck, Users } from 'lucide-react'
+import { AppWindow, ArrowLeft, Building2, LayoutGrid, ShieldCheck, Users } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { consoleOrgs } from '@/lib/access'
 import { ADMIN_HOME, ORGS_APPS, ORGS_HOME, orgMembersPath, orgPath } from '@/lib/app-routes'
@@ -52,14 +53,28 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
   const onMembers = section === 'members'
   const orgNav = org
     ? [
-        { href: orgPath(org.id), label: t('navApps'), icon: LayoutGrid, active: !onMembers },
-        { href: orgMembersPath(org.id), label: t('navMembers'), icon: Users, active: onMembers },
+        { href: orgPath(org.id), label: t('navOrgApps'), icon: LayoutGrid, active: !onMembers },
+        { href: orgMembersPath(org.id), label: t('navOrgMembers'), icon: Users, active: onMembers },
       ]
     : []
   const mainNav = [
     { href: ORGS_HOME, label: t('title'), icon: Building2, active: org === null && !onAllApps },
     { href: ORGS_APPS, label: t('navAllApps'), icon: AppWindow, active: onAllApps },
   ]
+  /*
+    Thanh bên có hai tầng: menu chung (Tổ chức, Ứng dụng) và menu của MỘT org — không hiện chồng nhau.
+    Đổi tầng thì trượt: vào org trượt từ phải, quay ra trượt từ trái. Lần dựng đầu (tải lại, mở link
+    thẳng) không trượt. Tính lúc render (state dẫn xuất) để hiệu ứng chạy ngay khung hình đầu.
+  */
+  const level = org ? org.id : null
+  const [panel, setPanel] = useState<{ level: string | null; slide: string }>({ level, slide: '' })
+  if (panel.level !== level) {
+    setPanel({ level, slide: level === null ? 'slide-in-from-left-8' : 'slide-in-from-right-8' })
+  }
+  const slideClass = panel.slide ? `animate-in fade-in duration-200 ${panel.slide} motion-reduce:animate-none` : ''
+  const nav = org
+    ? [{ href: ORGS_HOME, label: t('title'), icon: ArrowLeft, active: false }]
+    : mainNav
   const toAdmin = isSuperAdmin ? { href: ADMIN_HOME, label: tn('ewsAdmin'), icon: ShieldCheck } : undefined
 
   return (
@@ -71,27 +86,12 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
             <SidebarBrand href={ORGS_HOME} subtitle="Notification Hub" />
           </SidebarHeader>
 
-          <SidebarContent className="px-2 py-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-2">
-            <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
-              <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
-                {mainNav.map((item) => (
-                  <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                    <SidebarMenuButton render={<AppLink href={item.href} />} isActive={item.active} tooltip={item.label}>
-                      <item.icon className="size-4" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-
-            {org && (
+          <SidebarContent className="overflow-x-hidden px-2 py-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-2">
+            {/* `key` theo tầng: đổi tầng là dựng lại khối này -> hiệu ứng trượt chạy lại. */}
+            <div key={level ?? 'main'} className={slideClass}>
               <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
-                <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
-                  {org.name}
-                </SidebarGroupLabel>
                 <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
-                  {orgNav.map((item) => (
+                  {nav.map((item) => (
                     <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                       <SidebarMenuButton render={<AppLink href={item.href} />} isActive={item.active} tooltip={item.label}>
                         <item.icon className="size-4" />
@@ -101,7 +101,25 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
                   ))}
                 </SidebarMenu>
               </SidebarGroup>
-            )}
+
+              {org && (
+                <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
+                  <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
+                    {org.name}
+                  </SidebarGroupLabel>
+                  <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
+                    {orgNav.map((item) => (
+                      <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                        <SidebarMenuButton render={<AppLink href={item.href} />} isActive={item.active} tooltip={item.label}>
+                          <item.icon className="size-4" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroup>
+              )}
+            </div>
 
             <CollapsedSidebarTrigger />
           </SidebarContent>
@@ -138,7 +156,7 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
-                          <BreadcrumbPage className="font-semibold text-foreground">{t('navMembers')}</BreadcrumbPage>
+                          <BreadcrumbPage className="font-semibold text-foreground">{t('navOrgMembers')}</BreadcrumbPage>
                         </BreadcrumbItem>
                       </>
                     ) : (
