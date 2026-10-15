@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useEffect, useMemo } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { APP_PARAM, appKey } from '@/lib/app-routes'
 import type { App } from '@/lib/mock-data'
@@ -17,22 +17,11 @@ type AppSelection = {
   /** `null` = đường dẫn chưa có `?app=` hợp lệ. Màn của một app không bao giờ thấy null (`<AppGate>`). */
   app: App | null
   apps: App[]
-  /** Giá trị `?app=` thô — để trang chọn app nói được "không có app «x»". */
+  /** Giá trị `?app=` thô — `<AppGate>` chuyển nó sang trang Tổ chức để báo "không có app «x»". */
   requested: string | null
 }
 
 const AppContext = createContext<AppSelection | null>(null)
-
-const LAST_APP_KEY = 'ews.last-app'
-
-/** App dùng gần nhất trên máy này — CHỈ để đánh dấu ở trang chọn app, không bao giờ tự chọn. */
-export function readLastApp(): string | null {
-  try {
-    return window.localStorage.getItem(LAST_APP_KEY)
-  } catch {
-    return null
-  }
-}
 
 export function AppProvider({ apps, children }: { apps: App[]; children: React.ReactNode }) {
   const requested = useSearchParams().get(APP_PARAM)
@@ -40,16 +29,6 @@ export function AppProvider({ apps, children }: { apps: App[]; children: React.R
     () => ({ app: apps.find((a) => appKey(a) === requested) ?? null, apps, requested }),
     [apps, requested],
   )
-
-  const key = value.app ? appKey(value.app) : undefined
-  useEffect(() => {
-    if (!key) return
-    try {
-      window.localStorage.setItem(LAST_APP_KEY, key)
-    } catch {
-      // Trình duyệt chặn lưu trữ: chỉ mất nhãn "dùng gần nhất".
-    }
-  }, [key])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

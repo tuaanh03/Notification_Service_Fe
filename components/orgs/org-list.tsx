@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/page-header'
 import { useRole } from '@/components/role-context'
 import { Button } from '@/components/ui/button'
 import { createOrganizationAction } from '@/app/orgs/actions'
+import { ChooseAppNotice, useChooseAppParams } from './choose-app-notice'
 import { CreateOrgDialog } from './create-org-dialog'
 
 type OrgRow = { id: string; name: string; role: string; apps: number }
@@ -20,7 +21,8 @@ type OrgRow = { id: string; name: string; role: string; apps: number }
 /**
  * `/orgs` — danh sách tổ chức của người đăng nhập (`consoleOrgs`: Super Admin mọi org, người khác
  * org mình là thành viên). Chỉ cột có dữ liệu thật: tên, vai của mình, số app mình thấy.
- * Bấm một dòng -> `/orgs/<orgId>` (app của org đó). Ai đăng nhập cũng tạo được tổ chức và thành
+ * Bấm một dòng -> `/orgs/<orgId>` (app của org đó), chuyển tiếp `?next=` / `?missing=` nếu người dùng
+ * bị `<AppGate>` đưa tới đây chọn app. Ai đăng nhập cũng tạo được tổ chức và thành
  * Owner (ADR-0025 của backend).
  */
 export function OrgList() {
@@ -32,6 +34,7 @@ export function OrgList() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const { query } = useChooseAppParams()
 
   const create = (name: string) =>
     startTransition(async () => {
@@ -64,6 +67,7 @@ export function OrgList() {
 
   return (
     <>
+      <ChooseAppNotice />
       <PageHeader
         title={t('title')}
         subtitle={t('subtitle')}
@@ -77,7 +81,7 @@ export function OrgList() {
       <DataTable<OrgRow>
         columns={columns}
         rows={rows}
-        onRowClick={(r) => router.push(orgPath(r.id))}
+        onRowClick={(r) => router.push(`${orgPath(r.id)}${query}`)}
         empty={<EmptyState icon={Building2} title={t('emptyTitle')} description={t('emptyBody')} />}
       />
       <CreateOrgDialog

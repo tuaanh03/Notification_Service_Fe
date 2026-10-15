@@ -54,20 +54,6 @@
     "title": "Bản xem trước — số liệu minh hoạ",
     "body": "Màn này chưa đấu nối backend. Mọi số, tên và trạng thái hiển thị đều là dữ liệu mẫu, không phản ánh hệ thống thật — đừng dùng để ra quyết định hay báo cáo."
   },
-  "chooser": {
-    "title": "Chọn app để quản trị",
-    "subtitle": "Mọi màn hình của console đều thuộc một app. Chọn xong sẽ mở đúng màn bạn đang định vào.",
-    "notFound": "Không có app <mono>«{slug}»</mono>. Link có thể gõ sai — chọn lại bên dưới.",
-    "searchPlaceholder": "Tìm theo tên hoặc slug…",
-    "searchLabel": "Tìm app",
-    "noMatch": "Không có app nào khớp «{query}».",
-    "revoked": "Đã thu hồi ({count})",
-    "internal": "nội bộ",
-    "external": "bên ngoài",
-    "lastUsed": "dùng gần nhất",
-    "adminHint": "Tạm ngưng hay thu hồi app:",
-    "adminLink": "Quản trị EWS → Tất cả app"
-  },
   "noApps": {
     "errorTitle": "Không đọc được danh sách app",
     "emptyTitle": "Chưa có app nào",
@@ -1437,7 +1423,8 @@
     "creating": "Đang tạo…",
     "createApp": "Tạo app",
     "navApps": "Apps",
-    "navMembers": "Thành viên"
+    "navMembers": "Thành viên",
+    "missingApp": "Không có app <mono>«{app}»</mono>, hoặc bạn không được xem app đó. Link có thể gõ sai — chọn lại app bên dưới."
   },
   "members": {
     "title": "Thành viên · {org}",

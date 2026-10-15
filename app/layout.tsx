@@ -119,7 +119,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <AppProvider apps={apps}>
           {/*
             Layout KHÔNG tự chọn màn hình bên trong console: `<AppGate>` (client) mới biết đang ở
-            đường dẫn nào và dựng khung tương ứng — shell, trang chọn app, màn chưa có app,
+            đường dẫn nào và dựng khung tương ứng — shell, trang Tổ chức, màn chưa có app,
             hay màn báo lỗi.
           */}
           <AppGate error={error} admin={admin}>

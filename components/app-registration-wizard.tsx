@@ -47,7 +47,7 @@ export function AppRegistrationWizard() {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   // Danh sách app nạp ở layout (server). Không đọc lại thì app vừa tạo không có trong ô chọn app,
-  // và link "Khoá API" / "Chủ đề" ở bước 4 (`?app=<app_id mới>`) rơi vào trang chọn app báo "không có".
+  // và link "Khoá API" / "Chủ đề" ở bước 4 (`?app=<app_id mới>`) bị đưa sang trang Tổ chức báo "không có".
   const router = useAppRouter()
 
   const profileValid = isProfileValid(profile)

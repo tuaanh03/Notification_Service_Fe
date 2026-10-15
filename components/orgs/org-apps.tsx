@@ -13,10 +13,12 @@ import { PageHeader } from '@/components/page-header'
 import { useRole } from '@/components/role-context'
 import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
+import { ChooseAppNotice, useChooseAppParams } from './choose-app-notice'
 
 /**
  * `/orgs/<orgId>` — app của một org mà người đăng nhập thấy (danh sách đã lọc theo vai ở backend).
- * Bấm một dòng -> mở app đó ở console app. Org không thấy được (gõ tay, mất quyền) -> báo không có.
+ * Bấm một dòng -> mở app đó ở console app: đúng màn định mở (`?next=`, khi `<AppGate>` đưa người dùng
+ * tới đây vì đường dẫn thiếu / sai `?app=`), không có thì Tổng quan. Org không thấy được (gõ tay, mất quyền) -> báo không có.
  */
 export function OrgApps({ orgId }: { orgId: string }) {
   const t = useTranslations('orgs')
@@ -24,6 +26,7 @@ export function OrgApps({ orgId }: { orgId: string }) {
   const router = useAppRouter()
   const { me, creatableOrgs } = useRole()
   const { apps } = useAppSelection()
+  const { next } = useChooseAppParams()
   const org = consoleOrgs(me).find((o) => o.id === orgId) ?? null
 
   if (!org) {
@@ -48,13 +51,14 @@ export function OrgApps({ orgId }: { orgId: string }) {
 
   return (
     <>
+      <ChooseAppNotice />
       <PageHeader title={org.name} subtitle={t('appsSubtitle')} actions={createButton} />
       <DataTable<App>
         columns={columns}
         rows={rows}
         filterKey="status"
         chipLabel={statusLabel}
-        onRowClick={(a) => router.push('/', { app: appKey(a) })}
+        onRowClick={(a) => router.push(next, { app: appKey(a) })}
         empty={<EmptyState icon={LayoutGrid} title={t('noAppsTitle')} description={t('noAppsBody')} action={createButton} />}
       />
     </>

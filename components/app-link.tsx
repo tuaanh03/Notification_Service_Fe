@@ -10,8 +10,8 @@ import { useAppSelection } from './app-context'
  * Link nội bộ TỰ MANG `?app=` của app đang xem (`lib/app-routes.ts`).
  *
  * Đây là file DUY NHẤT được import `next/link` và `useRouter`: một link trần là một chỗ làm mất
- * app — người dùng bị đẩy ra trang chọn app giữa chừng. `app` = chỉ định app khác (trang chọn app);
- * `app={null}` = CỐ Ý bỏ app (dẫn về trang chọn app). Chưa có app thì để nguyên đường dẫn.
+ * app — người dùng bị đẩy sang trang Tổ chức chọn lại app giữa chừng. `app` = chỉ định app khác (bảng
+ * app của một org, bước 4 wizard); `app={null}` = CỐ Ý bỏ app. Chưa có app thì để nguyên đường dẫn.
  */
 export function AppLink({ href, app, ...props }: Omit<ComponentProps<typeof Link>, 'href'> & { href: string; app?: string | null }) {
   const { app: current } = useAppSelection()

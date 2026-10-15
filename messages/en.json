@@ -54,20 +54,6 @@
     "title": "Preview — sample data",
     "body": "This screen is not connected to the backend yet. Every number, name and status shown is sample data and does not reflect the real system — do not use it for decisions or reports."
   },
-  "chooser": {
-    "title": "Choose an app to manage",
-    "subtitle": "Every console screen belongs to an app. Once you choose, the screen you were heading to opens.",
-    "notFound": "There is no app <mono>«{slug}»</mono>. The link may be mistyped — choose again below.",
-    "searchPlaceholder": "Search by name or slug…",
-    "searchLabel": "Search apps",
-    "noMatch": "No app matches «{query}».",
-    "revoked": "Revoked ({count})",
-    "internal": "internal",
-    "external": "external",
-    "lastUsed": "last used",
-    "adminHint": "Suspend or revoke apps:",
-    "adminLink": "EWS administration → All apps"
-  },
   "noApps": {
     "errorTitle": "Could not load the app list",
     "emptyTitle": "No apps yet",
@@ -1437,7 +1423,8 @@
     "creating": "Creating…",
     "createApp": "Create app",
     "navApps": "Apps",
-    "navMembers": "Members"
+    "navMembers": "Members",
+    "missingApp": "There is no app <mono>«{app}»</mono>, or you cannot view it. The link may be mistyped — choose an app below."
   },
   "members": {
     "title": "Members · {org}",

@@ -74,13 +74,13 @@ webservice/ews-astrolink/
 │   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend)
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
-│   ├── app-context.tsx · app-gate.tsx · app-chooser.tsx · app-link.tsx · app-switcher.tsx
-│   │                         # app đọc từ ?app=, cổng + trang chọn app, link tự mang app (mục 2.9)
+│   ├── app-context.tsx · app-gate.tsx · app-link.tsx · app-switcher.tsx
+│   │                         # app đọc từ ?app=, cổng (thiếu app -> trang Tổ chức), link tự mang app (mục 2.9)
 │   ├── preview-banner.tsx    # dải băng "Bản xem trước" cho màn chưa đấu backend;
 │   │                         # AppShell render 1 lần, tự ẩn ở route trong WIRED_ROUTES (mục 2.4)
 │   ├── no-apps-screen.tsx    # 0 app hoặc /admin/apps lỗi — thay cho AppShell
 │   ├── admin-shell.tsx       # khung khu Quản trị EWS (/admin/*) — không ô chọn app, không cần ?app=
-│   ├── orgs-shell.tsx · orgs/*   # trang Tổ chức /orgs (bảng org) + /orgs/[orgId] (bảng app của org)
+│   ├── orgs-shell.tsx · orgs/*   # trang Tổ chức /orgs (bảng org) + /orgs/[orgId] (bảng app của org) — cũng là nơi chọn app
 │   ├── shell-parts.tsx       # mảnh dùng chung của AppShell + AdminShell: logo, nút thu gọn, menu tài khoản
 │   └── ui/*                  # shadcn v4 (base-ui) — chỉ thêm qua CLI, không sửa tay:
 │                             # alert avatar badge breadcrumb button checkbox collapsible dialog
@@ -423,13 +423,15 @@ hiện dữ liệu của app khác mà không báo gì.
 | `/orgs/*` (`isOrgsRoute` — trang Tổ chức) | `<OrgsShell>`, không cần app |
 | `ORG_ROUTES` (`/apps` — đăng ký app) | vào thẳng, có hay không có `?app=` |
 | màn của app, `?app=` hợp lệ | màn như thường |
-| thiếu `?app=`, tổ chức CHỈ có 1 app | tự thêm `?app=` (`router.replace`) |
-| thiếu hoặc sai `?app=` | `<AppChooser>` toàn màn, thay cả AppShell |
+| thiếu `?app=`, người này CHỈ thấy 1 app | tự thêm `?app=` (`router.replace`) |
+| thiếu hoặc sai `?app=` | chuyển sang trang Tổ chức (`chooseAppPath`): mọi app thuộc 1 org -> `/orgs/<orgId>`, còn lại `/orgs` |
 
-*   **Không đoán app.** "Dùng gần nhất" (`localStorage`) chỉ là NHÃN trên thẻ ở trang chọn app,
-    không bao giờ tự chọn — đoán sai là đúng cái lỗi đang sửa.
-*   **Trang chọn app hiện TẠI đường dẫn đang mở**, không phải route riêng: chọn xong là tới đúng
-    màn đã định (`/users/NV-01` -> `/users/NV-01?app=x`), không về trang đầu.
+*   **Không đoán app**, và **không có trang chọn app riêng** — trang Tổ chức là cửa vào duy nhất
+    (trước đây có `<AppChooser>` toàn màn làm trùng việc với `/orgs`, đã bỏ cùng nhãn "dùng gần nhất").
+*   **Chọn xong là tới đúng màn đã định**: `<AppGate>` gắn `?next=<màn định mở>` (+ `?missing=<giá trị
+    sai>` để trang Tổ chức báo "không có app «x»" — `<ChooseAppNotice>`); bảng org chuyển tiếp hai tham
+    số đó sang `/orgs/<orgId>`, bảng app mở `next` kèm `?app=` (`/users/NV-01` -> `/users/NV-01?app=x`).
+    `next` luôn qua `safeNext()`: chỉ đường dẫn nội bộ, bỏ `?app=` cũ, không nhận `//host`, `/orgs`, `/admin`.
 *   **Route mới mặc định CẦN app** (liệt kê theo chiều `ORG_ROUTES`) — quên khai báo thì bị bắt
     chọn app, sai về phía an toàn.
 *   **Đổi app** = `switchAppPath()`: ở lại màn đang xem, hoặc về danh sách nếu đang ở
@@ -463,20 +465,19 @@ hiện dữ liệu của app khác mà không báo gì.
     Vào từ sidebar khung Tổ chức (Apps · Thành viên) hoặc mục "Thành viên" của ô chuyển app/org.
 *   **`messageOf` ưu tiên mã trong `issues`** (lỗi 422 `VALIDATION`) nếu mã đó có câu dịch ở nhóm
     `errors` — ví dụ `ADMIN_NOT_REGISTERED` nằm trong `issues`, không ở `code`.
-    Trang chọn app (`<AppChooser>`) chỉ còn một việc: đường dẫn thiếu / sai `?app=`.
 *   **Link nội bộ CHỈ qua `<AppLink>` / `useAppRouter()`** (`components/app-link.tsx`) — tự gắn
     `?app=`. `app-link.tsx` là file duy nhất được import `next/link` và `useRouter`. Link tới app
-    KHÁC app đang xem thì truyền `app=` (trang chọn app, bước 4 wizard tạo app); `app={null}` = cố ý
-    bỏ app (dẫn về trang chọn app). Link tới `/admin/*` không bao giờ mang `?app=`.
+    KHÁC app đang xem thì truyền `app=` (bảng app của org, bước 4 wizard tạo app); `app={null}` = cố ý
+    bỏ app. Link tới `/admin/*` không bao giờ mang `?app=`.
 *   `useApp()` (luôn có app) cho màn của một app; `useAppSelection()` (app có thể null) cho khung
     — sidebar, ô chọn app, `<AppLink>`. Gọi `useApp()` trong màn `/admin` là ném lỗi.
 *   **Danh sách app nạp ở `layout.tsx` (server)**: thêm / duyệt app xong phải `router.refresh()`,
-    không thì app mới không có trong danh sách và link `?app=<app_id mới>` rơi vào trang chọn app.
+    không thì app mới không có trong danh sách và link `?app=<app_id mới>` bị đưa sang trang Tổ chức báo "không có".
 *   **Danh sách app đã lọc theo vai ở backend** (ADR-0022): mọi org người này thuộc về, Member chỉ
-    thấy app được cấp vai. Nhiều org thì trang chọn app và ô chọn app chia nhóm theo org.
+    thấy app được cấp vai. Ô chọn app chỉ liệt kê app của org đang xem.
 *   **Giá trị `?app=` lấy bằng `appKey(app)` = `app_id`**, không dùng slug: slug chỉ duy nhất trong một
     org, hai org trùng slug thì cùng một link mở ra app khác nhau tuỳ người xem. id không trùng, không
-    đổi. Link cũ dạng `?app=<slug>` không còn chạy — rơi vào trang chọn app.
+    đổi. Link cũ dạng `?app=<slug>` không còn chạy — bị đưa sang trang Tổ chức chọn lại.
 *   **Nút ghi ẩn theo vai** (`useRole().canManage(app)`): App Viewer không thấy thêm topic, cấp / thu
     hồi khoá, soạn / xuất bản template. Chỉ để giao diện gọn — backend vẫn trả 403.
 
@@ -635,7 +636,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
 | `<RecipientDetail externalId>` | `components/users/recipient-detail.tsx` | ✓ | trang chi tiết một người nhận (mục 2.7): đầu trang có địa chỉ + tình trạng, rồi cài đặt nhận tin, rồi các lần gửi; `page.tsx` truyền `key` theo app + mã |
 | `<AppLink href app?>` / `useAppRouter()` | `components/app-link.tsx` | ✓ | **nguồn duy nhất** của link nội bộ — tự gắn `?app=` (mục 2.9); file duy nhất import `next/link` / `useRouter` |
-| `<AppGate>` / `<AppChooser apps requested here>` | `components/app-gate.tsx`, `app-chooser.tsx` | ✓ | cổng theo `?app=` + trang chọn app toàn màn (mục 2.9) |
+| `<AppGate>` / `<ChooseAppNotice>` | `components/app-gate.tsx`, `components/orgs/choose-app-notice.tsx` | ✓ | cổng theo `?app=` (thiếu / sai -> trang Tổ chức kèm `?next=` / `?missing=`) (mục 2.9) |
 | `<RecipientPreferences recipient preferences error loading>` | `components/users/recipient-preferences.tsx` | ✓ | khối cài đặt nhận tin trong trang chi tiết; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); kèm `SUPPRESSED_LABEL` |
 | `<NotificationsTable initialExternalId? recipient?>` | `components/notifications/notifications-table.tsx` | ✓ | bảng lịch sử gửi (mục 2.8); `recipient` = cố định một người: ẩn ô gõ mã và cột mã |
 | `<NotificationOutcome notification linkRecipient onClose>` | `components/notifications/notification-outcome.tsx` | ✓ | panel chi tiết một lần gửi (mục 2.8); kèm `outcomeOf()` + `EXCLUSION_LABEL` — nguồn duy nhất của chữ "kết cục", dùng chung cột bảng và panel; `linkRecipient = false` khi đã ở trang của người đó (không link về chính nó) |
@@ -755,7 +756,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Ô nhập trong dialog giữ giá trị của lần mở trước | `<ConfirmDialog>` chỉ bật/tắt `open`, component không remount; reset trong `onCancel` không chạy khi đóng do thành công | `key` theo mục tiêu (`app.id:action`) để React dựng lại — với dialog ghi audit thì đây là bug **ghi sai dữ liệu**, không phải lỗi hiển thị |
 | Hai ô tìm kiếm cạnh nhau, ra kết quả khác nhau | `<DataTable>` luôn dựng ô lọc riêng (lọc **trang đang hiển thị**), màn lại có thêm ô tìm phía máy chủ | `hideSearch` trên `<DataTable>` khi đã có tìm server-side; hai ô trông giống nhau nhưng một cái chỉ thấy 25 dòng đang mở |
 | Hành động chỉ có trong một phiên wizard | đặt nút duyệt ở bước cuối wizard, không có ở danh sách | thao tác đổi trạng thái phải có ở màn **danh sách**; wizard chỉ là lối tắt (mục 2.5) |
-| Link nội bộ làm mất app — bấm vào là ra trang chọn app giữa chừng | dùng `next/link` / `useRouter` / `<a href="/…">` trần thay vì `<AppLink>` / `useAppRouter()` (mục 2.9) | `grep -rnE "from 'next/link'\|useRouter\b\|<a href=\"/" app components --include=*.tsx \| grep -v "components/ui/\|app-link.tsx\|useAppRouter"` phải rỗng |
+| Link nội bộ làm mất app — bấm vào là bị đưa sang trang Tổ chức chọn lại app giữa chừng | dùng `next/link` / `useRouter` / `<a href="/…">` trần thay vì `<AppLink>` / `useAppRouter()` (mục 2.9) | `grep -rnE "from 'next/link'\|useRouter\b\|<a href=\"/" app components --include=*.tsx \| grep -v "components/ui/\|app-link.tsx\|useAppRouter"` phải rỗng |
 | Số giả trên thanh trên / sidebar | `<PreviewBanner>` chỉ phủ vùng `<main>`, không phủ khung | số nào hiện ở khung phải lấy từ dữ liệu thật (`useAppSelection().apps`), không từ `lib/mock-data.ts` |
 | Form wizard có ô mà backend không lưu | dựng form theo mock `App`/`Topic` (giàu field) thay vì theo body route | đối chiếu `admin-*.routes.ts` trước khi thêm ô; field không có chỗ chứa thì **bỏ ô**, đừng để người dùng nhập rồi mất im lặng |
 | Báo "tạo app thất bại" trong khi app đã có trong DB | chuỗi nhiều lời gọi không transaction, lỗi giữa chừng bị quy hết về `ok: false` | `stoppedAt` (mục 2.5) — app đã tồn tại thì luôn trả `ok: true` kèm chỗ dừng |

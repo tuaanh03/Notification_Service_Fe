@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { appKey, isAdminRoute, isBootstrapRoute, isOrgRoute, isOrgsRoute } from '@/lib/app-routes'
+import { appKey, chooseAppPath, isAdminRoute, isBootstrapRoute, isOrgRoute, isOrgsRoute } from '@/lib/app-routes'
 import { AdminShell } from './admin-shell'
-import { AppChooser } from './app-chooser'
 import { useAppSelection } from './app-context'
 import { AppShell } from './app-shell'
 import { useAppRouter } from './app-link'
@@ -25,8 +24,10 @@ import type { AdminDto } from '@/lib/api/auth'
  * - Chưa có app nào, đang ở màn đăng ký app đầu tiên -> khung trần + màn đó.
  * - Chưa có app nào (hoặc đọc `/admin/apps` hỏng) -> `<NoAppsScreen>`, mọi đường dẫn khác.
  * - Màn toàn tổ chức (`ORG_ROUTES`), hoặc có `?app=` hợp lệ -> `<AppShell>` + màn đó.
- * - Thiếu `?app=` và tổ chức CHỈ có một app -> tự thêm (không có gì để chọn).
- * - Còn lại -> `<AppChooser>` toàn màn, thay cả AppShell.
+ * - Thiếu `?app=` và người này CHỈ thấy một app -> tự thêm (không có gì để chọn).
+ * - Còn lại (thiếu hoặc sai `?app=`) -> chuyển sang trang Tổ chức chọn app (`chooseAppPath`), mang
+ *   theo màn định mở (`?next=`) và giá trị sai (`?missing=`). Mọi app thuộc một org -> vào thẳng
+ *   bảng app của org đó. Không có trang chọn app riêng: trang Tổ chức là cửa vào duy nhất.
  *
  * Chưa qua cổng thì màn con KHÔNG render: không có khoảnh khắc nào hiện dữ liệu của app sai.
  *
@@ -55,6 +56,12 @@ export function AppGate({
   const open = isOrgRoute(pathname) || app !== null
   const only = !adminArea && !orgsPage && !open && requested === null && apps.length === 1 ? appKey(apps[0]) : null
   const here = search ? `${pathname}?${search}` : pathname
+  const orgIds = new Set(apps.map((a) => a.org_id))
+  const [onlyOrg] = orgIds
+  const choose =
+    !adminArea && !orgsPage && !open && only === null && apps.length > 0
+      ? chooseAppPath(here, orgIds.size === 1 && onlyOrg !== undefined ? onlyOrg : null, requested)
+      : null
 
   /**
    * Khung được CHỐT lúc bước vào đường dẫn, không tính lại giữa chừng.
@@ -75,7 +82,8 @@ export function AppGate({
   // Mọi hook nằm TRÊN các nhánh return bên dưới: thứ tự hook phải giống nhau ở mọi lần render.
   useEffect(() => {
     if (only) router.replace(here, { app: only })
-  }, [only, here, router])
+    else if (choose) router.replace(choose, { app: null })
+  }, [only, choose, here, router])
 
   if (adminArea) {
     // API hỏng: nói ra lý do như mọi màn khác, không dựng khung với bảng trống.
@@ -88,8 +96,8 @@ export function AppGate({
   if (apps.length === 0) return <NoAppsScreen error={error} />
 
   if (open) return <AppShell admin={admin}>{children}</AppShell>
-  if (only) return null
-  return <AppChooser apps={apps} requested={requested} here={here} />
+  // Đang chuyển (tự thêm `?app=` hoặc sang trang Tổ chức): không dựng màn nào của app.
+  return null
 }
 
 /**

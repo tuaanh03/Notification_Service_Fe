@@ -2,7 +2,7 @@
  * App nằm TRÊN ĐƯỜNG DẪN (`?app=<app_id>`) — nguồn duy nhất cho câu hỏi "đang xem app nào".
  *
  * Giữ app trong state client thì tải lại / mở tab mới / gửi link cho đồng nghiệp đều rơi về app
- * khác mà màn hình không báo gì. Đường dẫn thiếu app thì BẮT CHỌN (`<AppGate>`), không đoán.
+ * khác mà màn hình không báo gì. Đường dẫn thiếu app thì BẮT CHỌN ở trang Tổ chức (`<AppGate>`), không đoán.
  *
  * Đây là NƠI DUY NHẤT giữ luật đường dẫn theo app. Link nội bộ dựng bằng `<AppLink>` /
  * `useAppRouter()` (`components/app-link.tsx`), không ghép `?app=` bằng tay.
@@ -44,6 +44,40 @@ export function isOrgsRoute(pathname: string): boolean {
 
 export function orgPath(orgId: string): string {
   return `${ORGS_HOME}/${encodeURIComponent(orgId)}`
+}
+
+/** Màn định mở khi bị đưa sang trang Tổ chức chọn app (`chooseAppPath`). */
+export const NEXT_PARAM = 'next'
+/** Giá trị `?app=` sai đã khiến người dùng bị đưa sang trang Tổ chức — để trang đó báo "không có app «x»". */
+export const MISSING_PARAM = 'missing'
+
+/**
+ * Đường dẫn thiếu / sai `?app=` -> trang Tổ chức chọn app, mang theo màn định mở.
+ * `orgId` = mọi app người này thấy đều thuộc MỘT org -> vào thẳng bảng app của org đó.
+ */
+export function chooseAppPath(here: string, orgId: string | null, missing: string | null): string {
+  const params = new URLSearchParams()
+  const next = safeNext(here)
+  if (next !== '/') params.set(NEXT_PARAM, next)
+  if (missing !== null) params.set(MISSING_PARAM, missing)
+  const query = params.toString()
+  return `${orgId === null ? ORGS_HOME : orgPath(orgId)}${query ? `?${query}` : ''}`
+}
+
+/**
+ * `?next=` đọc từ đường dẫn — chỉ nhận đường dẫn NỘI BỘ của console app, bỏ `?app=` cũ (app sai /
+ * app khác là lý do người dùng bị đưa đi chọn). Còn lại -> `/`. Chặn `//host` để không thành chuyển
+ * hướng ra ngoài; chặn `/orgs`, `/admin` vì đó không phải màn của một app.
+ */
+export function safeNext(raw: string | null): string {
+  if (raw === null || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return '/'
+  const queryAt = raw.indexOf('?')
+  const path = queryAt === -1 ? raw : raw.slice(0, queryAt)
+  if (isOrgsRoute(path) || isAdminRoute(path)) return '/'
+  const params = new URLSearchParams(queryAt === -1 ? '' : raw.slice(queryAt + 1))
+  params.delete(APP_PARAM)
+  const query = params.toString()
+  return query ? `${path}?${query}` : path
 }
 
 /** Màn Thành viên của một org (ADR-0026 của backend). */
