@@ -1,6 +1,7 @@
 'use server'
 
 import {
+  createRecipient,
   getRecipient,
   getRecipientPreferences,
   listRecipients,
@@ -32,4 +33,11 @@ export async function loadPreferencesAction(
   externalId: string,
 ): Promise<ActionResult<UserPreferencesDto>> {
   return toResult(() => getRecipientPreferences(appId, externalId))
+}
+
+export async function createRecipientAction(
+  appId: string,
+  input: { externalId: string; email?: string },
+): Promise<ActionResult<RecipientDto>> {
+  return toResult(() => createRecipient(appId, input))
 }

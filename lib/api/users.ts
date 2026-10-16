@@ -9,8 +9,8 @@ const base = (appId: string) => `/apps/${encodeURIComponent(appId)}/users`
 /**
  * Bề mặt ĐỌC cho vận hành (`implementation_plan.md` §5, ĐX-0004).
  *
- * Các đường này CHỈ ĐỌC — không có bản ghi. Admin không sửa lựa chọn topic hộ người dùng;
- * app service tự ghi qua `/v1` bằng khoá của chính nó.
+ * Đọc là chính. Ghi duy nhất: người quản lý app THÊM TAY một người (`createRecipient`) — mã đã có thì
+ * 409, không ghi đè. Admin không sửa lựa chọn topic hộ người dùng; app service tự ghi qua `/v1`.
  */
 
 export type ListRecipientsInput = { limit?: number; offset?: number; q?: string }
@@ -22,6 +22,11 @@ export async function listRecipients(appId: string, input: ListRecipientsInput =
   if (input.offset !== undefined) query['offset'] = String(input.offset)
   if (input.q) query['q'] = input.q
   return adminFetch<RecipientPageDto>(base(appId), { query })
+}
+
+/** POST /admin/apps/:appId/users — 409 `USER_ALREADY_EXISTS` nếu mã đã có; email đi cùng luật với `/v1`. */
+export async function createRecipient(appId: string, input: { externalId: string; email?: string }): Promise<RecipientDto> {
+  return adminFetch<RecipientDto>(base(appId), { method: 'POST', body: input })
 }
 
 /**
