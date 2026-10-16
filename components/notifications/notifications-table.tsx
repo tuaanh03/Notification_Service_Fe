@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { ChevronLeft, ChevronRight, History, MailOpen, PlugZap, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, History, MailOpen, PlugZap, Search, UserRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { loadNotificationsAction } from '@/app/notifications/actions'
 import { loadTopicsAction } from '@/app/topics/actions'
@@ -56,7 +56,24 @@ function useColumns(withRecipient: boolean): Column<Row>[] {
       ),
   }
   return [
-    { key: 'createdAt', label: t('colCreatedAt'), mono: true, render: (n) => fmtDateTime(n.createdAt) },
+    {
+      key: 'createdAt',
+      label: t('colCreatedAt'),
+      mono: true,
+      render: (n) => (
+        <span className="inline-flex items-center gap-1.5">
+          {fmtDateTime(n.createdAt)}
+          {n.origin === 'dashboard' && (
+            <Tooltip>
+              <TooltipTrigger render={<span aria-label={t('fromWeb')} className="inline-flex text-[var(--pulsar)]" />}>
+                <UserRound className="size-3.5" />
+              </TooltipTrigger>
+              <TooltipContent>{t('fromWeb')}</TooltipContent>
+            </Tooltip>
+          )}
+        </span>
+      ),
+    },
     { key: 'topic', label: t('colTopic'), mono: true, render: (n) => n.topic || '—' },
     { key: 'template', label: t('colTemplate'), render: (n) => templateLabelOf(n) },
     ...(withRecipient ? [recipientColumn] : []),

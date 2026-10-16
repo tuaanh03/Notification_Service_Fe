@@ -250,6 +250,8 @@ export type OpenTrackingDto = {
  */
 export type NotificationSummaryDto = {
   id: string
+  /** api = app gọi `/v1` · dashboard = gửi từ màn Soạn thông báo. Optional: backend cũ chưa có. */
+  origin?: string
   /** Đường gửi trực tiếp của MVP chỉ ra: queued | sending | sent | no_recipient | failed */
   status: string
   topic: string
@@ -479,3 +481,31 @@ export type SystemSettingDto = {
   updatedBy: string | null
   updatedAt: string | null
 }
+
+/** Sao đúng `ConsoleSendResult` (`POST /admin/apps/:appId/notifications`). `code` = vì sao người đó không xếp hàng được. */
+export type ConsoleSendResultDto = {
+  queued: number
+  results: { externalId: string; notificationId: string | null; code: string | null }[]
+}
+
+/** Phần `PublicationDto` màn Soạn thông báo đọc (`POST /admin/apps/:appId/publications`). */
+export type ConsolePublicationDto = {
+  id: string
+  topic: string
+  recipientCount: number
+}
+
+/** Sao đúng `RenderedTemplateDto` (`POST …/templates/:id/render`) — bản đang xuất bản đã đổ biến. */
+export type RenderedTemplateDto = {
+  templateId: string
+  name: string
+  version: number
+  subject: string
+  html: string
+  text: string
+}
+
+/** Nội dung một lần gửi từ console — viết thẳng HOẶC template + payload. */
+export type ConsoleSendContent =
+  | { subject: string; html: string }
+  | { templateId: string; payload: Record<string, unknown> }
