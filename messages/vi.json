@@ -35,6 +35,7 @@
     "credentials": "Credentials",
     "quota": "Kênh & Quota",
     "webhooks": "Webhooks",
+    "tracking": "Theo dõi mở thư",
     "sync": "Sync danh bạ",
     "ewsAdmin": "Quản trị EWS",
     "sendApprovals": "Duyệt lần gửi",
@@ -247,6 +248,8 @@
     "colRecipient": "Mã người nhận",
     "colStatus": "Trạng thái",
     "colOutcome": "Kết cục",
+    "opened": "Đã mở",
+    "firstOpenedTip": "Mở lần đầu {at}",
     "noRecipientTip": "Không gửi vì người nhận bị chặn. Đây là hệ thống làm đúng, không phải lỗi.",
     "recipientPlaceholder": "khớp đúng, vd. NV-0123",
     "count": "{count} lần gửi",
@@ -1066,6 +1069,17 @@
     "pageSubtitle": "Hai chiều webhook của {app}: EWS báo kết quả sang app, và công cụ ngoài gọi vào để phát tin",
     "tabOutgoing": "Gửi đi",
     "tabIncoming": "Nhận vào"
+  },
+  "tracking": {
+    "title": "Theo dõi mở thư",
+    "subtitle": "App {app}",
+    "toggle": "Đếm số người mở thư",
+    "hint": "Số ước tính, chỉ áp dụng cho thư gửi sau khi bật.",
+    "notReady": "Máy chủ chưa cấu hình, bật cũng chưa có tác dụng.",
+    "enabledToast": "Đã bật đếm số người mở thư",
+    "disabledToast": "Đã tắt đếm số người mở thư",
+    "loadFailed": "Không đọc được cài đặt",
+    "retry": "Thử lại"
   },
   "incoming": {
     "add": "Thêm webhook",

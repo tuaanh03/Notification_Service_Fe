@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { ChevronLeft, ChevronRight, History, PlugZap, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, History, MailOpen, PlugZap, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { loadNotificationsAction } from '@/app/notifications/actions'
 import { loadTopicsAction } from '@/app/topics/actions'
@@ -75,8 +75,34 @@ function useColumns(withRecipient: boolean): Column<Row>[] {
           <StatusPill status={n.status} />
         ),
     },
-    { key: 'recipient', label: t('colOutcome'), render: (n) => <span className="text-xs">{outcomeOf(n)}</span> },
+    {
+      key: 'recipient',
+      label: t('colOutcome'),
+      render: (n) => (
+        <span className="inline-flex items-center gap-2 text-xs">
+          {outcomeOf(n)}
+          <OpenedMark recipient={n.recipient} />
+        </span>
+      ),
+    },
   ]
+}
+
+/** Đã mở (ADR-0031 của backend, số ước lượng): biểu tượng + số lần, rê chuột xem lần mở đầu. Chưa mở -> không hiện gì. */
+function OpenedMark({ recipient }: { recipient: NotificationSummaryDto['recipient'] }) {
+  const t = useTranslations('notifications')
+  if (!recipient?.firstOpenedAt) return null
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<span aria-label={t('opened')} className="inline-flex items-center gap-0.5 text-[var(--aurora)]" />}
+      >
+        <MailOpen className="size-3.5" />
+        {(recipient.openCount ?? 0) > 1 && <span className="font-mono">×{recipient.openCount}</span>}
+      </TooltipTrigger>
+      <TooltipContent>{t('firstOpenedTip', { at: fmtDateTime(recipient.firstOpenedAt) })}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 /**

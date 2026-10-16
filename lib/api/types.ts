@@ -74,6 +74,8 @@ export type AppDto = {
   maxRecipientsPerEvent: number
   includedInOrgBroadcast: boolean
   isSystem: boolean
+  /** Đếm "đã mở" (ADR-0031). Optional: backend cũ chưa có. */
+  trackOpens?: boolean
   /** ISO-8601 UTC */
   createdAt: string
   updatedAt: string
@@ -231,6 +233,15 @@ export type NotificationRecipientSummaryDto = {
   /** Lỗi từ máy chủ thư. Bắt đầu bằng `outcome_unknown` = không chắc thư đã đi hay chưa. */
   error: string | null
   sentAt: string | null
+  /** Đếm "đã mở" ƯỚC LƯỢNG (ADR-0031 của backend). Optional: backend cũ chưa có. */
+  firstOpenedAt?: string | null
+  openCount?: number
+}
+
+/** Sao đúng `OpenTrackingDto` (`GET /admin/apps/:appId/open-tracking`). `ready` = server đủ cấu hình để chèn ảnh. */
+export type OpenTrackingDto = {
+  enabled: boolean
+  ready: boolean
 }
 
 /**

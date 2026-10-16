@@ -35,6 +35,7 @@
     "credentials": "Credentials",
     "quota": "Channels & Quota",
     "webhooks": "Webhooks",
+    "tracking": "Open tracking",
     "sync": "Directory sync",
     "ewsAdmin": "EWS administration",
     "sendApprovals": "Send approvals",
@@ -247,6 +248,8 @@
     "colRecipient": "Recipient ID",
     "colStatus": "Status",
     "colOutcome": "Outcome",
+    "opened": "Opened",
+    "firstOpenedTip": "First opened {at}",
     "noRecipientTip": "Not sent because the recipient is blocked. This is the system working as intended, not an error.",
     "recipientPlaceholder": "exact match, e.g. NV-0123",
     "count": "{count} sends",
@@ -1066,6 +1069,17 @@
     "pageSubtitle": "Both directions for {app}: EWS reports results to the app, and external tools call in to publish",
     "tabOutgoing": "Outgoing",
     "tabIncoming": "Incoming"
+  },
+  "tracking": {
+    "title": "Open tracking",
+    "subtitle": "App {app}",
+    "toggle": "Count email opens",
+    "hint": "Estimated. Applies only to emails sent after it is turned on.",
+    "notReady": "The server is not configured yet, so turning this on has no effect.",
+    "enabledToast": "Open tracking turned on",
+    "disabledToast": "Open tracking turned off",
+    "loadFailed": "Could not load the setting",
+    "retry": "Retry"
   },
   "incoming": {
     "add": "Add webhook",
