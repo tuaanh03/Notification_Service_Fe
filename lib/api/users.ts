@@ -29,6 +29,11 @@ export async function createRecipient(appId: string, input: { externalId: string
   return adminFetch<RecipientDto>(base(appId), { method: 'POST', body: input })
 }
 
+/** DELETE /admin/apps/:appId/users/:externalId — xoá MỀM: giữ lịch sử gửi; app khai lại cùng mã thì khôi phục. */
+export async function deleteRecipient(appId: string, externalId: string): Promise<void> {
+  await adminFetch<void>(`${base(appId)}/${encodeURIComponent(externalId)}`, { method: 'DELETE' })
+}
+
 /**
  * GET /admin/apps/:appId/users/:externalId — đúng MỘT người, khớp đủ mã; không có -> 404.
  *

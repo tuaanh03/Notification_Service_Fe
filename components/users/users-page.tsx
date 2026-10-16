@@ -1,9 +1,25 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, MailX, PlugZap, Search, Upload, UserPlus, Users } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Eye,
+  MailX,
+  MoreHorizontal,
+  PlugZap,
+  Search,
+  Trash2,
+  Upload,
+  UserPlus,
+  Users,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
-import { loadRecipientsAction } from '@/app/users/actions'
+import { deleteRecipientAction, loadRecipientsAction } from '@/app/users/actions'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -19,6 +35,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -46,6 +63,7 @@ export function UsersPage() {
   const appId = app.app_id
   const writable = useRole().canManage(app)
   const [adding, setAdding] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const [rows, setRows] = useState<RecipientDto[] | null>(null)
   const [total, setTotal] = useState(0)
@@ -79,6 +97,29 @@ export function UsersPage() {
     setQuery('')
   }, [appId])
 
+  const openProfile = (externalId: string) => router.push(`/users/${encodeURIComponent(externalId)}`)
+
+  const copy = async (externalId: string) => {
+    try {
+      await navigator.clipboard.writeText(externalId)
+      toast.success(t('copied', { id: externalId }))
+    } catch {
+      toast.error(t('copyFailed'))
+    }
+  }
+
+  const remove = (externalId: string) =>
+    startTransition(async () => {
+      const result = await deleteRecipientAction(appId, externalId)
+      setDeleting(null)
+      if (!result.ok) {
+        toast.error(te('withCode', { message: result.message, code: result.code }))
+        return
+      }
+      toast.success(t('deleted', { id: externalId }))
+      await load()
+    })
+
   const search = () => {
     setOffset(0)
     setQuery(draft.trim())
@@ -89,6 +130,7 @@ export function UsersPage() {
     {
       key: 'email',
       label: t('colEmail'),
+      hideBelow: 'sm',
       render: (row) =>
         row.email ? (
           <span className="font-mono text-xs">{row.email.address}</span>
@@ -101,6 +143,7 @@ export function UsersPage() {
     {
       key: 'userId',
       label: t('colState'),
+      hideBelow: 'lg',
       render: (row) =>
         row.email ? (
           <span className="flex items-center gap-2">
@@ -118,12 +161,56 @@ export function UsersPage() {
     {
       key: 'createdAt',
       label: t('colOptedOut'),
+      hideBelow: 'xl',
       render: (row) =>
         row.email?.optedOutOptional ? (
           <span className="text-xs text-[var(--solar)]">{t('yes')}</span>
         ) : (
           <span className="text-xs text-[var(--text-muted)]">{t('no')}</span>
         ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (row) => (
+        // Bấm menu không mở trang chi tiết của dòng.
+        <span onClick={(e) => e.stopPropagation()} className="inline-flex">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={t('actionsFor', { id: row.externalId })}
+                  className="size-7 rounded-lg text-muted-foreground hover:text-foreground"
+                >
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 bg-popover border border-border shadow-md">
+              <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => openProfile(row.externalId)}>
+                <Eye className="size-3.5 mr-1.5" /> {t('viewProfile')}
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => void copy(row.externalId)}>
+                <Copy className="size-3.5 mr-1.5" /> {t('copyId')}
+              </DropdownMenuItem>
+              {writable && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-xs cursor-pointer text-[var(--supernova)] focus:text-[var(--supernova)]"
+                    onClick={() => setDeleting(row.externalId)}
+                  >
+                    <Trash2 className="size-3.5 mr-1.5" /> {t('delete')}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </span>
+      ),
     },
   ]
 
@@ -156,6 +243,16 @@ export function UsersPage() {
             </DropdownMenu>
           ) : undefined
         }
+      />
+      <ConfirmDialog
+        open={deleting !== null}
+        tone="blocking"
+        title={t('deleteTitle', { id: deleting ?? '' })}
+        description={t('deleteBody')}
+        confirmLabel={pending ? t('deleting') : t('delete')}
+        confirmDisabled={pending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && remove(deleting)}
       />
       <AddRecipientDialog
         open={adding}
@@ -200,7 +297,7 @@ export function UsersPage() {
             hideSearch
             columns={columns}
             rows={(rows ?? []) as Row[]}
-            onRowClick={(row) => router.push(`/users/${encodeURIComponent(row.externalId)}`)}
+            onRowClick={(row) => openProfile(row.externalId)}
             empty={
               <EmptyState
                 icon={Users}

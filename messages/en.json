@@ -183,7 +183,9 @@
     "TopicMandatoryChanged": "changed topic mandatory",
     "AppOpenTrackingChanged": "change open tracking",
     "NotificationOpened": "recipient opened the email",
-    "UserCreated": "add recipient"
+    "UserCreated": "add recipient",
+    "UserDeleted": "delete recipient",
+    "UserRestored": "restore recipient"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -829,7 +831,17 @@
     "errExists": "This ID already exists.",
     "errEmailTaken": "This email already belongs to someone else in the app.",
     "errEmailInvalid": "Invalid email.",
-    "errExternalId": "Letters, digits and . _ - : @ | only."
+    "errExternalId": "Letters, digits and . _ - : @ | only.",
+    "actionsFor": "Actions for {id}",
+    "viewProfile": "View profile",
+    "copyId": "Copy ID",
+    "copied": "Copied {id}",
+    "copyFailed": "Could not copy",
+    "delete": "Delete recipient",
+    "deleting": "Deleting…",
+    "deleteTitle": "Delete {id}?",
+    "deleteBody": "Send history is kept. If the app registers the same ID again, this recipient comes back.",
+    "deleted": "Deleted {id}"
   },
   "prefs": {
     "notChosen": "not chosen",

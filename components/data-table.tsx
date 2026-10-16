@@ -19,7 +19,12 @@ export type Column<T> = {
   align?: 'right'
   /** custom cell (e.g. <StatusPill>); default renders String(value) */
   render?: (row: T, index: number) => React.ReactNode
+  /** Ẩn cột khi màn hẹp hơn mốc này — giữ cột thao tác trong khung thay vì bắt cuộn ngang. */
+  hideBelow?: 'sm' | 'lg' | 'xl'
 }
+
+/** Class Tailwind phải là chuỗi nguyên văn để được sinh ra — không ghép `hidden ${bp}:table-cell`. */
+const HIDE_BELOW = { sm: 'hidden sm:table-cell', lg: 'hidden lg:table-cell', xl: 'hidden xl:table-cell' } as const
 
 /** Bảng dữ liệu dày (13px / row 44px) trên shadcn <Table>; glass chỉ ở container <Panel>, không ở row. */
 export function DataTable<T extends Record<string, unknown>>({
@@ -109,7 +114,15 @@ export function DataTable<T extends Record<string, unknown>>({
           <TableHeader className="sticky top-0 bg-[var(--deep)] text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
             <TableRow className="hover:bg-transparent">
               {columns.map((c) => (
-                <TableHead key={String(c.key)} className={cn('h-10 px-4 font-medium', c.numeric && 'text-right', c.align === 'right' && 'w-px whitespace-nowrap text-right')}>
+                <TableHead
+                  key={String(c.key)}
+                  className={cn(
+                    'h-10 px-4 font-medium',
+                    c.numeric && 'text-right',
+                    c.align === 'right' && 'w-px whitespace-nowrap text-right',
+                    c.hideBelow && HIDE_BELOW[c.hideBelow],
+                  )}
+                >
                   {c.label}
                 </TableHead>
               ))}
@@ -134,6 +147,7 @@ export function DataTable<T extends Record<string, unknown>>({
                       c.mono && 'font-mono text-xs',
                       c.numeric && 'text-right font-mono tabular-nums',
                       c.align === 'right' && 'w-px whitespace-nowrap text-right',
+                      c.hideBelow && HIDE_BELOW[c.hideBelow],
                     )}
                   >
                     {c.render ? c.render(r, i) : String(r[c.key] ?? '—')}

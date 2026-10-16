@@ -183,7 +183,9 @@
     "TopicMandatoryChanged": "đổi chủ đề bắt buộc",
     "AppOpenTrackingChanged": "đổi cài đặt theo dõi mở thư",
     "NotificationOpened": "người nhận mở thư",
-    "UserCreated": "thêm người nhận"
+    "UserCreated": "thêm người nhận",
+    "UserDeleted": "xoá người nhận",
+    "UserRestored": "khôi phục người nhận"
   },
   "exclusion": {
     "no_channel": "chưa khai email",
@@ -829,7 +831,17 @@
     "errExists": "Mã này đã có.",
     "errEmailTaken": "Email này đã thuộc người khác trong app.",
     "errEmailInvalid": "Email sai định dạng.",
-    "errExternalId": "Mã chỉ gồm chữ, số và . _ - : @ |"
+    "errExternalId": "Mã chỉ gồm chữ, số và . _ - : @ |",
+    "actionsFor": "Thao tác cho {id}",
+    "viewProfile": "Xem hồ sơ",
+    "copyId": "Sao chép mã",
+    "copied": "Đã chép {id}",
+    "copyFailed": "Không chép được",
+    "delete": "Xoá người nhận",
+    "deleting": "Đang xoá…",
+    "deleteTitle": "Xoá {id}?",
+    "deleteBody": "Lịch sử gửi vẫn giữ. App khai lại cùng mã thì người này dùng lại được.",
+    "deleted": "Đã xoá {id}"
   },
   "prefs": {
     "notChosen": "chưa chọn",

@@ -2,6 +2,7 @@
 
 import {
   createRecipient,
+  deleteRecipient,
   getRecipient,
   getRecipientPreferences,
   listRecipients,
@@ -40,4 +41,8 @@ export async function createRecipientAction(
   input: { externalId: string; email?: string },
 ): Promise<ActionResult<RecipientDto>> {
   return toResult(() => createRecipient(appId, input))
+}
+
+export async function deleteRecipientAction(appId: string, externalId: string): Promise<ActionResult<void>> {
+  return toResult(() => deleteRecipient(appId, externalId))
 }
