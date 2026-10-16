@@ -180,7 +180,10 @@
     "IncomingHookUrlRevealed": "xem URL incoming webhook",
     "SystemSettingsUpdated": "đổi cài đặt hệ thống",
     "TopicActivated": "kích hoạt chủ đề",
-    "TopicMandatoryChanged": "đổi chủ đề bắt buộc"
+    "TopicMandatoryChanged": "đổi chủ đề bắt buộc",
+    "AppOpenTrackingChanged": "đổi cài đặt theo dõi mở thư",
+    "NotificationOpened": "người nhận mở thư",
+    "UserCreated": "thêm người nhận"
   },
   "exclusion": {
     "no_channel": "chưa khai email",
@@ -224,7 +227,8 @@
     "statSends": "Lần gửi 24h",
     "statFailed": "Gửi lỗi 24h",
     "statWaiting": "Đang chờ gửi",
-    "statRecipients": "Người nhận có email dùng được",
+    "statRecipients": "Email dùng được",
+    "statOpenRate": "Tỉ lệ mở 24h",
     "hourlyTitle": "Lần gửi theo giờ",
     "hourlySubtitle": "24 giờ gần nhất · theo giờ app gọi · kết cục hiện tại",
     "statusTitle": "Trạng thái lần gửi",
@@ -1026,7 +1030,7 @@
     "notConfiguredBody": "Server EWS chưa có khoá ký webhook (WEBHOOK_SIGNING_KEY), nên chưa thêm URL, đổi secret hay gửi thử được. Báo đội vận hành EWS.",
     "actionFailed": "Thao tác không thành công",
     "endpoints": "URL nhận webhook",
-    "intro": "Mỗi khi một thư có kết quả (đã gửi, lỗi, bị chặn), EWS gọi POST sang URL đã đăng ký — app không phải hỏi lại liên tục.",
+    "intro": "Mỗi khi một thư có kết quả (đã gửi, lỗi, bị chặn) hoặc được mở, EWS gọi POST sang URL đã đăng ký — app không phải hỏi lại liên tục.",
     "add": "Thêm URL",
     "colUrl": "URL",
     "colEvents": "Sự kiện",
@@ -1058,6 +1062,7 @@
     "eventSent": "Thư đã được máy chủ thư nhận",
     "eventFailed": "Gửi thư không được",
     "eventNoRecipient": "Không gửi vì người nhận bị chặn (tắt chủ đề, email đã ngắt…)",
+    "eventOpened": "Người nhận mở thư lần đầu (cần bật Theo dõi mở thư)",
     "eventsRequired": "Chọn ít nhất một sự kiện.",
     "saving": "Đang lưu…",
     "save": "Lưu",

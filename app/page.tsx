@@ -49,6 +49,12 @@ function deltaOf({ total, previousTotal }: AppOverviewDto['sends']): string | un
 type Alert = { text: string; href?: string }
 
 /** "Cần chú ý" — luật đơn giản trên chính số liệu của màn này, không có nguồn nào khác. */
+/** Tỉ lệ mở (ADR-0031 của backend): đã mở / thư có chèn ảnh. Chưa có thư nào được theo dõi -> "—". */
+function openRate(opens: AppOverviewDto['opens']): string {
+  if (!opens || opens.tracked === 0) return '—'
+  return `${Math.round((opens.opened / opens.tracked) * 100)}%`
+}
+
 function alertsOf(o: AppOverviewDto, now: number, t: OverviewT, num: (n: number) => string): Alert[] {
   const alerts: Alert[] = []
   if (o.topics.active === 0) {
@@ -146,9 +152,9 @@ export default function Page() {
         <Overview view={view} />
       ) : (
         <div className="space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-24 flex-1" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className={i === 4 ? 'h-24 sm:col-span-2 xl:col-span-1' : 'h-24'} />
             ))}
           </div>
           <Skeleton className="h-80" />
@@ -173,7 +179,7 @@ function Overview({ view }: { view: OverviewView }) {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatPill
           label={t('statSends')}
           value={num(o.sends.total)}
@@ -186,6 +192,10 @@ function Overview({ view }: { view: OverviewView }) {
           label={t('statRecipients')}
           value={`${num(o.recipients.emailActive)}/${num(o.recipients.total)}`}
         />
+        {/* Ô thứ 5: hai cột thì trải cả hàng, khỏi nằm lẻ nửa hàng. */}
+        <div className="flex sm:col-span-2 xl:col-span-1">
+          <StatPill label={t('statOpenRate')} value={openRate(o.opens)} />
+        </div>
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
         <Panel className="p-5" glow>

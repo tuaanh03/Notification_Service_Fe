@@ -180,7 +180,10 @@
     "IncomingHookUrlRevealed": "viewed incoming webhook URL",
     "SystemSettingsUpdated": "changed system settings",
     "TopicActivated": "activated topic",
-    "TopicMandatoryChanged": "changed topic mandatory"
+    "TopicMandatoryChanged": "changed topic mandatory",
+    "AppOpenTrackingChanged": "change open tracking",
+    "NotificationOpened": "recipient opened the email",
+    "UserCreated": "add recipient"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -224,7 +227,8 @@
     "statSends": "Sends 24h",
     "statFailed": "Failed 24h",
     "statWaiting": "Waiting to send",
-    "statRecipients": "Recipients with usable email",
+    "statRecipients": "Usable emails",
+    "statOpenRate": "Open rate 24h",
     "hourlyTitle": "Sends by hour",
     "hourlySubtitle": "Last 24 hours · by time the app called · current outcome",
     "statusTitle": "Send status",
@@ -1026,7 +1030,7 @@
     "notConfiguredBody": "The EWS server has no webhook signing key (WEBHOOK_SIGNING_KEY), so URLs cannot be added, secrets rotated or tests sent yet. Contact the EWS operators.",
     "actionFailed": "Action failed",
     "endpoints": "Webhook URLs",
-    "intro": "Whenever an email has an outcome (sent, failed, blocked), EWS POSTs to the registered URL — the app does not have to keep polling.",
+    "intro": "Whenever an email has an outcome (sent, failed, blocked) or is opened, EWS POSTs to the registered URL — the app does not have to keep polling.",
     "add": "Add URL",
     "colUrl": "URL",
     "colEvents": "Events",
@@ -1058,6 +1062,7 @@
     "eventSent": "The mail server accepted the email",
     "eventFailed": "The email could not be sent",
     "eventNoRecipient": "Not sent because the recipient is blocked (topic off, email unsubscribed…)",
+    "eventOpened": "The recipient opened the email for the first time (needs Open tracking on)",
     "eventsRequired": "Choose at least one event.",
     "saving": "Saving…",
     "save": "Save",

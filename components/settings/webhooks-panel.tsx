@@ -290,7 +290,8 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
                 <TableHead className="px-3">{t('colUrl')}</TableHead>
                 <TableHead className="px-3">{t('colEvents')}</TableHead>
                 <TableHead className="px-3">{t('colStatus')}</TableHead>
-                <TableHead className="px-3">{t('colCreated')}</TableHead>
+                {/* Dưới 1280px bỏ cột ngày tạo để cột thao tác (Gửi thử, ⋯) không bị đẩy khỏi khung. */}
+                <TableHead className="hidden px-3 xl:table-cell">{t('colCreated')}</TableHead>
                 <TableHead className="px-3" />
               </TableRow>
             </TableHeader>
@@ -314,7 +315,7 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
                   <TableCell className="px-3">
                     <StatusPill status={e.status} />
                   </TableCell>
-                  <TableCell className="px-3 font-mono text-xs">{fmtDateTime(e.createdAt)}</TableCell>
+                  <TableCell className="hidden px-3 font-mono text-xs xl:table-cell">{fmtDateTime(e.createdAt)}</TableCell>
                   <TableCell className="px-3 text-right whitespace-nowrap" onClick={(ev) => ev.stopPropagation()}>
                     {writable && (
                       <>

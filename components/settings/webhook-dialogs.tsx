@@ -18,6 +18,7 @@ export const EVENT_LABEL = {
   'notification.sent': 'eventSent',
   'notification.failed': 'eventFailed',
   'notification.no_recipient': 'eventNoRecipient',
+  'notification.opened': 'eventOpened',
 } as const satisfies Record<WebhookEventType, string>
 
 /** Chỉ kiểm hình dạng để khoá nút — luật thật (không IP nội bộ, không user:pass…) ở backend. */

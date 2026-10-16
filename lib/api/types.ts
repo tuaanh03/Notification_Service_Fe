@@ -128,7 +128,7 @@ export type IssuedAppSecretDto = AppSecretDto & { apiKey: string }
  * Outgoing webhook (ADR-0029 của backend). Sự kiện app đăng ký được — sao đúng `WEBHOOK_EVENT_TYPES`
  * của backend. `ping` chỉ là lần "Gửi thử", không đăng ký được nên không có ở đây.
  */
-export const WEBHOOK_EVENT_TYPES = ['notification.sent', 'notification.failed', 'notification.no_recipient'] as const
+export const WEBHOOK_EVENT_TYPES = ['notification.sent', 'notification.failed', 'notification.no_recipient', 'notification.opened'] as const
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number]
 
 /** Sao đúng `WebhookEndpointDto`. KHÔNG có secret — secret chỉ có trong response tạo / đổi secret. */
@@ -313,6 +313,8 @@ export type AppOverviewDto = {
   sends: { total: number; previousTotal: number }
   /** Theo trạng thái hiện tại — đủ 11 khoá, không có thì 0. */
   byStatus: Record<string, number>
+  /** Đếm "đã mở" trong cửa sổ (ADR-0031): thư đã gửi CÓ chèn ảnh / trong đó đã mở. Optional: backend cũ chưa có. */
+  opens?: { tracked: number; opened: number }
   /** Vì sao bị chặn (`exclusion_reason`) — đủ mọi khoá, không có thì 0. */
   blocked: Record<string, number>
   /**
