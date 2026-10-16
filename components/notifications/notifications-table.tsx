@@ -105,17 +105,16 @@ function useColumns(withRecipient: boolean): Column<Row>[] {
   ]
 }
 
-/** Đã mở (ADR-0031 của backend, số ước lượng): biểu tượng + số lần, rê chuột xem lần mở đầu. Chưa mở -> không hiện gì. */
+/** Đã mở (ADR-0031 của backend): chỉ biểu tượng, rê chuột xem lần mở đầu. Chưa mở -> không hiện gì. */
 function OpenedMark({ recipient }: { recipient: NotificationSummaryDto['recipient'] }) {
   const t = useTranslations('notifications')
   if (!recipient?.firstOpenedAt) return null
   return (
     <Tooltip>
       <TooltipTrigger
-        render={<span aria-label={t('opened')} className="inline-flex items-center gap-0.5 text-[var(--aurora)]" />}
+        render={<span aria-label={t('opened')} className="inline-flex text-[var(--aurora)]" />}
       >
         <MailOpen className="size-3.5" />
-        {(recipient.openCount ?? 0) > 1 && <span className="font-mono">×{recipient.openCount}</span>}
       </TooltipTrigger>
       <TooltipContent>{t('firstOpenedTip', { at: fmtDateTime(recipient.firstOpenedAt) })}</TooltipContent>
     </Tooltip>
