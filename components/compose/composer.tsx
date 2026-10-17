@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
-import { CheckCircle2, FileText, Hash, PenLine, PlugZap, Send, ShieldOff, UserRound, X } from 'lucide-react'
+import { CheckCircle2, Clock, FileText, Hash, PenLine, PlugZap, Send, ShieldOff, UserRound, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
   loadComposeOptionsAction,
@@ -28,6 +28,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import type { ActionResult } from '@/lib/api/result'
 import type { ConsoleSendContent, TemplateVariableDto } from '@/lib/api/types'
+import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 
 /** Khớp `MAX_CONSOLE_RECIPIENTS` của backend — vượt thì backend trả 422. */
@@ -35,7 +36,11 @@ const MAX_PEOPLE = 20
 
 type Mode = 'people' | 'topic'
 type ContentMode = 'template' | 'direct'
-type Outcome = { kind: 'people'; queued: number; missing: string[] } | { kind: 'topic'; queued: number }
+/** `scheduledAt`: ngoài khung giờ gửi của app — thư chờ tới lúc đó (ADR-0032 của backend). */
+type Outcome = { scheduledAt: string | null } & (
+  | { kind: 'people'; queued: number; missing: string[] }
+  | { kind: 'topic'; queued: number }
+)
 
 /** Mã lỗi backend -> câu ngắn. Mã khác: câu chung kèm mã. */
 const KNOWN_ERRORS: Record<string, 'errMissingVariable' | 'errTooLarge' | 'errAppNotActive' | 'errContent'> = {
@@ -211,6 +216,7 @@ export function Composer() {
           kind: 'people',
           queued: result.data.queued,
           missing: result.data.results.filter((r) => r.code !== null).map((r) => r.externalId),
+          scheduledAt: result.data.scheduledAt ?? null,
         })
       } else {
         const result = await sendToTopicAction(appId, { ...content, topic, requestId })
@@ -218,7 +224,7 @@ export function Composer() {
           setError(failText(result))
           return
         }
-        setOutcome({ kind: 'topic', queued: result.data.recipientCount })
+        setOutcome({ kind: 'topic', queued: result.data.recipientCount, scheduledAt: result.data.scheduledAt ?? null })
       }
     })
   }
@@ -263,7 +269,15 @@ export function Composer() {
         <Panel className="mx-auto max-w-3xl px-8 py-16" ring>
           <div className="flex flex-col items-center gap-4 text-center">
             <CheckCircle2 className="size-12 text-[var(--aurora)]" />
-            <h2 className="text-xl font-semibold">{t('doneTitle', { count: outcome.queued })}</h2>
+            <h2 className="text-xl font-semibold">
+              {t(outcome.scheduledAt ? 'doneTitleScheduled' : 'doneTitle', { count: outcome.queued })}
+            </h2>
+            {outcome.scheduledAt && (
+              <p className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+                <Clock className="size-4" />
+                {t('doneScheduled', { at: fmtDateTime(outcome.scheduledAt) })}
+              </p>
+            )}
             {outcome.kind === 'people' && outcome.missing.length > 0 && (
               <p className="text-sm text-[var(--solar)]">{t('doneMissing', { ids: outcome.missing.join(', ') })}</p>
             )}

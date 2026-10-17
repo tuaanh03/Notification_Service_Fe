@@ -57,6 +57,9 @@ export type AdminProfileDto = {
 }
 
 /** Sao đúng `AppDto` của backend (`src/modules/apps/application/dto.ts`). */
+/** Khung giờ gửi (ADR-0032): 1 = thứ Hai … 7 = Chủ nhật; `HH:MM`, `end` có thể là `24:00`. */
+export type SendWindowDto = { days: number[]; start: string; end: string }
+
 export type AppDto = {
   id: string
   orgId: string
@@ -76,6 +79,10 @@ export type AppDto = {
   isSystem: boolean
   /** Đếm "đã mở" (ADR-0031). Optional: backend cũ chưa có. */
   trackOpens?: boolean
+  /** Khung giờ gửi, giờ Việt Nam (ADR-0032). null = gửi mọi lúc. Optional: backend cũ chưa có. */
+  sendWindow?: SendWindowDto | null
+  /** Tin bắt buộc bỏ qua khung giờ. */
+  mandatoryBypassWindow?: boolean
   /** ISO-8601 UTC */
   createdAt: string
   updatedAt: string
@@ -252,7 +259,7 @@ export type NotificationSummaryDto = {
   id: string
   /** api = app gọi `/v1` · dashboard = gửi từ màn Soạn thông báo. Optional: backend cũ chưa có. */
   origin?: string
-  /** Đường gửi trực tiếp của MVP chỉ ra: queued | sending | sent | no_recipient | failed */
+  /** Đường gửi trực tiếp chỉ ra: scheduled (chờ khung giờ gửi) | queued | sending | sent | no_recipient | failed */
   status: string
   topic: string
   /** null = người nhận đã không còn trong sổ. */
@@ -263,6 +270,8 @@ export type NotificationSummaryDto = {
   /** Gửi bằng template: tên + bản đã dùng (ADR-0020). null = nội dung viết thẳng. Optional: backend cũ chưa có. */
   template?: { id: string; name: string; version: number } | null
   createdAt: string
+  /** `scheduled`: lúc khung giờ gửi của app mở (ADR-0032). Optional: backend cũ chưa có. */
+  scheduledAt?: string | null
   queuedAt: string | null
   sendingAt: string | null
   finishedAt: string | null
@@ -488,6 +497,8 @@ export type SystemSettingDto = {
 export type ConsoleSendResultDto = {
   queued: number
   results: { externalId: string; notificationId: string | null; code: string | null }[]
+  /** Ngoài khung giờ gửi: lúc thư sẽ đi (ADR-0032). Optional: backend cũ chưa có. */
+  scheduledAt?: string | null
 }
 
 /** Phần `PublicationDto` màn Soạn thông báo đọc (`POST /admin/apps/:appId/publications`). */
@@ -495,6 +506,8 @@ export type ConsolePublicationDto = {
   id: string
   topic: string
   recipientCount: number
+  /** Ngoài khung giờ gửi: lúc thư sẽ đi (ADR-0032). Optional: backend cũ chưa có. */
+  scheduledAt?: string | null
 }
 
 /** Sao đúng `RenderedTemplateDto` (`POST …/templates/:id/render`) — bản đang xuất bản đã đổ biến. */

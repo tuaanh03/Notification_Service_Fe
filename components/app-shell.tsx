@@ -90,6 +90,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
     { href: '/settings/quota', name: 'quota', group: 'appSettings' },
     { href: '/settings/webhooks', name: 'webhooks', group: 'appSettings' },
     { href: '/settings/tracking', name: 'tracking', group: 'appSettings' },
+    { href: '/settings/limits', name: 'limits', group: 'appSettings' },
     { href: '/settings/sync', name: 'sync', group: 'appSettings' },
   ] as const
 
@@ -265,6 +266,11 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/tracking" />} isActive={path === '/settings/tracking'}>
                             <span>{tn('tracking')}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton render={<AppLink href="/settings/limits" />} isActive={path === '/settings/limits'}>
+                            <span>{tn('limits')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         {!isPreviewRoute('/settings/sync') && (

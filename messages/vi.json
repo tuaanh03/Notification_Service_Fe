@@ -36,6 +36,7 @@
     "quota": "Kênh & Quota",
     "webhooks": "Webhooks",
     "tracking": "Theo dõi mở thư",
+    "limits": "Giới hạn gửi",
     "sync": "Sync danh bạ",
     "ewsAdmin": "Quản trị EWS",
     "sendApprovals": "Duyệt lần gửi",
@@ -185,7 +186,9 @@
     "NotificationOpened": "người nhận mở thư",
     "UserCreated": "thêm người nhận",
     "UserDeleted": "xoá người nhận",
-    "UserRestored": "khôi phục người nhận"
+    "UserRestored": "khôi phục người nhận",
+    "AppSendWindowChanged": "Đổi khung giờ gửi",
+    "NotificationScheduled": "Hẹn gửi theo khung giờ"
   },
   "exclusion": {
     "no_channel": "chưa khai email",
@@ -213,7 +216,9 @@
     "stepSending": "Bắt đầu gửi",
     "stepAccepted": "Máy chủ thư nhận",
     "stepFinished": "Kết thúc",
-    "whyBlocked": "Muốn biết vì sao người này bị chặn: xem <link>trang của <mono>{id}</mono></link>. Cài đặt ở đó là hiện tại, không phải lúc gửi."
+    "whyBlocked": "Muốn biết vì sao người này bị chặn: xem <link>trang của <mono>{id}</mono></link>. Cài đặt ở đó là hiện tại, không phải lúc gửi.",
+    "scheduled": "gửi lúc {at}",
+    "stepScheduled": "Hẹn gửi (khung giờ)"
   },
   "overview": {
     "title": "Tổng quan",
@@ -437,6 +442,8 @@
     "sendTopic": "Gửi thật tới cả chủ đề",
     "sending": "Đang gửi…",
     "doneTitle": "Đã xếp hàng {count} thư",
+    "doneTitleScheduled": "Đã hẹn gửi {count} thư",
+    "doneScheduled": "Gửi lúc {at} — ngoài khung giờ gửi của app",
     "doneMissing": "Không có mã: {ids}",
     "viewHistory": "Xem lịch sử gửi",
     "composeAnother": "Soạn tin khác",
@@ -1131,6 +1138,31 @@
     "notReady": "Máy chủ chưa cấu hình, bật cũng chưa có tác dụng.",
     "enabledToast": "Đã bật đếm số người mở thư",
     "disabledToast": "Đã tắt đếm số người mở thư",
+    "loadFailed": "Không đọc được cài đặt",
+    "retry": "Thử lại"
+  },
+  "limits": {
+    "title": "Giới hạn gửi",
+    "subtitle": "App {app}",
+    "windowTitle": "Khung giờ gửi",
+    "windowHint": "Ngoài khung, thư chờ tới giờ mở rồi tự gửi.",
+    "days": "Ngày",
+    "from": "Từ",
+    "to": "Đến",
+    "timezone": "Giờ Việt Nam",
+    "day1": "T2",
+    "day2": "T3",
+    "day3": "T4",
+    "day4": "T5",
+    "day5": "T6",
+    "day6": "T7",
+    "day7": "CN",
+    "mandatoryTitle": "Tin bắt buộc",
+    "bypassWindow": "Bỏ qua khung giờ",
+    "save": "Lưu",
+    "saved": "Đã lưu giới hạn gửi",
+    "errDays": "Chọn ít nhất một ngày",
+    "errTime": "Giờ bắt đầu phải trước giờ kết thúc",
     "loadFailed": "Không đọc được cài đặt",
     "retry": "Thử lại"
   },

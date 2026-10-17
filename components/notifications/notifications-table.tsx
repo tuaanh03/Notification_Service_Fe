@@ -29,7 +29,7 @@ const PAGE_SIZE = 25
  * Không liệt kê đủ 11: sáu trạng thái còn lại thuộc gửi hàng loạt / hẹn giờ / phê duyệt, chưa có —
  * lựa chọn lọc cho trạng thái không bao giờ xuất hiện chỉ làm người trực nghĩ là "đang yên".
  */
-const MVP_STATUSES = ['queued', 'sending', 'sent', 'no_recipient', 'failed'] as const
+const MVP_STATUSES = ['scheduled', 'queued', 'sending', 'sent', 'no_recipient', 'failed'] as const
 
 /**
  * Cột của bảng — dựng trong hook vì nhãn theo ngôn ngữ đang chọn. Mã người nhận dẫn sang trang

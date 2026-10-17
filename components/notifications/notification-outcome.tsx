@@ -39,7 +39,10 @@ export function useOutcomeOf(): (n: NotificationSummaryDto) => string {
   const exclusion = useExclusionLabel()
   return (n) => {
     const r = n.recipient
-    if (!r) return n.status === 'queued' ? t('queued') : '—'
+    if (!r) {
+      if (n.status === 'scheduled' && n.scheduledAt) return t('scheduled', { at: fmtDateTime(n.scheduledAt) })
+      return n.status === 'queued' ? t('queued') : '—'
+    }
     if (r.exclusionReason) return t('excluded', { reason: exclusion(r.exclusionReason) })
     if (r.error?.startsWith(OUTCOME_UNKNOWN)) return t('unknown')
     if (r.error) return t('rejected')
@@ -191,6 +194,7 @@ function OutcomeDetail({ n, linkRecipient }: { n: NotificationSummaryDto; linkRe
         <p className="mb-1.5 text-[11px] text-[var(--text-muted)]">{tc('vnTime')}</p>
         <div className="rounded-lg border px-3 py-1">
           <Step label={t('stepCalled')} at={n.createdAt} />
+          {n.scheduledAt && <Step label={t('stepScheduled')} at={n.scheduledAt} />}
           <Step label={t('stepQueued')} at={n.queuedAt} />
           <Step label={t('stepSending')} at={n.sendingAt} />
           <Step label={t('stepAccepted')} at={n.recipient?.sentAt ?? null} />

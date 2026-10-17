@@ -36,6 +36,7 @@
     "quota": "Channels & Quota",
     "webhooks": "Webhooks",
     "tracking": "Open tracking",
+    "limits": "Sending limits",
     "sync": "Directory sync",
     "ewsAdmin": "EWS administration",
     "sendApprovals": "Send approvals",
@@ -185,7 +186,9 @@
     "NotificationOpened": "recipient opened the email",
     "UserCreated": "add recipient",
     "UserDeleted": "delete recipient",
-    "UserRestored": "restore recipient"
+    "UserRestored": "restore recipient",
+    "AppSendWindowChanged": "Send window changed",
+    "NotificationScheduled": "Held for send window"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -213,7 +216,9 @@
     "stepSending": "Started sending",
     "stepAccepted": "Mail server accepted",
     "stepFinished": "Finished",
-    "whyBlocked": "To see why this person was blocked: open <link>the page of <mono>{id}</mono></link>. Settings there are current, not as of sending."
+    "whyBlocked": "To see why this person was blocked: open <link>the page of <mono>{id}</mono></link>. Settings there are current, not as of sending.",
+    "scheduled": "sends at {at}",
+    "stepScheduled": "Scheduled (send window)"
   },
   "overview": {
     "title": "Overview",
@@ -437,6 +442,8 @@
     "sendTopic": "Send to the whole topic",
     "sending": "Sending…",
     "doneTitle": "{count} emails queued",
+    "doneTitleScheduled": "{count} emails scheduled",
+    "doneScheduled": "Goes out at {at} — outside the app send window",
     "doneMissing": "IDs not found: {ids}",
     "viewHistory": "View send history",
     "composeAnother": "Compose another",
@@ -1132,6 +1139,31 @@
     "enabledToast": "Open tracking turned on",
     "disabledToast": "Open tracking turned off",
     "loadFailed": "Could not load the setting",
+    "retry": "Retry"
+  },
+  "limits": {
+    "title": "Sending limits",
+    "subtitle": "App {app}",
+    "windowTitle": "Send window",
+    "windowHint": "Outside the window, mail waits and goes out when it opens.",
+    "days": "Days",
+    "from": "From",
+    "to": "To",
+    "timezone": "Vietnam time",
+    "day1": "Mon",
+    "day2": "Tue",
+    "day3": "Wed",
+    "day4": "Thu",
+    "day5": "Fri",
+    "day6": "Sat",
+    "day7": "Sun",
+    "mandatoryTitle": "Mandatory messages",
+    "bypassWindow": "Ignore the send window",
+    "save": "Save",
+    "saved": "Sending limits saved",
+    "errDays": "Pick at least one day",
+    "errTime": "Start must be before end",
+    "loadFailed": "Could not load settings",
     "retry": "Retry"
   },
   "incoming": {
