@@ -36,8 +36,11 @@ const MAX_PEOPLE = 20
 
 type Mode = 'people' | 'topic'
 type ContentMode = 'template' | 'direct'
-/** `scheduledAt`: ngoài khung giờ gửi của app — thư chờ tới lúc đó (ADR-0032 của backend). */
-type Outcome = { scheduledAt: string | null } & (
+/**
+ * Thư phải chờ giới hạn gửi của app (ADR-0032 của backend): thư sớm / muộn nhất sẽ đi lúc nào. Hai mốc bằng
+ * nhau = cùng đi một lúc (ngoài khung giờ); khác nhau = dàn đều, thư đi dần.
+ */
+type Outcome = { scheduledAt: string | null; lastScheduledAt: string | null } & (
   | { kind: 'people'; queued: number; missing: string[] }
   | { kind: 'topic'; queued: number }
 )
@@ -217,6 +220,7 @@ export function Composer() {
           queued: result.data.queued,
           missing: result.data.results.filter((r) => r.code !== null).map((r) => r.externalId),
           scheduledAt: result.data.scheduledAt ?? null,
+          lastScheduledAt: result.data.lastScheduledAt ?? null,
         })
       } else {
         const result = await sendToTopicAction(appId, { ...content, topic, requestId })
@@ -224,7 +228,12 @@ export function Composer() {
           setError(failText(result))
           return
         }
-        setOutcome({ kind: 'topic', queued: result.data.recipientCount, scheduledAt: result.data.scheduledAt ?? null })
+        setOutcome({
+          kind: 'topic',
+          queued: result.data.recipientCount,
+          scheduledAt: result.data.scheduledAt ?? null,
+          lastScheduledAt: result.data.lastScheduledAt ?? null,
+        })
       }
     })
   }
@@ -263,6 +272,7 @@ export function Composer() {
   }
 
   if (outcome) {
+    const spread = outcome.lastScheduledAt !== null && outcome.lastScheduledAt !== outcome.scheduledAt
     return (
       <>
         {header}
@@ -270,12 +280,14 @@ export function Composer() {
           <div className="flex flex-col items-center gap-4 text-center">
             <CheckCircle2 className="size-12 text-[var(--aurora)]" />
             <h2 className="text-xl font-semibold">
-              {t(outcome.scheduledAt ? 'doneTitleScheduled' : 'doneTitle', { count: outcome.queued })}
+              {t(spread ? 'doneTitle' : outcome.scheduledAt ? 'doneTitleScheduled' : 'doneTitle', { count: outcome.queued })}
             </h2>
             {outcome.scheduledAt && (
               <p className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
                 <Clock className="size-4" />
-                {t('doneScheduled', { at: fmtDateTime(outcome.scheduledAt) })}
+                {spread && outcome.lastScheduledAt
+                  ? t('doneSpread', { at: fmtDateTime(outcome.lastScheduledAt) })
+                  : t('doneScheduled', { at: fmtDateTime(outcome.scheduledAt) })}
               </p>
             )}
             {outcome.kind === 'people' && outcome.missing.length > 0 && (

@@ -188,7 +188,9 @@
     "UserDeleted": "xoá người nhận",
     "UserRestored": "khôi phục người nhận",
     "AppSendWindowChanged": "Đổi khung giờ gửi",
-    "NotificationScheduled": "Hẹn gửi theo khung giờ"
+    "AppPacingChanged": "Đổi dàn đều",
+    "AppPacingCeilingChanged": "Đổi trần tốc độ",
+    "NotificationScheduled": "Hẹn gửi theo giới hạn gửi"
   },
   "exclusion": {
     "no_channel": "chưa khai email",
@@ -218,7 +220,7 @@
     "stepFinished": "Kết thúc",
     "whyBlocked": "Muốn biết vì sao người này bị chặn: xem <link>trang của <mono>{id}</mono></link>. Cài đặt ở đó là hiện tại, không phải lúc gửi.",
     "scheduled": "gửi lúc {at}",
-    "stepScheduled": "Hẹn gửi (khung giờ)"
+    "stepScheduled": "Hẹn gửi"
   },
   "overview": {
     "title": "Tổng quan",
@@ -443,7 +445,8 @@
     "sending": "Đang gửi…",
     "doneTitle": "Đã xếp hàng {count} thư",
     "doneTitleScheduled": "Đã hẹn gửi {count} thư",
-    "doneScheduled": "Gửi lúc {at} — ngoài khung giờ gửi của app",
+    "doneScheduled": "Gửi lúc {at} — theo giới hạn gửi của app",
+    "doneSpread": "Thư đi dần, xong lúc {at} — theo giới hạn gửi của app",
     "doneMissing": "Không có mã: {ids}",
     "viewHistory": "Xem lịch sử gửi",
     "composeAnother": "Soạn tin khác",
@@ -1157,8 +1160,16 @@
     "day5": "T6",
     "day6": "T7",
     "day7": "CN",
+    "pacingTitle": "Dàn đều",
+    "pacingHint": "Mỗi phút gửi tối đa chừng này thư, phần còn lại đi ở phút sau.",
+    "perMinute": "thư / phút",
+    "ceilingNote": "Tối đa {max} thư / phút",
+    "errPerMinute": "Nhập số từ 1 đến {max}",
+    "ceilingTitle": "Trần tốc độ",
+    "ceilingHint": "Chỉ Super Admin. Áp cho mọi thư của app, kể cả tin bắt buộc.",
     "mandatoryTitle": "Tin bắt buộc",
     "bypassWindow": "Bỏ qua khung giờ",
+    "bypassPacing": "Không dàn đều",
     "save": "Lưu",
     "saved": "Đã lưu giới hạn gửi",
     "errDays": "Chọn ít nhất một ngày",

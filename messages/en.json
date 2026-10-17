@@ -188,7 +188,9 @@
     "UserDeleted": "delete recipient",
     "UserRestored": "restore recipient",
     "AppSendWindowChanged": "Send window changed",
-    "NotificationScheduled": "Held for send window"
+    "AppPacingChanged": "Pacing changed",
+    "AppPacingCeilingChanged": "Speed ceiling changed",
+    "NotificationScheduled": "Held by sending limits"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -218,7 +220,7 @@
     "stepFinished": "Finished",
     "whyBlocked": "To see why this person was blocked: open <link>the page of <mono>{id}</mono></link>. Settings there are current, not as of sending.",
     "scheduled": "sends at {at}",
-    "stepScheduled": "Scheduled (send window)"
+    "stepScheduled": "Scheduled"
   },
   "overview": {
     "title": "Overview",
@@ -443,7 +445,8 @@
     "sending": "Sending…",
     "doneTitle": "{count} emails queued",
     "doneTitleScheduled": "{count} emails scheduled",
-    "doneScheduled": "Goes out at {at} — outside the app send window",
+    "doneScheduled": "Goes out at {at} — per the app sending limits",
+    "doneSpread": "Going out gradually, done by {at} — per the app sending limits",
     "doneMissing": "IDs not found: {ids}",
     "viewHistory": "View send history",
     "composeAnother": "Compose another",
@@ -1157,8 +1160,16 @@
     "day5": "Fri",
     "day6": "Sat",
     "day7": "Sun",
+    "pacingTitle": "Pacing",
+    "pacingHint": "At most this many emails per minute; the rest go in the following minutes.",
+    "perMinute": "emails / minute",
+    "ceilingNote": "At most {max} emails / minute",
+    "errPerMinute": "Enter a number from 1 to {max}",
+    "ceilingTitle": "Speed ceiling",
+    "ceilingHint": "Super Admin only. Applies to every email of the app, mandatory ones included.",
     "mandatoryTitle": "Mandatory messages",
     "bypassWindow": "Ignore the send window",
+    "bypassPacing": "Skip pacing",
     "save": "Save",
     "saved": "Sending limits saved",
     "errDays": "Pick at least one day",

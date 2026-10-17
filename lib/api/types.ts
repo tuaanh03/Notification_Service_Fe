@@ -83,6 +83,12 @@ export type AppDto = {
   sendWindow?: SendWindowDto | null
   /** Tin bắt buộc bỏ qua khung giờ. */
   mandatoryBypassWindow?: boolean
+  /** Dàn đều: tối đa N thư / phút (ADR-0032 GĐ 2). null = không dàn. Optional: backend cũ chưa có. */
+  sendPerMinute?: number | null
+  /** Tin bắt buộc không bị dàn đều. */
+  mandatoryBypassPacing?: boolean
+  /** Trần tốc độ do Super Admin đặt — Admin App chỉ đặt dàn đều trong trần. null = không trần riêng. */
+  maxSendPerMinute?: number | null
   /** ISO-8601 UTC */
   createdAt: string
   updatedAt: string
@@ -270,7 +276,7 @@ export type NotificationSummaryDto = {
   /** Gửi bằng template: tên + bản đã dùng (ADR-0020). null = nội dung viết thẳng. Optional: backend cũ chưa có. */
   template?: { id: string; name: string; version: number } | null
   createdAt: string
-  /** `scheduled`: lúc khung giờ gửi của app mở (ADR-0032). Optional: backend cũ chưa có. */
+  /** `scheduled`: lúc thư sẽ đi theo giới hạn gửi của app (khung giờ / dàn đều — ADR-0032). Optional: backend cũ chưa có. */
   scheduledAt?: string | null
   queuedAt: string | null
   sendingAt: string | null
@@ -497,8 +503,9 @@ export type SystemSettingDto = {
 export type ConsoleSendResultDto = {
   queued: number
   results: { externalId: string; notificationId: string | null; code: string | null }[]
-  /** Ngoài khung giờ gửi: lúc thư sẽ đi (ADR-0032). Optional: backend cũ chưa có. */
+  /** Thư chờ giới hạn gửi của app: thư sớm / muộn nhất sẽ đi lúc nào (ADR-0032). Optional: backend cũ chưa có. */
   scheduledAt?: string | null
+  lastScheduledAt?: string | null
 }
 
 /** Phần `PublicationDto` màn Soạn thông báo đọc (`POST /admin/apps/:appId/publications`). */
@@ -506,8 +513,9 @@ export type ConsolePublicationDto = {
   id: string
   topic: string
   recipientCount: number
-  /** Ngoài khung giờ gửi: lúc thư sẽ đi (ADR-0032). Optional: backend cũ chưa có. */
+  /** Thư con chờ giới hạn gửi của app: thư sớm / muộn nhất sẽ đi lúc nào (ADR-0032). Optional: backend cũ chưa có. */
   scheduledAt?: string | null
+  lastScheduledAt?: string | null
 }
 
 /** Sao đúng `RenderedTemplateDto` (`POST …/templates/:id/render`) — bản đang xuất bản đã đổ biến. */
