@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Archive, Copy, CopyPlus, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
+import { Archive, Code2, Copy, CopyPlus, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
 import { isTemplateCategory, TEMPLATE_CATEGORIES } from '@/lib/template-categories'
 import { AiComposeDialog } from './ai-compose-dialog'
+import { BlockEditor } from './blocks/block-editor'
 import { ContractPanel } from './contract-panel'
 import { EditorPane, Highlight } from './editor-pane'
 import { useIssueText } from './issue-text'
@@ -48,6 +49,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  /** Hộp "Chuyển sang HTML" (ADR-0034) — một chiều. */
+  const [toHtmlOpen, setToHtmlOpen] = useState(false)
   /** Hộp Nhân bản: `dupRound` đổi mỗi lần mở để ô tên dựng lại, không giữ chữ của lần trước. */
   const [dupOpen, setDupOpen] = useState(false)
   const [dupRound, setDupRound] = useState(0)
@@ -106,6 +109,11 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       router.push(`/templates/${id}`)
     }
   }
+  const doConvert = async () => {
+    setToHtmlOpen(false)
+    if (await ed.convertToHtml()) toast.success(t('convertedToHtml'))
+  }
+  const blocks = ed.editor === 'blocks'
   const onSave = async () => {
     if (await ed.saveDraft()) toast.success(t('saved', { version: ed.draft?.version ?? nextVersion }))
   }
@@ -116,7 +124,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         title={detail.name}
         breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: detail.name }]}
         subtitle={
-          shown ? `v${shown.version} · ${ed.locked ? t('readOnly') : t('editingDraft')}${ed.dirty ? t('unsaved') : ''}` : undefined
+          shown
+            ? `v${shown.version} · ${blocks ? t('editorBlocks') : t('editorHtml')} · ${ed.locked ? t('readOnly') : t('editingDraft')}${ed.dirty ? t('unsaved') : ''}`
+            : undefined
         }
         actions={
           <>
@@ -130,6 +140,11 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                   <UploadCloud /> {t('publish', { version: ed.draft.version })}
                 </Button>
               </>
+            )}
+            {writable && !ed.archived && ed.draft && blocks && (
+              <Button variant="outline" disabled={ed.pending} onClick={() => setToHtmlOpen(true)} data-testid="to-html-btn">
+                <Code2 /> {t('toHtml')}
+              </Button>
             )}
             {writable && !ed.archived && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
@@ -250,17 +265,31 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
+            {/* Kiểu kéo-thả: bản chữ thường do backend sinh từ các khối — chỉ đọc. */}
             <Textarea
               id="tpl-text"
-              value={ed.text}
+              value={blocks ? ed.bodyText : ed.text}
               onChange={(e) => ed.setText(e.target.value)}
               className="min-h-20 font-mono text-xs"
               disabled={ed.locked}
+              readOnly={blocks}
               placeholder={t('textPlaceholder')}
             />
+            {blocks && <p className="text-[11px] text-[var(--text-muted)]">{t('textAuto')}</p>}
           </div>
         </Panel>
 
+        {blocks ? (
+          <>
+            <Panel className="h-[720px] min-w-0 overflow-hidden p-0">
+              <BlockEditor ed={ed} locked={ed.locked} />
+            </Panel>
+            <p className="-mt-3 text-[11px] text-[var(--text-muted)]">{t('aiHtmlOnly')}</p>
+            <div className="cosmic-surface h-[640px] overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs">
+              <PreviewPane ed={ed} />
+            </div>
+          </>
+        ) : (
         <ResizablePanelGroup
           orientation="horizontal"
           style={{ height: '650px', maxHeight: '650px' }}
@@ -283,6 +312,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             <PreviewPane ed={ed} />
           </ResizablePanel>
         </ResizablePanelGroup>
+        )}
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Panel className="min-w-0 p-5">
@@ -299,6 +329,19 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         </div>
       </div>
 
+      {/* Một chiều: không quay lại kéo-thả được; chỉ nháp đổi, bản đã xuất bản giữ nguyên. */}
+      <ConfirmDialog
+        open={toHtmlOpen}
+        title={t('toHtmlTitle')}
+        description={t('toHtmlBody')}
+        facts={[
+          [t('factDraft'), `v${ed.draft?.version ?? ''} → HTML`],
+          [t('factPublished'), ed.published ? t('toHtmlPublishedKept', { version: ed.published.version }) : '—'],
+        ]}
+        confirmLabel={t('toHtmlConfirm')}
+        onConfirm={() => void doConvert()}
+        onCancel={() => setToHtmlOpen(false)}
+      />
       <AiComposeDialog key={aiRound} open={aiOpen} ed={ed} onClose={() => setAiOpen(false)} />
       {/* Biến bắt buộc mới: từ lúc xuất bản, app chưa gửi biến đó thì mọi lần gửi bị từ chối. */}
       <ConfirmDialog

@@ -1,6 +1,11 @@
 'use client'
+import { useState } from 'react'
+import { Loader2, Monitor, Smartphone } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
+import { cn } from '@/lib/utils'
+import { useIssueText } from './issue-text'
 
 const SCROLLBAR_HIDE = `<style>
   html, body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
@@ -29,20 +34,50 @@ export function EmailPreviewFrame({ html, className }: { html: string; className
   )
 }
 
+/** Rộng khung xem trước theo thiết bị: máy tính = cả khung, điện thoại = 375px. */
+const DEVICES = ['desktop', 'mobile'] as const
+type Device = (typeof DEVICES)[number]
+
 /**
  * Xem thử bằng GIÁ TRỊ MẪU của bảng biến (không có thì `| default:`), escape như backend.
  * Biến chưa có giá trị nào hiện nguyên `{{ ... }}` — đúng chỗ backend sẽ từ chối lúc gửi.
+ * Kiểu kéo-thả: HTML do backend sinh (`ed.designPreview`), chờ ~0,5 giây sau lần sửa cuối.
  */
 export function PreviewPane({ ed }: { ed: TemplateEditorState }) {
   const t = useTranslations('previewPane')
+  const issueText = useIssueText()
+  const [device, setDevice] = useState<Device>('desktop')
+  const previewError = ed.editor === 'blocks' ? ed.designPreview.error : null
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white" data-testid="preview-pane">
-      <div className="shrink-0 border-b border-[var(--orbit)] px-4 py-2 text-xs">
-        <span className="text-[var(--text-muted)]">{t('subject')}</span>
-        <span className="font-medium text-[var(--text-primary)]">{ed.previewSubject || t('empty')}</span>
+      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--orbit)] px-4 py-2 text-xs">
+        <div className="min-w-0 flex-1 truncate">
+          <span className="text-[var(--text-muted)]">{t('subject')}</span>
+          <span className="font-medium text-[var(--text-primary)]">{ed.previewSubject || t('empty')}</span>
+        </div>
+        {ed.editor === 'blocks' && ed.designPreview.loading && <Loader2 className="size-3.5 animate-spin text-[var(--text-muted)]" aria-label={t('updating')} />}
+        <ToggleGroup variant="outline" size="sm" value={[device]} onValueChange={(v) => {
+          const next = DEVICES.find((d) => d === v[0])
+          if (next) setDevice(next)
+        }} aria-label={t('device')}>
+          <ToggleGroupItem value="desktop" aria-label={t('desktop')} className="gap-1 text-[11px]" data-testid="preview-desktop">
+            <Monitor className="size-3.5" /> {t('desktop')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="mobile" aria-label={t('mobile')} className="gap-1 text-[11px]" data-testid="preview-mobile">
+            <Smartphone className="size-3.5" /> {t('mobile')}
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
-      <div className="h-full min-h-0 w-full flex-1 overflow-hidden bg-white">
-        <EmailPreviewFrame html={ed.previewHtml} />
+      {previewError && (
+        <p className="shrink-0 border-b border-[var(--orbit)] bg-[var(--supernova)]/5 px-4 py-1.5 text-[11px] text-[var(--supernova)]" data-testid="preview-error">
+          {previewError.issues.length ? previewError.issues.map((i) => issueText(i)).join(' · ') : previewError.message} <span className="font-mono">({previewError.issues[0]?.code ?? previewError.code})</span>
+        </p>
+      )}
+      <div className={cn('h-full min-h-0 w-full flex-1 overflow-hidden', device === 'mobile' ? 'flex justify-center bg-[var(--void)] py-3' : 'bg-white')}>
+        <EmailPreviewFrame
+          html={ed.previewHtml}
+          className={device === 'mobile' ? 'h-full w-[375px] max-w-full rounded-xl border border-[var(--orbit)] bg-white shadow-sm' : undefined}
+        />
       </div>
       <p className="shrink-0 px-4 py-1 text-[11px] text-[var(--text-muted)]">
         {t('hint')}

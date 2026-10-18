@@ -3,11 +3,13 @@
 import {
   aiComposeTemplate,
   archiveTemplate,
+  convertDraftToHtml,
   createTemplate,
   draftFromVersion,
   duplicateTemplate,
   getTemplate,
   listTemplates,
+  previewDesign,
   publishTemplate,
   saveDraft,
   updateTemplate,
@@ -15,6 +17,7 @@ import {
   type TemplateContentInput,
   type TemplateListFilter,
 } from '@/lib/api/templates'
+import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 import { toResult, type ActionResult } from '@/lib/api/result'
 import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto } from '@/lib/api/types'
@@ -39,9 +42,26 @@ export async function loadTemplateAction(appId: string, id: string): Promise<Act
 
 export async function createTemplateAction(
   appId: string,
-  input: { name: string; category?: TemplateCategory } & Partial<TemplateContentInput>,
+  input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplate(appId, input))
+}
+
+/** Xem trước thiết kế kéo-thả đang soạn — backend sinh HTML, không lưu. */
+export async function previewDesignAction(appId: string, design: EmailDesign): Promise<ActionResult<{ html: string; text: string }>> {
+  return toResult(() => previewDesign(appId, design))
+}
+
+/** "Chuyển sang HTML" — chỉ nháp; bản đã xuất bản giữ nguyên. Console LƯU NHÁP trước rồi mới gọi. */
+export async function convertToHtmlAction(
+  appId: string,
+  id: string,
+  content: TemplateContentInput,
+): Promise<ActionResult<TemplateDetailDto>> {
+  return toResult(async () => {
+    await saveDraft(appId, id, content)
+    return convertDraftToHtml(appId, id)
+  })
 }
 
 /** Đổi tên và / hoặc nhóm — không đụng nội dung đang soạn. */

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import {
   aiComposeAction,
   archiveTemplateAction,
+  convertToHtmlAction,
   draftFromVersionAction,
   duplicateTemplateAction,
   loadTemplateAction,
@@ -12,8 +13,11 @@ import {
 } from '@/app/templates/actions'
 import type { Issue } from '@/lib/api/problem'
 import type { ActionResult } from '@/lib/api/result'
+import type { TemplateContentInput } from '@/lib/api/templates'
 import type { AiComposeResultDto, AiSuggestedVariableDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
+import { designTexts, type EmailDesign, type TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
+import { useDesignPreview } from './use-design-preview'
 import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
 
 /** Lỗi của thao tác GHI gần nhất — kèm `issues` khi xuất bản bị 422. */
@@ -37,6 +41,11 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
   const [variables, setVariables] = useState<TemplateVariableDto[]>([])
+  /** Kiểu soạn của bản đang hiện (ADR-0034). `blocks`: `html` / `text` ở trên là bản ĐÃ LƯU do backend sinh. */
+  const [editor, setEditor] = useState<TemplateEditor>('html')
+  const [design, setDesign] = useState<EmailDesign | null>(null)
+  /** Thiết kế đã sửa sau lần nạp cuối — chỉ khi đó mới hỏi backend xem trước; chưa sửa thì dùng HTML đã lưu. */
+  const [designEdited, setDesignEdited] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [aiBanner, setAiBanner] = useState(false)
 
@@ -58,6 +67,9 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     setHtml(v?.html ?? '')
     setText(v?.text ?? '')
     setVariables(v?.variables ?? [])
+    setEditor(v?.editor ?? 'html')
+    setDesign(v?.design ?? null)
+    setDesignEdited(false)
     setDirty(false)
   }, [])
 
@@ -76,8 +88,13 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     void load()
   }, [load])
 
+  const designPreview = useDesignPreview(appId, editor === 'blocks' && designEdited ? design : null)
+  /** HTML / chữ thường đang xem: kiểu blocks lấy bản backend vừa sinh (nếu đã sửa), không thì bản đã lưu. */
+  const bodyHtml = editor === 'blocks' ? (designPreview.preview?.html ?? html) : html
+  const bodyText = editor === 'blocks' ? (designPreview.preview?.text ?? text) : text
+
   const derived = useMemo(() => {
-    const used = usedVariablePaths(subject, html, text)
+    const used = editor === 'blocks' && design ? usedVariablePaths(subject, ...designTexts(design)) : usedVariablePaths(subject, html, text)
     const declared = variables.map((v) => v.name)
     return {
       declared,
@@ -87,7 +104,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
       missingSource: used.filter((p) => !hasSource(p)),
       unused: declared.filter((d) => !used.includes(d)),
       previewSubject: renderPreview(subject, variables, { escape: false }),
-      previewHtml: renderPreview(html, variables, { escape: true }),
+      previewHtml: renderPreview(bodyHtml, variables, { escape: true }),
       /** Bắt buộc mới so với bản ĐANG XUẤT BẢN — app chưa gửi biến này thì mọi lần gửi bị MISSING_VARIABLE. */
       newRequired: published
         ? variables
@@ -95,7 +112,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
             .map((v) => v.name)
         : [],
     }
-  }, [subject, html, text, variables, published])
+  }, [subject, html, text, variables, published, editor, design, bodyHtml])
 
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value)
@@ -151,7 +168,10 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
       })
     })
 
-  const content = () => ({ subject, html, text, variables })
+  const content = (): TemplateContentInput =>
+    editor === 'blocks' && design
+      ? { editor: 'blocks', subject, design, variables }
+      : { editor: 'html', subject, html, text, variables }
 
   return {
     detail,
@@ -173,6 +193,17 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     setHtml: edit(setHtml),
     text,
     setText: edit(setText),
+    editor,
+    design,
+    /** Sửa thiết kế kéo-thả — mọi phép sửa cây trả bản mới (`lib/email-design.ts`). */
+    setDesign: (next: EmailDesign) => {
+      setDesign(next)
+      setDesignEdited(true)
+      setDirty(true)
+    },
+    /** Chữ thường đang xem — kiểu blocks là bản backend sinh, chỉ đọc. */
+    bodyText,
+    designPreview,
     variables,
     updateVar,
     declareVar,
@@ -201,6 +232,8 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
         })
       }),
     archive: () => run(() => archiveTemplateAction(appId, templateId)),
+    /** "Chuyển sang HTML": lưu nháp đang soạn rồi chuyển — một chiều, bản đã xuất bản không đổi. */
+    convertToHtml: () => run(() => convertToHtmlAction(appId, templateId, content())),
     /**
      * Hỏi AI một đề xuất — KHÔNG đụng ô soạn. Gửi biến đã khai (tên / bắt buộc / mô tả), không gửi giá
      * trị mẫu; `revise` gửi kèm nội dung đang soạn (có thể chưa lưu).

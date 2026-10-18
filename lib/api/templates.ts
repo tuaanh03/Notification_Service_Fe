@@ -1,6 +1,7 @@
 import 'server-only'
 import { adminFetch } from './client'
 import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto, TemplateVariableDto } from './types'
+import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 
 export type { TemplateDetailDto, TemplateSummaryDto }
@@ -13,13 +14,13 @@ export type { TemplateDetailDto, TemplateSummaryDto }
 const base = (appId: string) => `/apps/${encodeURIComponent(appId)}/templates`
 const one = (appId: string, id: string) => `${base(appId)}/${encodeURIComponent(id)}`
 
-/** Nội dung soạn được của một bản nháp — đúng body `PUT .../draft`. */
-export type TemplateContentInput = {
-  subject: string
-  html: string
-  text: string
-  variables: TemplateVariableDto[]
-}
+/**
+ * Nội dung soạn được của một bản nháp — đúng body `PUT .../draft`. Kiểu `blocks` KHÔNG gửi `html` / `text`:
+ * backend sinh từ `design` (ADR-0034). Nháp đang khác kiểu -> 409 EDITOR_MISMATCH.
+ */
+export type TemplateContentInput =
+  | { editor: 'html'; subject: string; html: string; text: string; variables: TemplateVariableDto[] }
+  | { editor: 'blocks'; subject: string; design: EmailDesign; variables: TemplateVariableDto[] }
 
 /** Lọc danh sách: `search` khớp một phần tên, không phân biệt hoa thường và dấu (backend so theo collation). */
 export type TemplateListFilter = { category?: TemplateCategory; search?: string }
@@ -41,9 +42,22 @@ export async function getTemplate(appId: string, id: string): Promise<TemplateDe
 /** POST /admin/apps/:appId/templates — tạo kèm nháp v1. Trùng tên trong app -> 409 TEMPLATE_NAME_TAKEN. */
 export async function createTemplate(
   appId: string,
-  input: { name: string; category?: TemplateCategory } & Partial<TemplateContentInput>,
+  input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<TemplateDetailDto> {
   return adminFetch<TemplateDetailDto>(base(appId), { method: 'POST', body: input })
+}
+
+/**
+ * POST .../design-preview — HTML + chữ thường sinh từ thiết kế ĐANG SOẠN (chưa lưu), không ghi gì.
+ * Nguồn sinh HTML duy nhất là backend — console không giữ bản sao hàm sinh.
+ */
+export async function previewDesign(appId: string, design: EmailDesign): Promise<{ html: string; text: string }> {
+  return adminFetch<{ html: string; text: string }>(`${base(appId)}/design-preview`, { method: 'POST', body: { design } })
+}
+
+/** POST .../draft/convert-to-html — nháp kéo-thả thành nháp HTML, giữ HTML đã sinh. Một chiều; bản đã xuất bản không đổi. */
+export async function convertDraftToHtml(appId: string, id: string): Promise<TemplateDetailDto> {
+  return adminFetch<TemplateDetailDto>(`${one(appId, id)}/draft/convert-to-html`, { method: 'POST' })
 }
 
 /** PATCH /admin/apps/:appId/templates/:id — đổi tên và / hoặc nhóm; app gửi bằng id nên không ảnh hưởng việc gửi. */

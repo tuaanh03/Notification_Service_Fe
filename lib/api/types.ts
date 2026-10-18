@@ -1,3 +1,5 @@
+import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
+
 /**
  * Hợp đồng dữ liệu với `ews-astrolink-api`. KHÔNG có `server-only` ở file này:
  * component client cần import type để nhận props. Chỉ type, không logic, không secret.
@@ -361,6 +363,9 @@ export type TemplateVersionDto = {
   version: number
   /** draft | published | superseded */
   status: string
+  /** Kiểu soạn (ADR-0034 của backend); thiếu = `html`. `blocks`: `html` / `text` do backend sinh từ `design`. */
+  editor?: TemplateEditor
+  design?: EmailDesign | null
   subject: string
   html: string
   text: string
@@ -387,6 +392,8 @@ export type TemplateSummaryDto = {
   publishedVersion: number | null
   publishedAt: string | null
   draftVersion: number | null
+  /** Kiểu soạn của bản nháp (không có thì của bản đang xuất bản); thiếu = `html`. */
+  editor?: TemplateEditor
   variableCount: number
   createdAt: string
   updatedAt: string

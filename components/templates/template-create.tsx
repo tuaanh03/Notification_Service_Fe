@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { FilePlus2 } from 'lucide-react'
+import { Code2, FilePlus2, LayoutTemplate } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { createTemplateAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
@@ -12,10 +12,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { TEMPLATE_EDITORS, type TemplateEditor } from '@/lib/email-design'
 import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
 
 /**
- * Tạo template: chỉ cần TÊN (+ nhóm, mặc định "Khác"). Backend tạo kèm bản nháp v1 rỗng, trả `id` — soạn tiếp ở màn chi tiết.
+ * Tạo template: chỉ cần TÊN (+ nhóm, mặc định "Khác"; kiểu soạn, mặc định Kéo-thả — ADR-0034). Backend tạo kèm bản nháp v1 rỗng, trả `id` — soạn tiếp ở màn chi tiết.
  * Không có ô "mã template (key)": app gửi bằng `templateId` do hệ thống sinh (ADR-0020).
  */
 export function TemplateCreate() {
@@ -26,12 +28,13 @@ export function TemplateCreate() {
   const router = useAppRouter()
   const [name, setName] = useState('')
   const [category, setCategory] = useState<TemplateCategory>('other')
+  const [editor, setEditor] = useState<TemplateEditor>('blocks')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const create = () =>
     startTransition(async () => {
-      const result = await createTemplateAction(app.app_id, { name: name.trim(), category })
+      const result = await createTemplateAction(app.app_id, { name: name.trim(), category, editor })
       if (result.ok) router.replace(`/templates/${result.data.id}`)
       else setError(te('withCode', { message: result.message, code: result.code }))
     })
@@ -82,6 +85,26 @@ export function TemplateCreate() {
                 <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
               ))}
             </NativeSelect>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{tt('editorType')}</Label>
+            <ToggleGroup
+              variant="outline"
+              value={[editor]}
+              onValueChange={(v) => {
+                const next = TEMPLATE_EDITORS.find((e) => e === v[0])
+                if (next) setEditor(next)
+              }}
+              aria-label={tt('editorType')}
+            >
+              <ToggleGroupItem value="blocks" className="gap-1.5 text-xs" data-testid="editor-blocks">
+                <LayoutTemplate className="size-3.5" /> {tt('editorBlocks')}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="html" className="gap-1.5 text-xs" data-testid="editor-html">
+                <Code2 className="size-3.5" /> {tt('editorHtml')}
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <p className="text-[11px] text-[var(--text-muted)]">{editor === 'blocks' ? tt('editorBlocksHint') : tt('editorHtmlHint')}</p>
           </div>
           <Button type="submit" disabled={pending || !name.trim()}>
             <FilePlus2 /> {pending ? tt('creating') : tt('createAndEdit')}

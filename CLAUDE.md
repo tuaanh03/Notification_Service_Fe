@@ -72,7 +72,8 @@ webservice/ews-astrolink/
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
 │   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
 │   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
-│   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend)
+│   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend);
+│   │                         # blocks/* = trình kéo-thả (block-editor, block-palette, design-canvas, block-view, block-inspector, variable-field)
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng (thiếu app -> trang Tổ chức), link tự mang app (mục 2.9)
@@ -550,6 +551,13 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     biến là khuôn body mà app và incoming webhook phải gửi.
 *   Lịch sử gửi có cột **Template** ("tên · vN", "—" = nội dung viết thẳng) — `templateLabelOf()` trong
     `notification-outcome.tsx`, dùng chung bảng và panel.
+*   **Trình kéo-thả (ADR-0034 của backend).** Kiểu soạn theo VERSION (`editor`: `blocks` / `html`); tạo mới
+    mặc định Kéo-thả. `lib/email-design.ts` chỉ có KIỂU + phép sửa cây — HTML thư do BACKEND sinh: xem trước
+    gọi `previewDesignAction` (`hooks/use-design-preview.ts`, debounce 500 ms, bỏ kết quả cũ về muộn), lưu nháp
+    gửi `{ editor: 'blocks', design }` (không gửi `html` / `text`). Đừng chép hàm sinh HTML sang console. Kéo bằng
+    `@dnd-kit`; mọi thao tác kéo có đường bấm tương ứng (bấm khối ở bảng trái = thêm). Bản chữ thường chỉ đọc;
+    "Nhờ AI soạn" ẩn ở kiểu này. "Chuyển sang HTML" = lưu nháp rồi chuyển, có hộp xác nhận, một chiều, bản
+    đã xuất bản không đổi. Xem trước có nút Máy tính / Điện thoại (375px) cho cả hai kiểu.
 *   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).
 
 ### 2.13. Webhooks (`/settings/webhooks`) — EWS tự báo kết quả gửi thư cho app
