@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Archive, Copy, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
+import { Archive, Copy, CopyPlus, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -9,14 +9,17 @@ import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
+import { useAppRouter } from '@/components/app-link'
 import { useRole } from '@/components/role-context'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Textarea } from '@/components/ui/textarea'
 import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
+import { isTemplateCategory, TEMPLATE_CATEGORIES } from '@/lib/template-categories'
 import { AiComposeDialog } from './ai-compose-dialog'
 import { ContractPanel } from './contract-panel'
 import { EditorPane, Highlight } from './editor-pane'
@@ -35,7 +38,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const t = useTranslations('templateEditor')
   const tc = useTranslations('common')
   const te = useTranslations('errors')
+  const tcat = useTranslations('templateCategory')
   const { app } = useApp()
+  const router = useAppRouter()
   // App Viewer chỉ xem: khoá khung soạn, ẩn mọi nút ghi (backend vẫn chặn bằng 403).
   const writable = useRole().canManage(app)
   const ed = useTemplateEditor(app.app_id, templateId, !writable)
@@ -43,6 +48,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  /** Hộp Nhân bản: `dupRound` đổi mỗi lần mở để ô tên dựng lại, không giữ chữ của lần trước. */
+  const [dupOpen, setDupOpen] = useState(false)
+  const [dupRound, setDupRound] = useState(0)
+  const [dupName, setDupName] = useState('')
   /** Mỗi lần mở hộp thoại AI là dựng lại từ đầu — không mang mô tả / đề xuất của lần trước. */
   const [aiRound, setAiRound] = useState(0)
 
@@ -82,6 +91,21 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     }
   }
   const onPublish = () => (ed.newRequired.length > 0 ? setPublishWarn(true) : void doPublish())
+  const openDuplicate = () => {
+    setDupName(`${detail.name} ${t('copySuffix')}`.slice(0, 200))
+    setDupRound((n) => n + 1)
+    ed.clearError()
+    setDupOpen(true)
+  }
+  // Lỗi (vd tên trùng) thì GIỮ hộp mở, hiện lỗi ngay dưới ô tên để sửa tại chỗ.
+  const doDuplicate = async () => {
+    const id = await ed.duplicate(dupName.trim())
+    if (id) {
+      setDupOpen(false)
+      toast.success(t('duplicated'), { description: dupName.trim() })
+      router.push(`/templates/${id}`)
+    }
+  }
   const onSave = async () => {
     if (await ed.saveDraft()) toast.success(t('saved', { version: ed.draft?.version ?? nextVersion }))
   }
@@ -110,6 +134,11 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             {writable && !ed.archived && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
                 <Pencil /> {t('edit', { version: nextVersion })}
+              </Button>
+            )}
+            {writable && (
+              <Button variant="outline" disabled={ed.pending} onClick={openDuplicate}>
+                <CopyPlus /> {t('duplicate')}
               </Button>
             )}
             {writable && !ed.archived && (
@@ -146,7 +175,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         )}
 
         <Panel className="min-w-0 p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="tpl-name" className="text-xs font-semibold">{t('name')}</Label>
               <div className="flex gap-2">
@@ -160,6 +189,24 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 </Button>
               </div>
               <p className="text-[11px] text-[var(--text-muted)]">{t('nameHint')}</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tpl-category" className="text-xs font-semibold">{t('category')}</Label>
+              <NativeSelect
+                id="tpl-category"
+                value={detail.category}
+                disabled={ed.archived || !writable || ed.pending}
+                onChange={(e) => {
+                  const next = e.target.value
+                  if (isTemplateCategory(next)) void ed.changeCategory(next).then((ok) => ok && toast.success(t('categoryChanged')))
+                }}
+                className="w-full"
+              >
+                {TEMPLATE_CATEGORIES.map((c) => (
+                  <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
+                ))}
+              </NativeSelect>
+              <p className="text-[11px] text-[var(--text-muted)]">{t('categoryHint')}</p>
             </div>
             <div className="min-w-0 space-y-1.5">
               <Label className="text-xs font-semibold">{t('id')}</Label>
@@ -268,6 +315,30 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         onConfirm={() => void doPublish()}
         onCancel={() => setPublishWarn(false)}
       />
+      <ConfirmDialog
+        key={`dup:${dupRound}`}
+        open={dupOpen}
+        icon={CopyPlus}
+        title={t('duplicateTitle')}
+        description={t('duplicateBody')}
+        confirmLabel={t('duplicateConfirm')}
+        confirmDisabled={ed.pending || !dupName.trim()}
+        onConfirm={() => void doDuplicate()}
+        onCancel={() => {
+          setDupOpen(false)
+          ed.clearError()
+        }}
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="tpl-dup-name" className="text-xs font-semibold">{t('duplicateName')}</Label>
+          <Input id="tpl-dup-name" value={dupName} onChange={(e) => setDupName(e.target.value)} maxLength={200} autoFocus />
+          {ed.error && (
+            <p className="text-xs text-[var(--supernova)]" data-testid="duplicate-error">
+              {te('withCode', { message: ed.error.message, code: ed.error.code })}
+            </p>
+          )}
+        </div>
+      </ConfirmDialog>
       <ConfirmDialog
         open={archiveConfirm}
         tone="blocking"

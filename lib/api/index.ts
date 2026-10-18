@@ -23,12 +23,14 @@ export {
   listTemplates,
   getTemplate,
   createTemplate,
-  renameTemplate,
+  updateTemplate,
+  duplicateTemplate,
   saveDraft,
   draftFromVersion,
   publishTemplate,
   archiveTemplate,
   type TemplateContentInput,
+  type TemplateListFilter,
 } from './templates'
 export { listAudit } from './audit'
 export { getOverview } from './overview'

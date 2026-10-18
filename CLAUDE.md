@@ -534,6 +534,12 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
 *   **Biến bắt buộc mới so với bản đang xuất bản → hộp chặn trước khi xuất bản**: app chưa gửi biến đó
     thì mọi lần gửi bị `MISSING_VARIABLE`.
 *   **Lưu trữ không có đường quay lại** — `tone="blocking"`, nêu `TEMPLATE_ARCHIVED`.
+*   **Nhóm, tìm, nhân bản (ADR-0033 của backend).** Nhóm là bộ cố định `lib/template-categories.ts` (sao
+    `TEMPLATE_CATEGORIES` của backend), chữ ở nhóm `templateCategory` của `messages/*.json`. Danh sách lọc nhóm
+    + tìm tên ở BACKEND (`?category=&q=`, so theo collation nên "canh bao" ra "Cảnh báo"); trạng thái vẫn lọc
+    tại chỗ. Màn soạn đổi nhóm bằng ô chọn (lưu ngay); đổi tên / nhóm dùng `runMeta` — GIỮ nội dung đang soạn
+    chưa lưu. "Nhân bản" ra template MỚI (id mới, chỉ nháp v1), hộp hỏi tên (gợi ý "… (bản sao)" / "… (copy)" theo ngôn ngữ — backend BẮT BUỘC `name`, không tự đặt), lỗi như
+    tên trùng hiện trong hộp; bản gốc đã lưu trữ vẫn nhân bản được.
 *   **KHÔNG có "Gửi thử", "Import từ API", binding template ↔ topic.** Backend không có đường nào cho chúng.
 *   **"Nhờ AI soạn" gọi BACKEND** (`POST …/templates/:id/ai-compose`, ADR-0020 §7) — console không giữ khoá
     AI, không có route `/api/ai/*`. `<AiComposeDialog>` gửi mô tả + biến đã khai (+ nội dung đang soạn khi
@@ -810,3 +816,13 @@ Tất cả tính từ `webservice/ews-astrolink/`:
 *   Quy trình deploy chung của portal: `../../docs/QUY_TRINH_LAM_VIEC_SUA_CODE_VA_DEPLOY.md`
 *   Port mini-app đang dùng: `grep -h "127.0.0.1:" ../*/docker-compose.yml` — thêm app mới không được trùng
 
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

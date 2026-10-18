@@ -4,14 +4,16 @@ import {
   aiComposeAction,
   archiveTemplateAction,
   draftFromVersionAction,
+  duplicateTemplateAction,
   loadTemplateAction,
-  renameTemplateAction,
   saveAndPublishAction,
   saveDraftAction,
+  updateTemplateAction,
 } from '@/app/templates/actions'
 import type { Issue } from '@/lib/api/problem'
 import type { ActionResult } from '@/lib/api/result'
 import type { AiComposeResultDto, AiSuggestedVariableDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
+import type { TemplateCategory } from '@/lib/template-categories'
 import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
 
 /** Lỗi của thao tác GHI gần nhất — kèm `issues` khi xuất bản bị 422. */
@@ -130,6 +132,25 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
       })
     })
 
+  /**
+   * Lệnh chỉ đổi phần vỏ (tên / nhóm): nhận chi tiết mới nhưng GIỮ nội dung đang soạn — đổi tên giữa
+   * chừng không được xoá những gì người soạn chưa lưu.
+   */
+  const runMeta = (op: () => Promise<ActionResult<TemplateDetailDto>>) =>
+    new Promise<boolean>((resolve) => {
+      startTransition(async () => {
+        const result = await op()
+        if (result.ok) {
+          setError(null)
+          setDetail(result.data)
+          resolve(true)
+        } else {
+          setError({ message: result.message, code: result.code, issues: result.issues ?? [] })
+          resolve(false)
+        }
+      })
+    })
+
   const content = () => ({ subject, html, text, variables })
 
   return {
@@ -163,7 +184,22 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     publish: () => run(() => saveAndPublishAction(appId, templateId, content()), () => setAiBanner(false)),
     /** "Sửa" bản đang xuất bản / "Tạo nháp từ bản này". */
     draftFrom: (version: number) => run(() => draftFromVersionAction(appId, templateId, version)),
-    rename: (name: string) => run(() => renameTemplateAction(appId, templateId, name)),
+    rename: (name: string) => runMeta(() => updateTemplateAction(appId, templateId, { name })),
+    changeCategory: (category: TemplateCategory) => runMeta(() => updateTemplateAction(appId, templateId, { category })),
+    /** Nhân bản thành template mới — trả id bản sao (null = lỗi, đã hiện ở `error`). */
+    duplicate: (name: string) =>
+      new Promise<string | null>((resolve) => {
+        startTransition(async () => {
+          const result = await duplicateTemplateAction(appId, templateId, name)
+          if (result.ok) {
+            setError(null)
+            resolve(result.data.id)
+          } else {
+            setError({ message: result.message, code: result.code, issues: result.issues ?? [] })
+            resolve(null)
+          }
+        })
+      }),
     archive: () => run(() => archiveTemplateAction(appId, templateId)),
     /**
      * Hỏi AI một đề xuất — KHÔNG đụng ô soạn. Gửi biến đã khai (tên / bắt buộc / mô tả), không gửi giá

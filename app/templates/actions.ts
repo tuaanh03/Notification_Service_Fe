@@ -5,14 +5,17 @@ import {
   archiveTemplate,
   createTemplate,
   draftFromVersion,
+  duplicateTemplate,
   getTemplate,
   listTemplates,
   publishTemplate,
-  renameTemplate,
   saveDraft,
+  updateTemplate,
   type AiComposeInput,
   type TemplateContentInput,
+  type TemplateListFilter,
 } from '@/lib/api/templates'
+import type { TemplateCategory } from '@/lib/template-categories'
 import { toResult, type ActionResult } from '@/lib/api/result'
 import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto } from '@/lib/api/types'
 
@@ -23,8 +26,11 @@ import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto } from '
  * trên server, nên bỏ bước lưu là xuất bản nhầm bản cũ trong khi màn hình đang hiện bản mới.
  */
 
-export async function loadTemplatesAction(appId: string): Promise<ActionResult<TemplateSummaryDto[]>> {
-  return toResult(() => listTemplates(appId))
+export async function loadTemplatesAction(
+  appId: string,
+  filter: TemplateListFilter = {},
+): Promise<ActionResult<TemplateSummaryDto[]>> {
+  return toResult(() => listTemplates(appId, filter))
 }
 
 export async function loadTemplateAction(appId: string, id: string): Promise<ActionResult<TemplateDetailDto>> {
@@ -33,13 +39,22 @@ export async function loadTemplateAction(appId: string, id: string): Promise<Act
 
 export async function createTemplateAction(
   appId: string,
-  input: { name: string } & Partial<TemplateContentInput>,
+  input: { name: string; category?: TemplateCategory } & Partial<TemplateContentInput>,
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplate(appId, input))
 }
 
-export async function renameTemplateAction(appId: string, id: string, name: string): Promise<ActionResult<TemplateDetailDto>> {
-  return toResult(() => renameTemplate(appId, id, name))
+/** Đổi tên và / hoặc nhóm — không đụng nội dung đang soạn. */
+export async function updateTemplateAction(
+  appId: string,
+  id: string,
+  patch: { name?: string; category?: TemplateCategory },
+): Promise<ActionResult<TemplateDetailDto>> {
+  return toResult(() => updateTemplate(appId, id, patch))
+}
+
+export async function duplicateTemplateAction(appId: string, id: string, name: string): Promise<ActionResult<TemplateDetailDto>> {
+  return toResult(() => duplicateTemplate(appId, id, name))
 }
 
 export async function saveDraftAction(

@@ -1,6 +1,7 @@
 import 'server-only'
 import { adminFetch } from './client'
 import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto, TemplateVariableDto } from './types'
+import type { TemplateCategory } from '@/lib/template-categories'
 
 export type { TemplateDetailDto, TemplateSummaryDto }
 
@@ -20,9 +21,16 @@ export type TemplateContentInput = {
   variables: TemplateVariableDto[]
 }
 
-/** GET /admin/apps/:appId/templates */
-export async function listTemplates(appId: string): Promise<TemplateSummaryDto[]> {
-  return adminFetch<TemplateSummaryDto[]>(base(appId))
+/** Lọc danh sách: `search` khớp một phần tên, không phân biệt hoa thường và dấu (backend so theo collation). */
+export type TemplateListFilter = { category?: TemplateCategory; search?: string }
+
+/** GET /admin/apps/:appId/templates?category=&q= */
+export async function listTemplates(appId: string, filter: TemplateListFilter = {}): Promise<TemplateSummaryDto[]> {
+  const query = new URLSearchParams()
+  if (filter.category) query.set('category', filter.category)
+  if (filter.search?.trim()) query.set('q', filter.search.trim())
+  const qs = query.toString()
+  return adminFetch<TemplateSummaryDto[]>(qs ? `${base(appId)}?${qs}` : base(appId))
 }
 
 /** GET /admin/apps/:appId/templates/:id — template của app khác -> 404. */
@@ -33,14 +41,27 @@ export async function getTemplate(appId: string, id: string): Promise<TemplateDe
 /** POST /admin/apps/:appId/templates — tạo kèm nháp v1. Trùng tên trong app -> 409 TEMPLATE_NAME_TAKEN. */
 export async function createTemplate(
   appId: string,
-  input: { name: string } & Partial<TemplateContentInput>,
+  input: { name: string; category?: TemplateCategory } & Partial<TemplateContentInput>,
 ): Promise<TemplateDetailDto> {
   return adminFetch<TemplateDetailDto>(base(appId), { method: 'POST', body: input })
 }
 
-/** PATCH /admin/apps/:appId/templates/:id — đổi tên; app gửi bằng id nên không ảnh hưởng việc gửi. */
-export async function renameTemplate(appId: string, id: string, name: string): Promise<TemplateDetailDto> {
-  return adminFetch<TemplateDetailDto>(one(appId, id), { method: 'PATCH', body: { name } })
+/** PATCH /admin/apps/:appId/templates/:id — đổi tên và / hoặc nhóm; app gửi bằng id nên không ảnh hưởng việc gửi. */
+export async function updateTemplate(
+  appId: string,
+  id: string,
+  patch: { name?: string; category?: TemplateCategory },
+): Promise<TemplateDetailDto> {
+  return adminFetch<TemplateDetailDto>(one(appId, id), { method: 'PATCH', body: patch })
+}
+
+/**
+ * POST .../duplicate — template MỚI (id mới) cùng app, chỉ có nháp v1 chép từ nháp (không có thì bản
+ * đang xuất bản). `name` bắt buộc — backend không tự đặt tên, hậu tố "(bản sao)" / "(copy)" do console
+ * ghép theo ngôn ngữ đang dùng. Thiếu tên -> 422; trùng tên -> 409 TEMPLATE_NAME_TAKEN.
+ */
+export async function duplicateTemplate(appId: string, id: string, name: string): Promise<TemplateDetailDto> {
+  return adminFetch<TemplateDetailDto>(`${one(appId, id)}/duplicate`, { method: 'POST', body: { name } })
 }
 
 /** PUT .../draft — có nháp thì ghi đè, chưa có thì tạo nháp số kế tiếp. Lưu được cả khi còn lỗi. */

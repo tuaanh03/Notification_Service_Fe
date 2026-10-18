@@ -4,15 +4,21 @@ function seeded(seed: number) {
   const x = Math.sin(seed) * 10000
   return x - Math.floor(x)
 }
+/**
+ * Làm tròn trước khi đưa vào `style`: số thực đủ 17 chữ số được máy chủ và trình duyệt viết ra chuỗi
+ * khác nhau (chuẩn hoá CSS) -> cảnh báo lệch hydration. Vài chữ số thập phân là đủ cho vị trí sao.
+ */
+const round = (value: number, digits: number) => Number(value.toFixed(digits))
+
 export function CosmicBackground() {
   const stars = useMemo(
     () =>
       Array.from({ length: 140 }, (_, i) => ({
-        left: `${seeded(i + 1) * 100}%`,
-        top: `${seeded(i + 99) * 100}%`,
-        opacity: 0.1 + seeded(i + 20) * 0.25,
+        left: `${round(seeded(i + 1) * 100, 2)}%`,
+        top: `${round(seeded(i + 99) * 100, 2)}%`,
+        opacity: round(0.1 + seeded(i + 20) * 0.25, 3),
         size: 1 + Math.round(seeded(i + 40)),
-        delay: `${seeded(i + 80) * 7}s`,
+        delay: `${round(seeded(i + 80) * 7, 2)}s`,
       })),
     [],
   )

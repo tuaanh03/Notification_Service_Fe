@@ -1,7 +1,7 @@
 'use client'
 
 import { AppLink } from '@/components/app-link'
-import { AlertTriangle, Ban } from 'lucide-react'
+import { AlertTriangle, Ban, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,6 +24,11 @@ type ConfirmDialogProps = {
   children?: React.ReactNode
   /** `blocking` = modal chặn (icon Ban, supernova); mặc định = xác nhận có hậu quả (solar) */
   tone?: 'warning' | 'blocking'
+  /**
+   * Icon thay cho icon theo `tone`, màu trung tính — cho hộp KHÔNG có hậu quả nguy hiểm (vd Nhân bản).
+   * Bỏ trống = icon cảnh báo / chặn như cũ.
+   */
+  icon?: LucideIcon
   onConfirm?: () => void
   onCancel: () => void
   confirmLabel?: string
@@ -45,6 +50,7 @@ export function ConfirmDialog({
   facts,
   children,
   tone = 'warning',
+  icon,
   onConfirm,
   onCancel,
   confirmLabel,
@@ -53,7 +59,7 @@ export function ConfirmDialog({
   confirmDisabled = false,
 }: ConfirmDialogProps) {
   const tc = useTranslations('common')
-  const Icon = tone === 'blocking' ? Ban : AlertTriangle
+  const Icon = icon ?? (tone === 'blocking' ? Ban : AlertTriangle)
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
       <DialogContent
@@ -66,7 +72,7 @@ export function ConfirmDialog({
           <Icon
             className={cn(
               'mb-1 size-6',
-              tone === 'blocking' ? 'text-[var(--supernova)]' : 'text-[var(--solar)]',
+              icon ? 'text-[var(--starlight)]' : tone === 'blocking' ? 'text-[var(--supernova)]' : 'text-[var(--solar)]',
             )}
             aria-hidden="true"
           />

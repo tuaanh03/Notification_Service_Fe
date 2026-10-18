@@ -1,6 +1,6 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
-import { FileWarning, Files } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { FileWarning, Files, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { loadTemplatesAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
@@ -10,17 +10,29 @@ import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateSummaryDto } from '@/lib/api/types'
+import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
 import { fmtDateTime } from '@/lib/time'
+
+/** Chờ người gõ ngừng một chút rồi mới hỏi backend — không gọi mỗi phím. */
+const SEARCH_DEBOUNCE_MS = 300
 
 type Row = TemplateSummaryDto & Record<string, unknown>
 
 /** Cột của bảng — trong hook vì nhãn theo ngôn ngữ đang chọn. */
 function useColumns(): Column<Row>[] {
   const tt = useTranslations('templates')
+  const tcat = useTranslations('templateCategory')
   return [
   { key: 'name', label: tt('colName'), render: (t) => <span className="font-medium">{t.name}</span> },
+  {
+    key: 'category',
+    label: tt('colCategory'),
+    render: (t) => <span className="text-[var(--text-secondary)]">{isTemplateCategory(t.category) ? tcat(t.category) : t.category}</span>,
+  },
   { key: 'status', label: tt('colStatus'), render: (t) => <StatusPill status={t.status} /> },
   {
     key: 'publishedVersion',
@@ -44,10 +56,14 @@ function useColumns(): Column<Row>[] {
 ]
 }
 
-/** Danh sách template thật của app đang chọn — bấm dòng mở màn soạn `/templates/[id]`. */
+/**
+ * Danh sách template thật của app đang chọn — bấm dòng mở màn soạn `/templates/[id]`.
+ * Nhóm + ô tìm lọc ở BACKEND (so tên theo collation: "canh bao" ra "Cảnh báo"); trạng thái lọc tại chỗ.
+ */
 export function TemplatesTable() {
   const tt = useTranslations('templates')
   const tc = useTranslations('common')
+  const tcat = useTranslations('templateCategory')
   const statusLabel = useStatusLabel()
   const te = useTranslations('errors')
   const columns = useColumns()
@@ -57,10 +73,22 @@ export function TemplatesTable() {
   const [rows, setRows] = useState<TemplateSummaryDto[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<string[]>(['active'])
+  const [category, setCategory] = useState<TemplateCategory | ''>('')
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   const appId = app.app_id
+  /** Lần nạp mới nhất — kết quả của lần cũ về muộn (đổi bộ lọc liên tục) thì bỏ. */
+  const latest = useRef(0)
   const load = useCallback(async () => {
-    const result = await loadTemplatesAction(appId)
+    const seq = ++latest.current
+    const result = await loadTemplatesAction(appId, { ...(category ? { category } : {}), ...(search ? { search } : {}) })
+    if (seq !== latest.current) return
     if (result.ok) {
       setRows(result.data)
       setError(null)
@@ -68,9 +96,9 @@ export function TemplatesTable() {
       setRows(null)
       setError(te('withCode', { message: result.message, code: result.code }))
     }
-  }, [appId, te])
+  }, [appId, category, search, te])
 
-  // Đổi app là đổi hẳn tập template: xoá dữ liệu cũ trước khi nạp.
+  // Đổi app / bộ lọc là đổi hẳn tập template: xoá dữ liệu cũ trước khi nạp.
   useEffect(() => {
     setRows(null)
     setError(null)
@@ -89,9 +117,32 @@ export function TemplatesTable() {
   }
 
   const filtered = (rows ?? []).filter((t) => status.length === 0 || status.includes(t.status))
+  const filtering = category !== '' || search !== ''
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full sm:w-64">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={tt('search')}
+            aria-label={tt('search')}
+            maxLength={200}
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+        <NativeSelect
+          size="sm"
+          value={category}
+          onChange={(e) => setCategory(isTemplateCategory(e.target.value) ? e.target.value : '')}
+          aria-label={tt('category')}
+        >
+          <NativeSelectOption value="">{tt('allCategories')}</NativeSelectOption>
+          {TEMPLATE_CATEGORIES.map((c) => (
+            <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
+          ))}
+        </NativeSelect>
         <ToggleGroup multiple variant="outline" size="sm" value={status} onValueChange={(v) => setStatus(v as string[])} aria-label={tt('colStatus')}>
           <ToggleGroupItem value="active">{statusLabel('active')}</ToggleGroupItem>
           <ToggleGroupItem value="archived">{statusLabel('archived')}</ToggleGroupItem>
@@ -102,10 +153,12 @@ export function TemplatesTable() {
         columns={columns}
         rows={filtered as Row[]}
         onRowClick={(t) => router.push(`/templates/${t.id}`)}
+        // Đã có ô "Tìm theo tên" (tìm ở backend) phía trên — ô lọc của bảng thành ô thứ hai trông giống mà tìm khác.
+        hideSearch
         empty={
           rows === null ? (
             <EmptyState icon={Files} title={tt('loading')} description="" />
-          ) : rows.length === 0 ? (
+          ) : rows.length === 0 && !filtering ? (
             <EmptyState
               icon={Files}
               title={tt('emptyTitle')}

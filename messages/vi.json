@@ -637,7 +637,17 @@
     "archiveForever": "Lưu trữ vĩnh viễn",
     "archived": "Đã lưu trữ template",
     "publishFailed": "Chưa xuất bản được — {count} lỗi",
-    "code": "mã: {code}"
+    "code": "mã: {code}",
+    "category": "Nhóm",
+    "categoryHint": "Để gom và lọc ở danh sách. Không ảnh hưởng việc gửi.",
+    "categoryChanged": "Đã đổi nhóm",
+    "duplicate": "Nhân bản",
+    "duplicateTitle": "Nhân bản template",
+    "duplicateBody": "Tạo template mới với mã mới, chép bản nháp (không có thì bản đang xuất bản). Bản sao cần xuất bản trước khi gửi.",
+    "duplicateName": "Tên bản sao",
+    "duplicateConfirm": "Tạo bản sao",
+    "duplicated": "Đã tạo bản sao",
+    "copySuffix": "(bản sao)"
   },
   "aiCompose": {
     "title": "Nhờ AI soạn",
@@ -683,14 +693,27 @@
     "emptyTitle": "App chưa có template nào",
     "emptyBody": "Tạo template, soạn nội dung rồi Xuất bản — sau đó đưa templateId cho đội app.",
     "noMatchTitle": "Không có template khớp bộ lọc",
-    "noMatchBody": "Bỏ bớt bộ lọc trạng thái.",
+    "noMatchBody": "Đổi ô tìm hoặc bỏ bớt bộ lọc.",
     "newTitle": "Tạo template",
     "newCrumb": "Tạo mới",
     "name": "Tên template",
     "namePlaceholder": "vd: Cảnh báo VM quá tải",
     "nameHint": "Không trùng với template khác trong app — kể cả chỉ khác hoa thường hoặc dấu. Mã để app gửi do hệ thống sinh.",
     "creating": "Đang tạo…",
-    "createAndEdit": "Tạo và soạn nội dung"
+    "createAndEdit": "Tạo và soạn nội dung",
+    "colCategory": "Nhóm",
+    "category": "Nhóm",
+    "allCategories": "Tất cả nhóm",
+    "search": "Tìm theo tên"
+  },
+  "templateCategory": {
+    "alert": "Cảnh báo",
+    "system": "Thông báo hệ thống",
+    "onboarding": "Chào mừng",
+    "reminder": "Nhắc việc",
+    "approval": "Phê duyệt",
+    "report": "Báo cáo",
+    "other": "Khác"
   },
   "schema": {
     "colName": "Tên biến",

@@ -380,6 +380,8 @@ export type TemplateSummaryDto = {
   id: string
   name: string
   channel: string
+  /** Một trong `TEMPLATE_CATEGORIES` (`lib/template-categories.ts`). */
+  category: string
   /** active | archived */
   status: string
   publishedVersion: number | null

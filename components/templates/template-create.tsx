@@ -11,23 +11,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
 
 /**
- * Tạo template: chỉ cần TÊN. Backend tạo kèm bản nháp v1 rỗng, trả `id` — soạn tiếp ở màn chi tiết.
+ * Tạo template: chỉ cần TÊN (+ nhóm, mặc định "Khác"). Backend tạo kèm bản nháp v1 rỗng, trả `id` — soạn tiếp ở màn chi tiết.
  * Không có ô "mã template (key)": app gửi bằng `templateId` do hệ thống sinh (ADR-0020).
  */
 export function TemplateCreate() {
   const tt = useTranslations('templates')
   const te = useTranslations('errors')
+  const tcat = useTranslations('templateCategory')
   const { app } = useApp()
   const router = useAppRouter()
   const [name, setName] = useState('')
+  const [category, setCategory] = useState<TemplateCategory>('other')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const create = () =>
     startTransition(async () => {
-      const result = await createTemplateAction(app.app_id, { name: name.trim() })
+      const result = await createTemplateAction(app.app_id, { name: name.trim(), category })
       if (result.ok) router.replace(`/templates/${result.data.id}`)
       else setError(te('withCode', { message: result.message, code: result.code }))
     })
@@ -65,6 +69,19 @@ export function TemplateCreate() {
               autoFocus
             />
             <p className="text-[11px] text-[var(--text-muted)]">{tt('nameHint')}</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-tpl-category" className="text-xs font-semibold">{tt('category')}</Label>
+            <NativeSelect
+              id="new-tpl-category"
+              value={category}
+              onChange={(e) => isTemplateCategory(e.target.value) && setCategory(e.target.value)}
+              className="w-full"
+            >
+              {TEMPLATE_CATEGORIES.map((c) => (
+                <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
+              ))}
+            </NativeSelect>
           </div>
           <Button type="submit" disabled={pending || !name.trim()}>
             <FilePlus2 /> {pending ? tt('creating') : tt('createAndEdit')}
