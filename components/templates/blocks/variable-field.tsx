@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { FieldHint } from '../field-hint'
 
 /**
  * Ô chữ có nút "Chèn biến": chèn `{{ <biến đã khai> }}` vào đúng chỗ con trỏ. Chỉ liệt kê biến trong bảng
@@ -62,7 +63,10 @@ export function VariableField({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <Label htmlFor={id} className="text-[11px] font-semibold">{label}</Label>
+        <div className="flex items-center gap-1">
+          <Label htmlFor={id} className="text-[11px] font-semibold">{label}</Label>
+          {hint && <FieldHint text={hint} label={t('hintFor', { field: label })} />}
+        </div>
         {!disabled && (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -90,7 +94,8 @@ export function VariableField({
         )}
       </div>
       {multiline ? <Textarea ref={ref} rows={4} {...common} /> : <Input ref={ref} {...common} />}
-      {hint && <p className={invalid ? 'text-[11px] text-[var(--supernova)]' : 'text-[11px] text-[var(--text-muted)]'}>{hint}</p>}
+      {/* Giải thích nằm ở (?); chỉ khi giá trị sai mới hiện thành dòng đỏ — lỗi không được chờ rê chuột. */}
+      {hint && invalid && <p className="text-[11px] text-[var(--supernova)]">{hint}</p>}
     </div>
   )
 }

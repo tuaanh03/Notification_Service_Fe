@@ -622,11 +622,10 @@
     "id": "Mã template (templateId)",
     "idHint": "Đưa mã này cho đội app. Máy thử và máy thật có mã khác nhau.",
     "variables": "Biến",
-    "subject": "Tiêu đề",
-    "subjectPlaceholder": "[Cảnh báo] '{{ payload.vm_name }}' vượt ngưỡng",
+    "subject": "Tiêu đề thư",
+    "subjectPlaceholder": "Ví dụ: Cảnh báo máy chủ quá tải",
     "empty": "(trống)",
     "text": "Bản chữ thường (tuỳ chọn)",
-    "textPlaceholder": "Cho hộp thư không hiển thị HTML. Để trống thì chỉ gửi HTML.",
     "versions": "Phiên bản",
     "sendWith": "Gửi bằng template này",
     "byPublished": "Theo bản đang xuất bản v{version}.",
@@ -663,8 +662,22 @@
     "toHtmlPublishedKept": "v{version} giữ nguyên",
     "factDraft": "bản nháp",
     "convertedToHtml": "Đã chuyển nháp sang HTML",
-    "textAuto": "Tự sinh từ các khối khi lưu nháp.",
-    "aiHtmlOnly": "Nhờ AI soạn chỉ có ở kiểu HTML."
+    "textAuto": "Tự tạo từ nội dung thư mỗi lần lưu nháp, cho hộp thư không hiện được định dạng.",
+    "textHint": "Cho hộp thư không hiện được HTML. Để trống thì chỉ gửi bản HTML.",
+    "tabCompose": "Soạn thư",
+    "tabIntegration": "Tích hợp cho đội app",
+    "moreActions": "Thao tác khác",
+    "copyId": "Sao chép mã template",
+    "variablesNotice": "{count, plural, other {# biến}} trong thư chưa khai báo hoặc viết sai — chưa xuất bản được.",
+    "openVariables": "Xem tab Biến",
+    "advanced": "Nâng cao",
+    "advancedSummary": "tên, nhóm, bản chữ thường",
+    "hintFor": "Giải thích: {field}",
+    "factId": "mã template",
+    "leaveTitle": "Rời trang?",
+    "leaveBody": "Thay đổi chưa lưu sẽ mất. Muốn giữ thì ở lại và bấm Lưu nháp.",
+    "leaveConfirm": "Rời trang, bỏ thay đổi",
+    "leaveStay": "Ở lại"
   },
   "aiCompose": {
     "title": "Nhờ AI soạn",
@@ -695,7 +708,7 @@
   },
   "templates": {
     "title": "Templates",
-    "subtitle": "Admin soạn và xuất bản · app gửi bằng templateId + payload · luôn dùng bản đang xuất bản",
+    "subtitle": "Soạn và xuất bản thư mẫu · đội app gửi bằng mã template · luôn dùng bản đang xuất bản",
     "create": "Tạo template",
     "colName": "Tên",
     "colStatus": "Trạng thái",
@@ -708,14 +721,14 @@
     "retry": "Thử lại",
     "loading": "Đang tải…",
     "emptyTitle": "App chưa có template nào",
-    "emptyBody": "Tạo template, soạn nội dung rồi Xuất bản — sau đó đưa templateId cho đội app.",
+    "emptyBody": "Tạo template, soạn nội dung rồi Xuất bản — sau đó đưa mã template cho đội app.",
     "noMatchTitle": "Không có template khớp bộ lọc",
     "noMatchBody": "Đổi ô tìm hoặc bỏ bớt bộ lọc.",
     "newTitle": "Tạo template",
     "newCrumb": "Tạo mới",
     "name": "Tên template",
     "namePlaceholder": "vd: Cảnh báo VM quá tải",
-    "nameHint": "Không trùng với template khác trong app — kể cả chỉ khác hoa thường hoặc dấu. Mã để app gửi do hệ thống sinh.",
+    "nameHint": "Không trùng với template khác trong app, kể cả chỉ khác chữ hoa hay dấu.",
     "creating": "Đang tạo…",
     "createAndEdit": "Tạo và soạn nội dung",
     "colCategory": "Nhóm",
@@ -726,7 +739,9 @@
     "editorBlocks": "Kéo-thả",
     "editorHtml": "HTML",
     "editorBlocksHint": "Kéo khối vào thư, không cần viết HTML.",
-    "editorHtmlHint": "Tự viết HTML, có Nhờ AI soạn."
+    "editorHtmlHint": "Tự viết HTML, có Nhờ AI soạn.",
+    "editorChoiceSelected": "Đang chọn",
+    "hintFor": "Giải thích: {field}"
   },
   "templateCategory": {
     "alert": "Cảnh báo",
@@ -744,7 +759,7 @@
     "all": "Tất cả",
     "blankTitle": "Bắt đầu từ trống",
     "blankBody": "Tự soạn bằng kéo-thả hoặc HTML.",
-    "back": "Chọn mẫu khác",
+    "back": "Quay lại thư viện mẫu",
     "emptyCategory": "Nhóm này chưa có mẫu.",
     "loadFailed": "Không tải được thư viện mẫu",
     "retry": "Thử lại",
@@ -772,7 +787,7 @@
     "descriptionAria": "Mô tả {name}",
     "removeAria": "Xoá {name}",
     "none": "Chưa có biến. Gõ <mono>'{{ payload.<tên> }}'</mono> vào tiêu đề hoặc nội dung rồi bấm Khai báo.",
-    "defaultHint": "Biến không bắt buộc phải có giá trị mặc định viết ngay trong nội dung: <mono>'{{ payload.owner | default: \"chưa rõ\" }}'</mono>. Giá trị đổ vào HTML luôn được escape — dữ liệu của app hiện ra như chữ, không thành thẻ HTML."
+    "defaultHint": "Biến không bắt buộc nên có giá trị mặc định ngay trong nội dung: <mono>'{{ payload.owner | default: \"chưa rõ\" }}'</mono>."
   },
   "contract": {
     "apiKey": "khoá API của app",
@@ -1786,7 +1801,6 @@
     "font_sans": "Không chân",
     "font_serif": "Có chân",
     "font_mono": "Đơn cách",
-    "textAuto": "Bản chữ thường tự sinh từ các khối.",
     "content": "Nội dung",
     "textHint": "**đậm**, [chữ](https://…). Xuống dòng giữ nguyên.",
     "level": "Cỡ",
@@ -1813,8 +1827,9 @@
     "thickness": "Độ dày (px)",
     "height": "Cao (px)",
     "htmlCode": "Mã HTML",
-    "htmlHint": "Không thoát ký tự. Luật nội dung kiểm lúc xuất bản.",
+    "htmlHint": "Mã HTML dán nguyên vào thư. Luật nội dung được kiểm khi xuất bản.",
     "insertVariable": "Chèn biến",
-    "noVariables": "Chưa khai biến nào"
+    "noVariables": "Chưa khai biến nào",
+    "hintFor": "Giải thích: {field}"
   }
 }

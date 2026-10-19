@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { ArrowLeft, Code2, FilePlus2, LayoutTemplate } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Code2, FilePlus2, LayoutTemplate, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { createTemplateAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
@@ -14,8 +14,16 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { TEMPLATE_EDITORS, type TemplateEditor } from '@/lib/email-design'
+import { cn } from '@/lib/utils'
 import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
+import { FieldHint } from './field-hint'
 import { PresetGallery } from './preset-gallery'
+
+/** Hai kiểu soạn, hiện thành hai thẻ lớn — thẻ đang chọn có viền sáng + dấu tích, không chỉ đổi màu nền. */
+const EDITOR_CHOICES: ReadonlyArray<{ value: TemplateEditor; icon: LucideIcon; label: 'editorBlocks' | 'editorHtml'; hint: 'editorBlocksHint' | 'editorHtmlHint' }> = [
+  { value: 'blocks', icon: LayoutTemplate, label: 'editorBlocks', hint: 'editorBlocksHint' },
+  { value: 'html', icon: Code2, label: 'editorHtml', hint: 'editorHtmlHint' },
+]
 
 /**
  * Tạo template, hai bước: chọn "Bắt đầu từ trống" hoặc một mẫu dựng sẵn (ADR-0035 — `<PresetGallery>`), rồi
@@ -54,7 +62,7 @@ export function TemplateCreate() {
       {!blank ? (
         <PresetGallery onBlank={() => setBlank(true)} />
       ) : (
-        <Panel className="max-w-xl space-y-4 p-5">
+        <Panel className="mx-auto w-full max-w-2xl space-y-5 p-6">
           <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setBlank(false)} data-testid="back-to-presets">
             <ArrowLeft /> {tp('back')}
           </Button>
@@ -64,39 +72,43 @@ export function TemplateCreate() {
             </Alert>
           )}
           <form
-            className="space-y-4"
+            className="space-y-5"
             onSubmit={(e) => {
               e.preventDefault()
               if (name.trim()) create()
             }}
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="new-tpl-name" className="text-xs font-semibold">{tt('name')}</Label>
-              <Input
-                id="new-tpl-name"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value)
-                  setError(null)
-                }}
-                maxLength={200}
-                placeholder={tt('namePlaceholder')}
-                autoFocus
-              />
-              <p className="text-[11px] text-[var(--text-muted)]">{tt('nameHint')}</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="new-tpl-category" className="text-xs font-semibold">{tt('category')}</Label>
-              <NativeSelect
-                id="new-tpl-category"
-                value={category}
-                onChange={(e) => isTemplateCategory(e.target.value) && setCategory(e.target.value)}
-                className="w-full"
-              >
-                {TEMPLATE_CATEGORIES.map((c) => (
-                  <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
-                ))}
-              </NativeSelect>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="new-tpl-name" className="text-xs font-semibold">{tt('name')}</Label>
+                  <FieldHint text={tt('nameHint')} label={tt('hintFor', { field: tt('name') })} />
+                </div>
+                <Input
+                  id="new-tpl-name"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value)
+                    setError(null)
+                  }}
+                  maxLength={200}
+                  placeholder={tt('namePlaceholder')}
+                  autoFocus
+                />
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                <Label htmlFor="new-tpl-category" className="text-xs font-semibold">{tt('category')}</Label>
+                <NativeSelect
+                  id="new-tpl-category"
+                  value={category}
+                  onChange={(e) => isTemplateCategory(e.target.value) && setCategory(e.target.value)}
+                  className="w-full"
+                >
+                  {TEMPLATE_CATEGORIES.map((c) => (
+                    <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">{tt('editorType')}</Label>
@@ -108,15 +120,31 @@ export function TemplateCreate() {
                   if (next) setEditor(next)
                 }}
                 aria-label={tt('editorType')}
+                className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2"
               >
-                <ToggleGroupItem value="blocks" className="gap-1.5 text-xs" data-testid="editor-blocks">
-                  <LayoutTemplate className="size-3.5" /> {tt('editorBlocks')}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="html" className="gap-1.5 text-xs" data-testid="editor-html">
-                  <Code2 className="size-3.5" /> {tt('editorHtml')}
-                </ToggleGroupItem>
+                {EDITOR_CHOICES.map(({ value, icon: Icon, label, hint }) => {
+                  const selected = editor === value
+                  return (
+                    <ToggleGroupItem
+                      key={value}
+                      value={value}
+                      className={cn(
+                        'relative h-auto flex-col items-start gap-1 rounded-xl p-4 text-left whitespace-normal aria-pressed:bg-[var(--starlight)]/10',
+                        selected && 'ring-2 ring-[var(--starlight)]',
+                      )}
+                      data-testid={`editor-${value}`}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+                        <Icon className="size-4 text-[var(--starlight)]" /> {tt(label)}
+                      </span>
+                      <span className="text-xs font-normal text-[var(--text-secondary)]">{tt(hint)}</span>
+                      {selected && (
+                        <CheckCircle2 className="absolute top-3 right-3 size-4 text-[var(--starlight)]" aria-label={tt('editorChoiceSelected')} />
+                      )}
+                    </ToggleGroupItem>
+                  )
+                })}
               </ToggleGroup>
-              <p className="text-[11px] text-[var(--text-muted)]">{editor === 'blocks' ? tt('editorBlocksHint') : tt('editorHtmlHint')}</p>
             </div>
             <Button type="submit" disabled={pending || !name.trim()}>
               <FilePlus2 /> {pending ? tt('creating') : tt('createAndEdit')}

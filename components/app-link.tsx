@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, type ComponentProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { appKey, withApp } from '@/lib/app-routes'
@@ -13,9 +13,63 @@ import { useAppSelection } from './app-context'
  * app — người dùng bị đẩy sang trang Tổ chức chọn lại app giữa chừng. `app` = chỉ định app khác (bảng
  * app của một org, bước 4 wizard); `app={null}` = CỐ Ý bỏ app. Chưa có app thì để nguyên đường dẫn.
  */
-export function AppLink({ href, app, ...props }: Omit<ComponentProps<typeof Link>, 'href'> & { href: string; app?: string | null }) {
+export function AppLink({ href, app, onNavigate, ...props }: Omit<ComponentProps<typeof Link>, 'href'> & { href: string; app?: string | null }) {
   const { app: current } = useAppSelection()
-  return <Link href={withApp(href, app === undefined ? (current ? appKey(current) : null) : app)} {...props} />
+  const target = withApp(href, app === undefined ? (current ? appKey(current) : null) : app)
+  return (
+    <Link
+      href={target}
+      onNavigate={(e) => {
+        onNavigate?.(e)
+        if (leaveGuard?.(target)) e.preventDefault()
+      }}
+      {...props}
+    />
+  )
+}
+
+/**
+ * Chặn rời trang khi còn thay đổi chưa lưu — một màn đăng ký tại một thời điểm (màn soạn template).
+ * Trả `true` = đã giữ lại, màn tự hỏi người dùng. Chỉ chặn được đường đi qua `<AppLink>` / `useAppRouter()`
+ * (cộng `beforeunload` khi đóng tab / tải lại); nút Back của trình duyệt KHÔNG chặn được.
+ */
+let leaveGuard: ((href: string) => boolean) | null = null
+
+/**
+ * `active` = đang có thay đổi chưa lưu. `pendingHref` khác null = người dùng vừa định rời đi — màn hiện
+ * `<ConfirmDialog>`; `leave()` bỏ chặn rồi đi tiếp, `stay()` ở lại.
+ */
+export function useLeaveGuard(active: boolean) {
+  const router = useRouter()
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+  useEffect(() => {
+    if (!active) return
+    const guard = (href: string) => {
+      setPendingHref(href)
+      return true
+    }
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      // Chrome cũ chỉ hỏi khi có returnValue.
+      e.returnValue = ''
+    }
+    leaveGuard = guard
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      if (leaveGuard === guard) leaveGuard = null
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
+  }, [active])
+  return {
+    pendingHref,
+    stay: () => setPendingHref(null),
+    leave: () => {
+      const href = pendingHref
+      leaveGuard = null
+      setPendingHref(null)
+      if (href) router.push(href)
+    },
+  }
 }
 
 type Options = { app?: string | null }
@@ -27,9 +81,14 @@ export function useAppRouter() {
   const current = app ? appKey(app) : null
   return useMemo(
     () => ({
-      push: (href: string, options?: Options) => router.push(withApp(href, options?.app === undefined ? current : options.app)),
-      replace: (href: string, options?: Options) =>
-        router.replace(withApp(href, options?.app === undefined ? current : options.app)),
+      push: (href: string, options?: Options) => {
+        const target = withApp(href, options?.app === undefined ? current : options.app)
+        if (!leaveGuard?.(target)) router.push(target)
+      },
+      replace: (href: string, options?: Options) => {
+        const target = withApp(href, options?.app === undefined ? current : options.app)
+        if (!leaveGuard?.(target)) router.replace(target)
+      },
       refresh: () => router.refresh(),
     }),
     [router, current],

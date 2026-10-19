@@ -26,6 +26,7 @@ import {
   type EmailDesign,
 } from '@/lib/email-design'
 import type { Selection } from './block-editor'
+import { FieldHint } from '../field-hint'
 import { VariableField } from './variable-field'
 
 type Props = {
@@ -86,7 +87,10 @@ export function BlockInspector({ ed, design, locked, selection, onSelect, onChan
     body = (
       <>
         <div className="space-y-1">
-          <Label className="text-[11px] font-semibold">{t('columnsLabel')}</Label>
+          <div className="flex items-center gap-1">
+            <Label className="text-[11px] font-semibold">{t('columnsLabel')}</Label>
+            <FieldHint text={t('columnsHint')} label={t('hintFor', { field: t('columnsLabel') })} />
+          </div>
           <ToggleGroup
             variant="outline"
             size="sm"
@@ -98,7 +102,6 @@ export function BlockInspector({ ed, design, locked, selection, onSelect, onChan
               <ToggleGroupItem key={n} value={String(n)} className="font-mono text-xs">{n}</ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <p className="text-[11px] text-[var(--text-muted)]">{t('columnsHint')}</p>
         </div>
         <ColorField
           id="row-bg"
@@ -166,7 +169,6 @@ function SettingsForm({ settings, locked, onChange }: { settings: DesignSettings
           ))}
         </NativeSelect>
       </div>
-      <p className="text-[11px] text-[var(--text-muted)]">{t('textAuto')}</p>
     </>
   )
 }
@@ -214,9 +216,12 @@ function BlockForm({ block, vars, locked, textColor, onPatch }: { block: DesignB
       return (
         <>
           <div className="space-y-1">
-            <Label htmlFor="blk-src" className="text-[11px] font-semibold">{t('imageUrl')}</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="blk-src" className="text-[11px] font-semibold">{t('imageUrl')}</Label>
+              <FieldHint text={t('imageUrlHint')} label={t('hintFor', { field: t('imageUrl') })} />
+            </div>
             <Input id="blk-src" value={block.src} disabled={locked} placeholder="https://" aria-invalid={imageLooksWrong(block.src) || undefined} className="text-xs" onChange={(e) => onPatch({ src: e.target.value })} />
-            <p className={imageLooksWrong(block.src) ? 'text-[11px] text-[var(--supernova)]' : 'text-[11px] text-[var(--text-muted)]'}>{t('imageUrlHint')}</p>
+            {imageLooksWrong(block.src) && <p className="text-[11px] text-[var(--supernova)]">{t('imageUrlHint')}</p>}
           </div>
           <VariableField id="blk-alt" label={t('alt')} value={block.alt} variables={vars} disabled={locked} hint={t('altHint')} onChange={(alt) => onPatch({ alt })} />
           <NumberField id="blk-width" label={t('imageWidth')} value={block.width} min={10} max={100} disabled={locked} onChange={(width) => onPatch({ width })} />
@@ -236,9 +241,11 @@ function BlockForm({ block, vars, locked, textColor, onPatch }: { block: DesignB
     case 'html':
       return (
         <div className="space-y-1">
-          <Label htmlFor="blk-html" className="text-[11px] font-semibold">{t('htmlCode')}</Label>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="blk-html" className="text-[11px] font-semibold">{t('htmlCode')}</Label>
+            <FieldHint text={t('htmlHint')} label={t('hintFor', { field: t('htmlCode') })} />
+          </div>
           <Textarea id="blk-html" value={block.html} disabled={locked} rows={10} className="font-mono text-[11px]" onChange={(e) => onPatch({ html: e.target.value })} />
-          <p className="text-[11px] text-[var(--text-muted)]">{t('htmlHint')}</p>
         </div>
       )
   }

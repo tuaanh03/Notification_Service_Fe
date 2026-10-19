@@ -1,6 +1,7 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Archive, Code2, Copy, CopyPlus, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
+import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Archive, CopyPlus, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -9,29 +10,33 @@ import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
-import { useAppRouter } from '@/components/app-link'
+import { useAppRouter, useLeaveGuard } from '@/components/app-link'
 import { useRole } from '@/components/role-context'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
-import { isTemplateCategory, TEMPLATE_CATEGORIES } from '@/lib/template-categories'
 import { AiComposeDialog } from './ai-compose-dialog'
-import { BlockEditor } from './blocks/block-editor'
-import { ContractPanel } from './contract-panel'
-import { EditorPane, Highlight } from './editor-pane'
+import { ComposeTab } from './compose-tab'
+import { IntegrationTab } from './integration-tab'
 import { useIssueText } from './issue-text'
-import { PreviewPane } from './preview-pane'
 import { SchemaPane } from './schema-pane'
+import { TemplateActionsMenu } from './template-actions-menu'
 import { VersionsPanel } from './versions-panel'
 
+/** Tab của màn soạn, giữ trên đường dẫn (`?tab=`) để tải lại / gửi link vẫn mở đúng tab. "compose" = không có tham số. */
+const EDITOR_TABS = ['compose', 'variables', 'integration', 'versions'] as const
+type EditorTab = (typeof EDITOR_TABS)[number]
+const TAB_PARAM = 'tab'
+const tabOf = (raw: string | null): EditorTab => EDITOR_TABS.find((x) => x === raw) ?? 'compose'
+
 /**
- * Màn soạn một template (ADR-0020). Thứ tự khối theo việc người soạn làm: tên + mã cho đội app →
- * bảng biến → tiêu đề → nội dung + xem thử → lịch sử phiên bản → hợp đồng gửi.
+ * Màn soạn một template (ADR-0020). Bốn tab: Soạn thư (mặc định, cho người không biết code) · Biến ·
+ * Tích hợp cho đội app (mã template + lời gọi mẫu) · Phiên bản. Thanh đầu chỉ có Lưu nháp + Xuất bản; thao
+ * tác phụ ở menu ⋯. Còn thay đổi chưa lưu thì hỏi trước khi rời trang (`useLeaveGuard`).
  *
  * Không có "Gửi thử": backend chưa có đường gửi thử. Xuất bản = lưu nháp rồi xuất bản (một action).
  */
@@ -39,13 +44,14 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const t = useTranslations('templateEditor')
   const tc = useTranslations('common')
   const te = useTranslations('errors')
-  const tcat = useTranslations('templateCategory')
+  const tt = useTranslations('templates')
   const { app } = useApp()
   const router = useAppRouter()
   // App Viewer chỉ xem: khoá khung soạn, ẩn mọi nút ghi (backend vẫn chặn bằng 403).
   const writable = useRole().canManage(app)
   const ed = useTemplateEditor(app.app_id, templateId, !writable)
-  const [name, setName] = useState('')
+  /** Tên đang gõ ở ô Đổi tên; `null` = chưa gõ, ô hiện tên đã lưu. */
+  const [nameEdit, setName] = useState<string | null>(null)
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
@@ -59,12 +65,26 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [aiRound, setAiRound] = useState(0)
 
   const savedName = ed.detail?.name ?? ''
-  useEffect(() => setName(savedName), [savedName])
+  const name = nameEdit ?? savedName
+  /** Chưa lưu = nội dung đang soạn khác bản đã lưu, hoặc đã gõ tên mới mà chưa bấm Đổi tên. */
+  const dirty = ed.dirty || (ed.detail !== null && name.trim() !== savedName)
+  const leave = useLeaveGuard(dirty)
+
+  // Đổi tab chỉ thay `?tab=` bằng history của trình duyệt — không chuyển trang, không mất nội dung đang soạn.
+  const searchParams = useSearchParams()
+  const tab = tabOf(searchParams.get(TAB_PARAM))
+  const setTab = (next: EditorTab) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (next === 'compose') params.delete(TAB_PARAM)
+    else params.set(TAB_PARAM, next)
+    const query = params.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
+  }
 
   if (ed.loadError) {
     return (
       <>
-        <PageHeader title="Template" breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: templateId }]} />
+        <PageHeader title="Template" breadcrumb={[{ label: tt('title'), href: '/templates' }, { label: templateId }]} />
         <EmptyState
           icon={FileWarning}
           title={ed.loadError.code === 'NOT_FOUND' ? t('notInApp') : t('loadFailed')}
@@ -79,7 +99,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     )
   }
   if (!ed.detail) {
-    return <PageHeader title={t('loading')} breadcrumb={[{ label: 'Templates', href: '/templates' }]} />
+    return <PageHeader title={t('loading')} breadcrumb={[{ label: tt('title'), href: '/templates' }]} />
   }
 
   const detail = ed.detail
@@ -118,14 +138,20 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     if (await ed.saveDraft()) toast.success(t('saved', { version: ed.draft?.version ?? nextVersion }))
   }
 
+  const copyId = () => {
+    navigator.clipboard?.writeText(detail.id)
+    toast.success(tc('copied'), { description: detail.id })
+  }
+  const varProblems = ed.undeclared.length + ed.missingSource.length
+
   return (
     <>
       <PageHeader
         title={detail.name}
-        breadcrumb={[{ label: 'Templates', href: '/templates' }, { label: detail.name }]}
+        breadcrumb={[{ label: tt('title'), href: '/templates' }, { label: detail.name }]}
         subtitle={
           shown
-            ? `v${shown.version} · ${blocks ? t('editorBlocks') : t('editorHtml')} · ${ed.locked ? t('readOnly') : t('editingDraft')}${ed.dirty ? t('unsaved') : ''}`
+            ? `v${shown.version} · ${blocks ? t('editorBlocks') : t('editorHtml')} · ${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
             : undefined
         }
         actions={
@@ -141,26 +167,18 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 </Button>
               </>
             )}
-            {writable && !ed.archived && ed.draft && blocks && (
-              <Button variant="outline" disabled={ed.pending} onClick={() => setToHtmlOpen(true)} data-testid="to-html-btn">
-                <Code2 /> {t('toHtml')}
-              </Button>
-            )}
             {writable && !ed.archived && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
                 <Pencil /> {t('edit', { version: nextVersion })}
               </Button>
             )}
-            {writable && (
-              <Button variant="outline" disabled={ed.pending} onClick={openDuplicate}>
-                <CopyPlus /> {t('duplicate')}
-              </Button>
-            )}
-            {writable && !ed.archived && (
-              <Button variant="outline" disabled={ed.pending} onClick={() => setArchiveConfirm(true)}>
-                <Archive /> {t('archive')}
-              </Button>
-            )}
+            <TemplateActionsMenu
+              disabled={ed.pending}
+              onCopyId={copyId}
+              onDuplicate={writable ? openDuplicate : undefined}
+              onToHtml={writable && !ed.archived && ed.draft && blocks ? () => setToHtmlOpen(true) : undefined}
+              onArchive={writable && !ed.archived ? () => setArchiveConfirm(true) : undefined}
+            />
           </>
         }
       />
@@ -189,146 +207,64 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           </Alert>
         )}
 
-        <Panel className="min-w-0 p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="tpl-name" className="text-xs font-semibold">{t('name')}</Label>
-              <div className="flex gap-2">
-                <Input id="tpl-name" value={name} onChange={(e) => setName(e.target.value)} disabled={ed.archived || !writable} className="text-sm" />
-                <Button
-                  variant="outline"
-                  disabled={!writable || ed.archived || ed.pending || !name.trim() || name.trim() === savedName}
-                  onClick={() => void ed.rename(name.trim()).then((ok) => ok && toast.success(t('renamed')))}
-                >
-                  {t('rename')}
-                </Button>
-              </div>
-              <p className="text-[11px] text-[var(--text-muted)]">{t('nameHint')}</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tpl-category" className="text-xs font-semibold">{t('category')}</Label>
-              <NativeSelect
-                id="tpl-category"
-                value={detail.category}
-                disabled={ed.archived || !writable || ed.pending}
-                onChange={(e) => {
-                  const next = e.target.value
-                  if (isTemplateCategory(next)) void ed.changeCategory(next).then((ok) => ok && toast.success(t('categoryChanged')))
-                }}
-                className="w-full"
-              >
-                {TEMPLATE_CATEGORIES.map((c) => (
-                  <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
-                ))}
-              </NativeSelect>
-              <p className="text-[11px] text-[var(--text-muted)]">{t('categoryHint')}</p>
-            </div>
-            <div className="min-w-0 space-y-1.5">
-              <Label className="text-xs font-semibold">{t('id')}</Label>
-              <Button
-                variant="outline"
-                className="w-full justify-between font-mono text-xs"
-                onClick={() => {
-                  navigator.clipboard?.writeText(detail.id)
-                  toast.success(tc('copied'), { description: detail.id })
-                }}
-              >
-                <span className="truncate">{detail.id}</span>
-                <Copy />
-              </Button>
-              <p className="text-[11px] text-[var(--text-muted)]">{t('idHint')}</p>
-            </div>
-          </div>
-        </Panel>
-
-        <Panel className="min-w-0 p-5">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('variables')}</h2>
-          <div className="mt-3">
-            <SchemaPane ed={ed} locked={ed.locked} />
-          </div>
-        </Panel>
-
-        <Panel className="min-w-0 space-y-4 p-5">
-          <div className="space-y-2">
-            <Label htmlFor="tpl-subject" className="text-xs font-semibold">{t('subject')}</Label>
-            <Input
-              id="tpl-subject"
-              value={ed.subject}
-              onChange={(e) => ed.setSubject(e.target.value)}
-              className="font-mono text-sm"
-              disabled={ed.locked}
-              placeholder={t('subjectPlaceholder')}
+        <Tabs value={tab} onValueChange={(v) => setTab(v as EditorTab)}>
+          <TabsList variant="line" className="mb-2 h-auto w-full flex-wrap justify-start gap-1 group-data-horizontal/tabs:h-auto">
+            <TabsTrigger value="compose" className="flex-none px-2.5" data-testid="tab-compose">{t('tabCompose')}</TabsTrigger>
+            <TabsTrigger value="variables" className="flex-none px-2.5" data-testid="tab-variables">
+              {t('variables')}
+              <Badge variant="outline" className="font-mono text-[10px] tabular-nums">{ed.variables.length}</Badge>
+              {varProblems > 0 && (
+                <span
+                  className="size-1.5 rounded-full bg-[var(--supernova)]"
+                  role="img"
+                  aria-label={t('variablesNotice', { count: varProblems })}
+                  data-testid="variables-problem-dot"
+                />
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="integration" className="flex-none px-2.5" data-testid="tab-integration">{t('tabIntegration')}</TabsTrigger>
+            <TabsTrigger value="versions" className="flex-none px-2.5" data-testid="tab-versions">{t('versions')}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="compose" className="min-w-0">
+            <ComposeTab
+              ed={ed}
+              writable={writable}
+              name={name}
+              onNameChange={setName}
+              savedName={savedName}
+              onAi={() => {
+                setAiRound((n) => n + 1)
+                setAiOpen(true)
+              }}
+              onShowVariables={() => setTab('variables')}
             />
-            <p className="font-mono text-xs" data-testid="subject-highlight">
-              <Highlight text={ed.subject || t('empty')} declared={ed.declared} />
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
-            {/* Kiểu kéo-thả: bản chữ thường do backend sinh từ các khối — chỉ đọc. */}
-            <Textarea
-              id="tpl-text"
-              value={blocks ? ed.bodyText : ed.text}
-              onChange={(e) => ed.setText(e.target.value)}
-              className="min-h-20 font-mono text-xs"
-              disabled={ed.locked}
-              readOnly={blocks}
-              placeholder={t('textPlaceholder')}
-            />
-            {blocks && <p className="text-[11px] text-[var(--text-muted)]">{t('textAuto')}</p>}
-          </div>
-        </Panel>
-
-        {blocks ? (
-          <>
-            <Panel className="h-[720px] min-w-0 overflow-hidden p-0">
-              <BlockEditor ed={ed} locked={ed.locked} />
+          </TabsContent>
+          <TabsContent value="variables" className="min-w-0">
+            <Panel className="min-w-0 p-5">
+              <SchemaPane ed={ed} locked={ed.locked} />
             </Panel>
-            <p className="-mt-3 text-[11px] text-[var(--text-muted)]">{t('aiHtmlOnly')}</p>
-            <div className="cosmic-surface h-[640px] overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs">
-              <PreviewPane ed={ed} />
-            </div>
-          </>
-        ) : (
-        <ResizablePanelGroup
-          orientation="horizontal"
-          style={{ height: '650px', maxHeight: '650px' }}
-          className="cosmic-surface overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs"
-        >
-          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden">
-            <div className="flex h-full min-w-0 flex-col overflow-hidden p-5">
-              <EditorPane
-                ed={ed}
-                locked={ed.locked}
-                onAi={() => {
-                  setAiRound((n) => n + 1)
-                  setAiOpen(true)
-                }}
-              />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden bg-white">
-            <PreviewPane ed={ed} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-        )}
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Panel className="min-w-0 p-5">
-            <h2 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">{t('versions')}</h2>
-            <VersionsPanel ed={ed} />
-          </Panel>
-          <Panel className="min-w-0 p-5">
-            <h2 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">{t('sendWith')}</h2>
-            <p className="mb-3 text-xs text-[var(--text-muted)]">
-              {ed.published ? t('byPublished', { version: ed.published.version }) : t('notPublished')}
-            </p>
-            <ContractPanel templateId={detail.id} variables={ed.published?.variables ?? ed.variables} />
-          </Panel>
-        </div>
+          </TabsContent>
+          <TabsContent value="integration" className="min-w-0">
+            <IntegrationTab ed={ed} onCopyId={copyId} />
+          </TabsContent>
+          <TabsContent value="versions" className="min-w-0">
+            <Panel className="min-w-0 p-5">
+              <VersionsPanel ed={ed} />
+            </Panel>
+          </TabsContent>
+        </Tabs>
       </div>
 
+      {/* Còn thay đổi chưa lưu mà bấm link nội bộ / đổi app (useLeaveGuard). Đóng tab / tải lại do trình duyệt tự hỏi. */}
+      <ConfirmDialog
+        open={leave.pendingHref !== null}
+        title={t('leaveTitle')}
+        description={t('leaveBody')}
+        confirmLabel={t('leaveConfirm')}
+        cancelLabel={t('leaveStay')}
+        onConfirm={leave.leave}
+        onCancel={leave.stay}
+      />
       {/* Một chiều: không quay lại kéo-thả được; chỉ nháp đổi, bản đã xuất bản giữ nguyên. */}
       <ConfirmDialog
         open={toHtmlOpen}
@@ -388,7 +324,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         title={t('archiveTitle', { name: detail.name })}
         description={t('archiveBody')}
         facts={[
-          ['templateId', detail.id],
+          [t('factId'), detail.id],
           [t('factPublished'), ed.published ? `v${ed.published.version}` : '—'],
           [t('factAppError'), '422 TEMPLATE_ARCHIVED'],
         ]}

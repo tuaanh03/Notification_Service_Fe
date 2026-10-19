@@ -70,8 +70,9 @@ webservice/ews-astrolink/
 │   │                         # users-table, add-user-dialog, user-detail (+ profile-panel, subscriptions-panel,
 │   │                         # data-tags-panel, event-log-panel) nay KHÔNG ai dùng (mục 2.7);
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
-│   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-pane, preview-pane,
-│   │                         # schema-pane, versions-panel, contract-panel) — ĐÃ đấu API (mục 2.12);
+│   ├── templates/*           # templates-page/-table, template-create, template-editor (+ compose-tab, integration-tab,
+│   │                         # template-actions-menu, field-hint, editor-pane, preview-pane, schema-pane, versions-panel,
+│   │                         # contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend);
 │   │                         # blocks/* = trình kéo-thả (block-editor, block-palette, design-canvas, block-view, block-inspector, variable-field)
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
@@ -518,12 +519,27 @@ Ba lời gọi gộp trong `loadOverviewAction` (`app/actions.ts`); một cái h
 Đọc / ghi `/admin/apps/:appId/templates…` (ADR-0020 của backend). App service KHÔNG tạo / sửa template;
 nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ biến vào bản đang xuất bản.
 
-*   **Định danh là `templateId` (UUID), không có `key`.** Màn soạn hiện mã kèm nút sao chép để đưa cho
-    đội app. Tên chỉ cho người đọc, không trùng trong app — so KHÔNG phân biệt hoa thường và dấu
+*   **Định danh là `templateId` (UUID), không có `key`.** Mã + nút sao chép ở tab "Tích hợp cho đội app" và
+    mục "Sao chép mã template" của menu ⋯ — KHÔNG ở đầu tab Soạn thư. Tên chỉ cho người đọc, không trùng trong app — so KHÔNG phân biệt hoa thường và dấu
     (`TEMPLATE_NAME_TAKEN`).
 *   **Cú pháp biến là `{{ payload.x }}` / `{{ user.external_id }}`.** `{{ x }}` (thiếu nguồn) bị tô đỏ và
     backend từ chối. Mặc định viết trong nội dung: `{{ payload.x | default: "…" }}` — bảng biến KHÔNG có
     cột "Kiểu" / "Mặc định" (backend không có chỗ chứa, mục 6 "form có ô backend không lưu").
+*   **Bố cục màn soạn `/templates/[id]`** — tách việc soạn thư khỏi phần cho lập trình viên. Bốn tab (`?tab=`,
+    đổi bằng `history.replaceState` — không chuyển trang, không mất nội dung chưa lưu): **Soạn thư** (mặc định:
+    tiêu đề trên cùng → khung soạn + xem thử → "Nâng cao" thu gọn: tên, nhóm, bản chữ thường) · **Biến**
+    (`<SchemaPane>`) · **Tích hợp cho đội app** (mã template + `<ContractPanel>`) · **Phiên bản**. Tab Soạn thư
+    không có chữ "payload", "templateId", "escape" — thuật ngữ chỉ ở tab Biến / Tích hợp. Biến chưa khai / thiếu
+    nguồn vẫn báo ở đầu tab Soạn thư (một dòng + nút sang tab Biến; tab Biến có chấm đỏ) — đừng để cảnh báo chỉ
+    nằm ở tab khác. Thanh đầu chỉ có trạng thái + Lưu nháp + Xuất bản (hoặc "Sửa" khi không có nháp); Sao chép
+    mã / Nhân bản / Chuyển sang HTML / Lưu trữ ở menu ⋯ (`<TemplateActionsMenu>`, Lưu trữ cuối, sau vạch ngăn,
+    màu nguy hiểm; mục ghi ẩn theo `canManage`). Chú thích dưới ô là dấu (?) `<FieldHint>` (tooltip); lỗi của ô
+    (link sai…) vẫn hiện thành dòng đỏ, không giấu vào tooltip.
+*   **Hỏi khi rời trang chưa lưu.** Chưa lưu = `ed.dirty` hoặc ô tên đã gõ mà chưa Đổi tên. `useLeaveGuard(dirty)`
+    (`components/app-link.tsx`): `beforeunload` khi đóng tab / tải lại; link `<AppLink>` (`onNavigate`) và
+    `useAppRouter().push/replace` (vd đổi app) bị giữ lại để màn hiện `<ConfirmDialog>` "Rời trang?". Nút Back
+    của trình duyệt KHÔNG chặn được (App Router không có sự kiện huỷ). Link trần không qua `<AppLink>` thì lọt —
+    thêm một lý do cho luật mục 2.9.
 *   **Một nháp + một bản đang xuất bản.** Không có nháp thì khung soạn chỉ đọc, nút "Sửa" tạo nháp từ
     bản đang xuất bản. "Quay về bản cũ" = "Tạo nháp từ bản này", người soạn tự Xuất bản — không có
     xuất bản lại tại chỗ.
@@ -555,11 +571,11 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     mặc định Kéo-thả. `lib/email-design.ts` chỉ có KIỂU + phép sửa cây — HTML thư do BACKEND sinh: xem trước
     gọi `previewDesignAction` (`hooks/use-design-preview.ts`, debounce 500 ms, bỏ kết quả cũ về muộn), lưu nháp
     gửi `{ editor: 'blocks', design }` (không gửi `html` / `text`). Đừng chép hàm sinh HTML sang console. Kéo bằng
-    `@dnd-kit`; mọi thao tác kéo có đường bấm tương ứng (bấm khối ở bảng trái = thêm). Bản chữ thường chỉ đọc;
-    "Nhờ AI soạn" ẩn ở kiểu này. "Chuyển sang HTML" = lưu nháp rồi chuyển, có hộp xác nhận, một chiều, bản
+    `@dnd-kit`; mọi thao tác kéo có đường bấm tương ứng (bấm khối ở bảng trái = thêm). Bản chữ thường chỉ đọc (trong
+    "Nâng cao"); "Nhờ AI soạn" ẩn ở kiểu này. "Chuyển sang HTML" = lưu nháp rồi chuyển, có hộp xác nhận, một chiều, bản
     đã xuất bản không đổi. Xem trước có nút Máy tính / Điện thoại (375px) cho cả hai kiểu.
 *   **Thư viện mẫu (ADR-0035 của backend).** `/templates/new` mở bằng bước chọn (`<PresetGallery>`): ô "Bắt đầu
-    từ trống" (form cũ) + lưới thẻ mẫu lọc theo nhóm (chỉ nhóm có mẫu). Mẫu nạp qua `loadTemplatePresetsAction`
+    từ trống" (form ở giữa: tên + nhóm, kiểu soạn là hai thẻ lớn có dấu tích; nút quay lại "Quay lại thư viện mẫu") + lưới thẻ mẫu lọc theo nhóm (chỉ nhóm có mẫu). Mẫu nạp qua `loadTemplatePresetsAction`
     (`hooks/use-template-presets.ts`, giữ theo ngôn ngữ thư); ảnh thu nhỏ là iframe `sandbox=""` của `html` backend
     sinh, thay giá trị mẫu bằng `renderPreview`. Bấm thẻ -> `<PresetDialog>`: xem trước `DevicePreview` (dùng chung
     `preview-pane.tsx`), chọn ngôn ngữ thư (mặc định theo màn), tên gợi ý theo ngôn ngữ thư, "Dùng mẫu" ->
@@ -655,7 +671,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<GrantFields id grant onGrantChange acknowledged onAcknowledgedChange>` | `components/apps/grant-fields.tsx` | ✓ | **nguồn duy nhất** của phần nhập quyền cấp lúc duyệt: 2 hạn mức + cảnh báo "lưu nhưng chưa đối chiếu" + ô tick bắt buộc; dùng chung wizard bước 4 và `<ApproveAppDialog>` |
 | `<ApproveAppDialog app pending error onCancel onConfirm>` | `components/apps/approve-app-dialog.tsx` | ✓ | hộp duyệt ở `/admin/apps`; bọc `<ConfirmDialog>`, `app = null` là đóng |
 | `<RecipientDetail externalId>` | `components/users/recipient-detail.tsx` | ✓ | trang chi tiết một người nhận (mục 2.7): đầu trang có địa chỉ + tình trạng, rồi cài đặt nhận tin, rồi các lần gửi; `page.tsx` truyền `key` theo app + mã |
-| `<AppLink href app?>` / `useAppRouter()` | `components/app-link.tsx` | ✓ | **nguồn duy nhất** của link nội bộ — tự gắn `?app=` (mục 2.9); file duy nhất import `next/link` / `useRouter` |
+| `<AppLink href app?>` / `useAppRouter()` / `useLeaveGuard(active)` | `components/app-link.tsx` | ✓ | **nguồn duy nhất** của link nội bộ — tự gắn `?app=` (mục 2.9); file duy nhất import `next/link` / `useRouter`; `useLeaveGuard` giữ link / `push` khi màn còn thay đổi chưa lưu (mục 2.12) |
 | `<AppGate>` / `<ChooseAppNotice>` | `components/app-gate.tsx`, `components/orgs/choose-app-notice.tsx` | ✓ | cổng theo `?app=` (thiếu / sai -> trang Tổ chức kèm `?next=` / `?missing=`) (mục 2.9) |
 | `<RecipientPreferences recipient preferences error loading>` | `components/users/recipient-preferences.tsx` | ✓ | khối cài đặt nhận tin trong trang chi tiết; chỉ đọc, cảnh báo L0/L1 ở đầu (mục 2.7); kèm `SUPPRESSED_LABEL` |
 | `<NotificationsTable initialExternalId? recipient?>` | `components/notifications/notifications-table.tsx` | ✓ | bảng lịch sử gửi (mục 2.8); `recipient` = cố định một người: ẩn ô gõ mã và cột mã |
@@ -766,6 +782,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Hydration mismatch ở starfield | `Math.random()` lúc render | seeded PRNG |
 | Hydration #418 khi `prefers-reduced-motion: reduce` | `useReducedMotion()` SSR trả `null`, client trả `true` → class/element khác nhau ngay lần render đầu | animation gate bằng CSS `@media (prefers-reduced-motion)` (đã có ở globals.css); chỉ dùng `useReducedMotion` cho phần render sau khi user tương tác |
 | Trang tràn ngang ở 375 dù bảng đã `overflow-x-auto` | grid/flex item `min-width:auto` → track phình theo min-content của `pre`/`table`/`TabsList w-fit` | `min-w-0` lên con của grid; `TabsList className="h-auto w-full flex-wrap"` |
+| Hàng tab xuống 2 dòng nhưng dòng 2 đè lên khối bên dưới | `TabsList` của `components/ui/tabs` có `group-data-horizontal/tabs:h-8` — biến thể này thắng `h-auto` thường | thêm `group-data-horizontal/tabs:h-auto` cạnh `h-auto w-full flex-wrap` ở chỗ dùng (vd `template-editor.tsx`); không sửa `components/ui/` |
 | Dialog cắt mất chữ bên TRÁI, có thanh cuộn ngang ẩn | `<DialogContent>` là `grid`, cột `auto` phình theo max-content của `<pre>`/chuỗi mono dài; dialog mở ra tự focus một nút nằm ngoài vùng nhìn → trình duyệt cuộn ngang container, nội dung trôi trái, `overflow-x-hidden` cắt đi | `grid-cols-[minmax(0,1fr)]` trên `DialogContent` (đã có ở `ConfirmDialog` và `CredentialDialog`); kiểm bằng `el.scrollWidth` vs `clientWidth`, không chỉ đọc `innerText` |
 | `border-<màu>` không ăn, viền luôn ra `--orbit` | `app/globals.css:88` có `* { border-color: var(--orbit) }` **ngoài `@layer`** — rule không layer thắng mọi utility Tailwind, bất kể specificity | biết trước là nó sẽ không ăn (`forbidden-notice.tsx` và `<PreviewBanner>` đều dính); cần viền màu thật thì theo `<StatusPill>` — `style={{ borderColor }}` lấy màu từ `lib/theme.ts`. Đừng gỡ dòng 88: nó đang đặt viền mặc định cho cả console |
 | Docker build fail ở `next/font` | build không có internet để tải Google Fonts | build trên máy có mạng; không đổi sang font local nếu chưa được duyệt |
