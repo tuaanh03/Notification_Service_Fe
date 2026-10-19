@@ -33,7 +33,7 @@ export function NotificationDetail({ id }: { id: string }) {
           title={t('notFoundTitle')}
           description={t('notFoundBody', { id })}
           action={
-            <Button variant="outline" render={<AppLink href="/notifications" />}>
+            <Button nativeButton={false} variant="outline" render={<AppLink href="/notifications" />}>
               {t('backToHistory')}
             </Button>
           }
@@ -78,11 +78,11 @@ export function NotificationDetail({ id }: { id: string }) {
               <Square /> {t('stop')}
             </Button>
           )}
-          <Button variant="outline" render={<AppLink href="/compose" />}>
+          <Button nativeButton={false} variant="outline" render={<AppLink href="/compose" />}>
             <Copy /> {t('duplicate')}
           </Button>
           {left !== 'Chưa' && (
-            <Button variant="outline" render={<AppLink href="/compose" />}>
+            <Button nativeButton={false} variant="outline" render={<AppLink href="/compose" />}>
               <FilePlus2 /> {t('correction')}
             </Button>
           )}

@@ -58,6 +58,7 @@ export function WebhookFormDialog({
 
   return (
     <ConfirmDialog
+      icon={Webhook}
       open={open}
       title={mode === 'create' ? t('addTitle') : t('editTitle')}
       description={mode === 'create' ? t('addBody') : t('editBody')}

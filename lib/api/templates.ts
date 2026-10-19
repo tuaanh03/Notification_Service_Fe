@@ -1,6 +1,7 @@
 import 'server-only'
 import { adminFetch } from './client'
-import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto, TemplateVariableDto } from './types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplatePresetDto, TemplateSummaryDto, TemplateVariableDto } from './types'
+import type { Locale } from '@/i18n/locales'
 import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 
@@ -45,6 +46,25 @@ export async function createTemplate(
   input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<TemplateDetailDto> {
   return adminFetch<TemplateDetailDto>(base(appId), { method: 'POST', body: input })
+}
+
+/**
+ * GET /admin/template-presets?locale= — thư viện mẫu dựng sẵn (ADR-0035), không thuộc app nào. Mỗi mẫu
+ * kèm `html` đã sinh để làm ảnh thu nhỏ / xem trước.
+ */
+export async function listTemplatePresets(locale: Locale): Promise<TemplatePresetDto[]> {
+  return adminFetch<TemplatePresetDto[]>(`/template-presets?locale=${encodeURIComponent(locale)}`)
+}
+
+/**
+ * POST .../from-preset — template MỚI, nháp v1 kiểu kéo-thả chép từ mẫu ở ngôn ngữ thư đã chọn. Chép một
+ * lần: mẫu đổi về sau không đổi template này. `name` bắt buộc; trùng tên -> 409 TEMPLATE_NAME_TAKEN.
+ */
+export async function createTemplateFromPreset(
+  appId: string,
+  input: { presetId: string; locale: Locale; name: string },
+): Promise<TemplateDetailDto> {
+  return adminFetch<TemplateDetailDto>(`${base(appId)}/from-preset`, { method: 'POST', body: input })
 }
 
 /**

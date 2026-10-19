@@ -99,7 +99,7 @@ export function ImportWizard() {
             <p className="text-xs text-[var(--text-muted)]">
               {t('auditNote', { count: p.conflicts.length })}
             </p>
-            <Button variant="outline" render={<AppLink href="/users" />}>
+            <Button nativeButton={false} variant="outline" render={<AppLink href="/users" />}>
               {t('backToUsers')}
             </Button>
           </div>

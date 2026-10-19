@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Loader2, Search, TriangleAlert } from 'lucide-react'
+import { AppWindow, Check, Loader2, Search, TriangleAlert, UserCog, UserPlus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { App } from '@/lib/mock-data'
 import type { AppRole, MemberCandidateDto, OrgAppRoleDto, OrgMemberDto, OrgRole } from '@/lib/api/types'
@@ -99,6 +99,7 @@ export function AddMemberDialog({
 
   return (
     <ConfirmDialog
+      icon={UserPlus}
       open={open}
       title={t('addTitle')}
       description={t('addBody')}
@@ -223,6 +224,7 @@ function ChangeRoleBody({
   const [role, setRole] = useState<OrgRole>(member?.role ?? 'member')
   return (
     <ConfirmDialog
+      icon={UserCog}
       open={member !== null}
       title={title}
       description={t('changeRoleBody', { email: member?.email ?? '' })}
@@ -306,6 +308,7 @@ function AppRolesBody({
 
   return (
     <ConfirmDialog
+      icon={AppWindow}
       open={member !== null}
       title={t('appAccessTitle')}
       description={t('appAccessBody', { email: member?.email ?? '' })}

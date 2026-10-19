@@ -99,7 +99,7 @@ export function ConfirmDialog({
             {cancelLabel ?? tc('cancel')}
           </Button>
           {confirmHref ? (
-            <Button render={<AppLink href={confirmHref} />} onClick={onCancel}>
+            <Button nativeButton={false} render={<AppLink href={confirmHref} />} onClick={onCancel}>
               {confirmLabel ?? tc('confirm')}
             </Button>
           ) : (

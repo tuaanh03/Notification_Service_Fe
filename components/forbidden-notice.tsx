@@ -34,7 +34,7 @@ export function ForbiddenNotice({
         <AlertDescription className="text-[var(--text-primary)]">
           {t('audited', { description })}
         </AlertDescription>
-        <Button variant="link" render={<AppLink href={backHref} />} className="justify-self-start px-0">
+        <Button nativeButton={false} variant="link" render={<AppLink href={backHref} />} className="justify-self-start px-0">
           {backLabel}
         </Button>
       </Alert>

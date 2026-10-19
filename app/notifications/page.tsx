@@ -16,7 +16,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ e
         title={t('title')}
         subtitle={t('subtitle')}
         actions={
-          <Button variant="outline" render={<AppLink href="/notifications/errors" />}>
+          <Button nativeButton={false} variant="outline" render={<AppLink href="/notifications/errors" />}>
             <BookOpen /> {t('errorCodes')}
           </Button>
         }

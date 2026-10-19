@@ -89,6 +89,7 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
       </Dialog>
 
       <ConfirmDialog
+        icon={CopyPlus}
         open={copyFrom !== null}
         title={t('copyTitle', { version: copyFrom?.version ?? '' })}
         description={t('copyBody')}

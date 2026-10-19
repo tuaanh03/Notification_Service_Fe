@@ -1,4 +1,6 @@
+import type { Locale } from '@/i18n/locales'
 import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
+import type { TemplateCategory } from '@/lib/template-categories'
 
 /**
  * Hợp đồng dữ liệu với `ews-astrolink-api`. KHÔNG có `server-only` ở file này:
@@ -401,6 +403,23 @@ export type TemplateSummaryDto = {
 
 /** Sao đúng `TemplateDetailDto`: tóm tắt + mọi version, mới nhất trước. */
 export type TemplateDetailDto = TemplateSummaryDto & { versions: TemplateVersionDto[] }
+
+/**
+ * Sao đúng `TemplatePresetDto` (`GET /admin/template-presets`, ADR-0035 của backend) — một mẫu dựng sẵn ở
+ * MỘT ngôn ngữ thư. `html` do backend sinh từ `design`, còn nguyên `{{ … }}`.
+ */
+export type TemplatePresetDto = {
+  id: string
+  version: number
+  category: TemplateCategory
+  locale: Locale
+  name: string
+  description: string
+  subject: string
+  variables: TemplateVariableDto[]
+  design: EmailDesign
+  html: string
+}
 
 /** Biến AI đề xuất thêm — `name` đã có tiền tố `payload.`; người soạn tick duyệt mới thêm vào bảng biến. */
 export type AiSuggestedVariableDto = { name: string; required: boolean; description?: string; sample?: string }

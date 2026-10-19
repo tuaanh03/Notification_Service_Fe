@@ -737,6 +737,27 @@
     "report": "Reports",
     "other": "Other"
   },
+  "templatePresets": {
+    "chooseTitle": "How do you want to start?",
+    "chooseHint": "Pick a ready-made template and adjust it, or start from scratch.",
+    "filter": "Filter by category",
+    "all": "All",
+    "blankTitle": "Start from blank",
+    "blankBody": "Build it yourself with drag-and-drop or HTML.",
+    "back": "Choose another template",
+    "emptyCategory": "No templates in this category yet.",
+    "loadFailed": "Could not load the template library",
+    "retry": "Retry",
+    "loading": "Loading template…",
+    "thumbnail": "Thumbnail: {name}",
+    "mailLanguage": "Email language",
+    "name": "Template name",
+    "variables": "Variables the app must send",
+    "hint": "The new template starts as a draft you can edit freely — the original stays unchanged.",
+    "use": "Use template",
+    "using": "Creating…",
+    "cancel": "Cancel"
+  },
   "schema": {
     "colName": "Variable name",
     "colRequired": "Required",

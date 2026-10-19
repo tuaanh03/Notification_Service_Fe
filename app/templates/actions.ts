@@ -5,9 +5,11 @@ import {
   archiveTemplate,
   convertDraftToHtml,
   createTemplate,
+  createTemplateFromPreset,
   draftFromVersion,
   duplicateTemplate,
   getTemplate,
+  listTemplatePresets,
   listTemplates,
   previewDesign,
   publishTemplate,
@@ -17,10 +19,11 @@ import {
   type TemplateContentInput,
   type TemplateListFilter,
 } from '@/lib/api/templates'
+import type { Locale } from '@/i18n/locales'
 import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 import { toResult, type ActionResult } from '@/lib/api/result'
-import type { AiComposeResultDto, TemplateDetailDto, TemplateSummaryDto } from '@/lib/api/types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplatePresetDto, TemplateSummaryDto } from '@/lib/api/types'
 
 /**
  * Lớp BFF của màn Templates. Server Action vì dữ liệu thuộc app đang chọn (`?app=`, CLAUDE.md mục 2.2).
@@ -45,6 +48,19 @@ export async function createTemplateAction(
   input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplate(appId, input))
+}
+
+/** Thư viện mẫu theo ngôn ngữ thư — không thuộc app nào, nhưng vẫn đi qua BFF (token nằm ở server). */
+export async function loadTemplatePresetsAction(locale: Locale): Promise<ActionResult<TemplatePresetDto[]>> {
+  return toResult(() => listTemplatePresets(locale))
+}
+
+/** "Dùng mẫu" — template mới của app, nháp v1 chép từ mẫu. */
+export async function createFromPresetAction(
+  appId: string,
+  input: { presetId: string; locale: Locale; name: string },
+): Promise<ActionResult<TemplateDetailDto>> {
+  return toResult(() => createTemplateFromPreset(appId, input))
 }
 
 /** Xem trước thiết kế kéo-thả đang soạn — backend sinh HTML, không lưu. */

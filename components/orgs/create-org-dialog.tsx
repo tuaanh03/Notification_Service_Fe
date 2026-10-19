@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { TriangleAlert } from 'lucide-react'
+import { Building2, TriangleAlert } from 'lucide-react'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,7 @@ export function CreateOrgDialog({
 
   return (
     <ConfirmDialog
+      icon={Building2}
       open={open}
       title={t('createTitle')}
       description={t('createBody')}

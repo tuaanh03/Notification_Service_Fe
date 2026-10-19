@@ -27,7 +27,7 @@ export function SettingsProfile() {
         actions={
           // Chỉ ai được tạo app (Owner / Org Admin / Super Admin) mới thấy lối vào wizard.
           creatableOrgs.length > 0 ? (
-            <Button variant="outline" render={<AppLink href="/apps/new" />}>
+            <Button nativeButton={false} variant="outline" render={<AppLink href="/apps/new" />}>
               {t('registerAnother')}
             </Button>
           ) : undefined
@@ -76,7 +76,7 @@ export function SettingsProfile() {
               {t('zeroOk')}
             </AlertDescription>
           </Alert>
-          <Button variant="link" className="mt-3 px-0" render={<AppLink href="/topics" />}>
+          <Button nativeButton={false} variant="link" className="mt-3 px-0" render={<AppLink href="/topics" />}>
             {t('manageSubscribers')} <ExternalLink data-icon="inline-end" />
           </Button>
         </Panel>

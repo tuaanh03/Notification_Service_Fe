@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ListTree } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Input } from '@/components/ui/input'
@@ -43,6 +44,7 @@ export function CreateTopicDialog({
 
   return (
     <ConfirmDialog
+      icon={ListTree}
       open={open}
       title={t('title')}
       description={t('body', { app: appName })}

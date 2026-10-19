@@ -737,6 +737,27 @@
     "report": "Báo cáo",
     "other": "Khác"
   },
+  "templatePresets": {
+    "chooseTitle": "Bắt đầu từ đâu?",
+    "chooseHint": "Chọn một mẫu dựng sẵn rồi sửa tiếp, hoặc tự soạn từ đầu.",
+    "filter": "Lọc theo nhóm",
+    "all": "Tất cả",
+    "blankTitle": "Bắt đầu từ trống",
+    "blankBody": "Tự soạn bằng kéo-thả hoặc HTML.",
+    "back": "Chọn mẫu khác",
+    "emptyCategory": "Nhóm này chưa có mẫu.",
+    "loadFailed": "Không tải được thư viện mẫu",
+    "retry": "Thử lại",
+    "loading": "Đang tải mẫu…",
+    "thumbnail": "Ảnh thu nhỏ: {name}",
+    "mailLanguage": "Ngôn ngữ thư",
+    "name": "Tên template",
+    "variables": "Biến app cần gửi",
+    "hint": "Template mới chỉ có bản nháp, sửa thoải mái — mẫu gốc không đổi.",
+    "use": "Dùng mẫu",
+    "using": "Đang tạo…",
+    "cancel": "Huỷ"
+  },
   "schema": {
     "colName": "Tên biến",
     "colRequired": "Bắt buộc",

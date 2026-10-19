@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Loader2, Monitor, Smartphone } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -17,7 +17,7 @@ const FRAGMENT_SHELL = (body: string) =>
   `<!DOCTYPE html><html><head><meta charset="utf-8">${SCROLLBAR_HIDE}<style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #1e293b; margin: 24px; padding: 0; background: #ffffff; } a { color: #2563eb; } h1, h2, h3 { margin-top: 0; color: #0f172a; }</style></head><body>${body}</body></html>`
 
 /** HTML thư -> tài liệu cho iframe: mảnh HTML thì bọc khung thư mặc định, đủ `<html>` thì giữ nguyên. */
-function emailDocument(html: string, emptyText: string): string {
+export function emailDocument(html: string, emptyText: string): string {
   const raw = html || `<p style="color: #94a3b8; font-family: sans-serif; font-size: 14px;">${emptyText}</p>`
   if (!/<html|<!doctype/i.test(raw)) return FRAGMENT_SHELL(raw)
   return /<head[^>]*>/i.test(raw) ? raw.replace(/<head[^>]*>/i, `$&${SCROLLBAR_HIDE}`) : `${SCROLLBAR_HIDE}${raw}`
@@ -39,23 +39,34 @@ const DEVICES = ['desktop', 'mobile'] as const
 type Device = (typeof DEVICES)[number]
 
 /**
- * Xem thử bằng GIÁ TRỊ MẪU của bảng biến (không có thì `| default:`), escape như backend.
- * Biến chưa có giá trị nào hiện nguyên `{{ ... }}` — đúng chỗ backend sẽ từ chối lúc gửi.
- * Kiểu kéo-thả: HTML do backend sinh (`ed.designPreview`), chờ ~0,5 giây sau lần sửa cuối.
+ * Khung xem trước có tiêu đề + nút Máy tính / Điện thoại — dùng chung màn soạn (`PreviewPane`) và hộp xem
+ * trước mẫu dựng sẵn. `notice` hiện ngay dưới thanh trên (lỗi xem trước…), `footer` ở đáy.
  */
-export function PreviewPane({ ed }: { ed: TemplateEditorState }) {
+export function DevicePreview({
+  subject,
+  html,
+  loading = false,
+  notice,
+  footer,
+  className,
+}: {
+  subject: string
+  html: string
+  loading?: boolean
+  notice?: ReactNode
+  footer?: ReactNode
+  className?: string
+}) {
   const t = useTranslations('previewPane')
-  const issueText = useIssueText()
   const [device, setDevice] = useState<Device>('desktop')
-  const previewError = ed.editor === 'blocks' ? ed.designPreview.error : null
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white" data-testid="preview-pane">
+    <div className={cn('flex h-full flex-col overflow-hidden bg-white', className)}>
       <div className="flex shrink-0 items-center gap-3 border-b border-[var(--orbit)] px-4 py-2 text-xs">
         <div className="min-w-0 flex-1 truncate">
           <span className="text-[var(--text-muted)]">{t('subject')}</span>
-          <span className="font-medium text-[var(--text-primary)]">{ed.previewSubject || t('empty')}</span>
+          <span className="font-medium text-[var(--text-primary)]">{subject || t('empty')}</span>
         </div>
-        {ed.editor === 'blocks' && ed.designPreview.loading && <Loader2 className="size-3.5 animate-spin text-[var(--text-muted)]" aria-label={t('updating')} />}
+        {loading && <Loader2 className="size-3.5 animate-spin text-[var(--text-muted)]" aria-label={t('updating')} />}
         <ToggleGroup variant="outline" size="sm" value={[device]} onValueChange={(v) => {
           const next = DEVICES.find((d) => d === v[0])
           if (next) setDevice(next)
@@ -68,20 +79,42 @@ export function PreviewPane({ ed }: { ed: TemplateEditorState }) {
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
-      {previewError && (
-        <p className="shrink-0 border-b border-[var(--orbit)] bg-[var(--supernova)]/5 px-4 py-1.5 text-[11px] text-[var(--supernova)]" data-testid="preview-error">
-          {previewError.issues.length ? previewError.issues.map((i) => issueText(i)).join(' · ') : previewError.message} <span className="font-mono">({previewError.issues[0]?.code ?? previewError.code})</span>
-        </p>
-      )}
+      {notice}
       <div className={cn('h-full min-h-0 w-full flex-1 overflow-hidden', device === 'mobile' ? 'flex justify-center bg-[var(--void)] py-3' : 'bg-white')}>
         <EmailPreviewFrame
-          html={ed.previewHtml}
+          html={html}
           className={device === 'mobile' ? 'h-full w-[375px] max-w-full rounded-xl border border-[var(--orbit)] bg-white shadow-sm' : undefined}
         />
       </div>
-      <p className="shrink-0 px-4 py-1 text-[11px] text-[var(--text-muted)]">
-        {t('hint')}
-      </p>
+      {footer}
+    </div>
+  )
+}
+
+/**
+ * Xem thử bằng GIÁ TRỊ MẪU của bảng biến (không có thì `| default:`), escape như backend.
+ * Biến chưa có giá trị nào hiện nguyên `{{ ... }}` — đúng chỗ backend sẽ từ chối lúc gửi.
+ * Kiểu kéo-thả: HTML do backend sinh (`ed.designPreview`), chờ ~0,5 giây sau lần sửa cuối.
+ */
+export function PreviewPane({ ed }: { ed: TemplateEditorState }) {
+  const t = useTranslations('previewPane')
+  const issueText = useIssueText()
+  const previewError = ed.editor === 'blocks' ? ed.designPreview.error : null
+  return (
+    <div className="h-full" data-testid="preview-pane">
+      <DevicePreview
+        subject={ed.previewSubject}
+        html={ed.previewHtml}
+        loading={ed.editor === 'blocks' && ed.designPreview.loading}
+        notice={
+          previewError && (
+            <p className="shrink-0 border-b border-[var(--orbit)] bg-[var(--supernova)]/5 px-4 py-1.5 text-[11px] text-[var(--supernova)]" data-testid="preview-error">
+              {previewError.issues.length ? previewError.issues.map((i) => issueText(i)).join(' · ') : previewError.message} <span className="font-mono">({previewError.issues[0]?.code ?? previewError.code})</span>
+            </p>
+          )
+        }
+        footer={<p className="shrink-0 px-4 py-1 text-[11px] text-[var(--text-muted)]">{t('hint')}</p>}
+      />
     </div>
   )
 }

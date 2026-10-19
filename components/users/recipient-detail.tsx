@@ -59,7 +59,7 @@ export function RecipientDetail({ externalId }: { externalId: string }) {
 
   const breadcrumb = [{ label: tr('title'), href: '/users' }, { label: externalId }]
   const back = (
-    <Button variant="outline" render={<AppLink href="/users" />}>
+    <Button nativeButton={false} variant="outline" render={<AppLink href="/users" />}>
       {t('back')}
     </Button>
   )

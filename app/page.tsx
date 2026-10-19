@@ -354,7 +354,7 @@ function Overview({ view }: { view: OverviewView }) {
             <h2 className="text-sm font-semibold">{t('recentTitle')}</h2>
             <p className="mt-1 text-xs text-[var(--text-muted)]">{t('recentSubtitle')}</p>
           </div>
-          <Button variant="link" size="sm" render={<AppLink href="/notifications" />}>
+          <Button nativeButton={false} variant="link" size="sm" render={<AppLink href="/notifications" />}>
             {tc('viewAll')}
           </Button>
         </div>

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { UserPlus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { createRecipientAction } from '@/app/users/actions'
@@ -65,6 +66,7 @@ export function AddRecipientDialog({
 
   return (
     <ConfirmDialog
+      icon={UserPlus}
       open={open}
       title={t('addTitle')}
       description={t('addBody')}

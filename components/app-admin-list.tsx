@@ -241,7 +241,7 @@ export function AppAdminList({ rows }: { rows: AppDto[] }) {
         title={t('title')}
         subtitle={t('subtitle')}
         actions={
-          <Button render={<AppLink href="/apps/new" />}>
+          <Button nativeButton={false} render={<AppLink href="/apps/new" />}>
             <Plus />
             {t('register')}
           </Button>

@@ -64,7 +64,7 @@ export function UserDetail({ id }: { id: string }) {
           title="Không tìm thấy user"
           description={`Không có hồ sơ ${id}.`}
           action={
-            <Button variant="outline" render={<AppLink href="/users" />}>
+            <Button nativeButton={false} variant="outline" render={<AppLink href="/users" />}>
               Về danh sách Users
             </Button>
           }

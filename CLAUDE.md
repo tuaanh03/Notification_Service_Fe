@@ -558,6 +558,12 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     `@dnd-kit`; mọi thao tác kéo có đường bấm tương ứng (bấm khối ở bảng trái = thêm). Bản chữ thường chỉ đọc;
     "Nhờ AI soạn" ẩn ở kiểu này. "Chuyển sang HTML" = lưu nháp rồi chuyển, có hộp xác nhận, một chiều, bản
     đã xuất bản không đổi. Xem trước có nút Máy tính / Điện thoại (375px) cho cả hai kiểu.
+*   **Thư viện mẫu (ADR-0035 của backend).** `/templates/new` mở bằng bước chọn (`<PresetGallery>`): ô "Bắt đầu
+    từ trống" (form cũ) + lưới thẻ mẫu lọc theo nhóm (chỉ nhóm có mẫu). Mẫu nạp qua `loadTemplatePresetsAction`
+    (`hooks/use-template-presets.ts`, giữ theo ngôn ngữ thư); ảnh thu nhỏ là iframe `sandbox=""` của `html` backend
+    sinh, thay giá trị mẫu bằng `renderPreview`. Bấm thẻ -> `<PresetDialog>`: xem trước `DevicePreview` (dùng chung
+    `preview-pane.tsx`), chọn ngôn ngữ thư (mặc định theo màn), tên gợi ý theo ngôn ngữ thư, "Dùng mẫu" ->
+    `createFromPresetAction` -> màn soạn. Tên bắt buộc, trùng tên hiện trong hộp. Mẫu không đồng bộ về sau.
 *   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).
 
 ### 2.13. Webhooks (`/settings/webhooks`) — EWS tự báo kết quả gửi thư cho app
