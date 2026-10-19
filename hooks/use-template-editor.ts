@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import {
   aiComposeAction,
   archiveTemplateAction,
@@ -16,9 +16,20 @@ import type { ActionResult } from '@/lib/api/result'
 import type { TemplateContentInput } from '@/lib/api/templates'
 import type { AiComposeResultDto, AiSuggestedVariableDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
 import { designTexts, type EmailDesign, type TemplateEditor } from '@/lib/email-design'
+import { isVisualDesign, type VisualDesign } from '@/lib/visual-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 import { useDesignPreview } from './use-design-preview'
 import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
+
+/**
+ * Bộ soạn trực quan đang mở (ADR-0036) tự đăng ký vào hook bằng `attachVisual` — lúc lưu, hook hỏi nó HTML +
+ * MJML + dự án hiện tại (grapesjs-mjml sinh ngay ở trình duyệt, đồng bộ).
+ */
+export type VisualEditorHandle = {
+  snapshot: () => { html: string; mjml: string; project: Record<string, unknown> }
+  /** Lưu xong: đếm lại thay đổi từ đầu (thay đổi sau đó mới là "chưa lưu"). */
+  markSaved: () => void
+}
 
 /** Lỗi của thao tác GHI gần nhất — kèm `issues` khi xuất bản bị 422. */
 export type EditorError = { message: string; code: string; issues: readonly Issue[] }
@@ -44,6 +55,11 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   /** Kiểu soạn của bản đang hiện (ADR-0034). `blocks`: `html` / `text` ở trên là bản ĐÃ LƯU do backend sinh. */
   const [editor, setEditor] = useState<TemplateEditor>('html')
   const [design, setDesign] = useState<EmailDesign | null>(null)
+  /** Kiểu `visual`: dự án ĐÃ LƯU (để mở bộ soạn); nội dung đang soạn nằm trong GrapesJS, đọc qua `visualRef`. */
+  const [visualDesign, setVisualDesign] = useState<VisualDesign | null>(null)
+  /** MJML đang soạn (bộ soạn báo sau mỗi lần sửa) — chỉ để tìm biến chưa khai, không gửi đi. */
+  const [visualMjml, setVisualMjml] = useState<string | null>(null)
+  const visualRef = useRef<VisualEditorHandle | null>(null)
   /** Thiết kế đã sửa sau lần nạp cuối — chỉ khi đó mới hỏi backend xem trước; chưa sửa thì dùng HTML đã lưu. */
   const [designEdited, setDesignEdited] = useState(false)
   const [dirty, setDirty] = useState(false)
@@ -68,7 +84,10 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     setText(v?.text ?? '')
     setVariables(v?.variables ?? [])
     setEditor(v?.editor ?? 'html')
-    setDesign(v?.design ?? null)
+    const saved = v?.design ?? null
+    setDesign(saved && !isVisualDesign(saved) ? saved : null)
+    setVisualDesign(isVisualDesign(saved) ? saved : null)
+    setVisualMjml(null)
     setDesignEdited(false)
     setDirty(false)
   }, [])
@@ -94,7 +113,12 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   const bodyText = editor === 'blocks' ? (designPreview.preview?.text ?? text) : text
 
   const derived = useMemo(() => {
-    const used = editor === 'blocks' && design ? usedVariablePaths(subject, ...designTexts(design)) : usedVariablePaths(subject, html, text)
+    const used =
+      editor === 'blocks' && design
+        ? usedVariablePaths(subject, ...designTexts(design))
+        : editor === 'visual'
+          ? usedVariablePaths(subject, visualMjml ?? visualDesign?.mjml ?? html)
+          : usedVariablePaths(subject, html, text)
     const declared = variables.map((v) => v.name)
     return {
       declared,
@@ -112,7 +136,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
             .map((v) => v.name)
         : [],
     }
-  }, [subject, html, text, variables, published, editor, design, bodyHtml])
+  }, [subject, html, text, variables, published, editor, design, bodyHtml, visualMjml, visualDesign])
 
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value)
@@ -140,6 +164,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
         if (result.ok) {
           setError(null)
           adopt(result.data)
+          visualRef.current?.markSaved()
           onOk?.()
           resolve(true)
         } else {
@@ -168,10 +193,19 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
       })
     })
 
-  const content = (): TemplateContentInput =>
-    editor === 'blocks' && design
+  const content = (): TemplateContentInput => {
+    if (editor === 'visual') {
+      // Bộ soạn chưa nạp xong (hiếm) thì gửi lại đúng bản đã lưu — không bao giờ gửi thư rỗng thay cho thư thật.
+      const snap = visualRef.current?.snapshot()
+      const saved = visualDesign ?? { format: 'grapesjs-mjml' as const, version: 1 as const, project: {}, mjml: '' }
+      return snap
+        ? { editor: 'visual', subject, html: snap.html, design: { ...saved, project: snap.project, mjml: snap.mjml }, variables }
+        : { editor: 'visual', subject, html, design: saved, variables }
+    }
+    return editor === 'blocks' && design
       ? { editor: 'blocks', subject, design, variables }
       : { editor: 'html', subject, html, text, variables }
+  }
 
   return {
     detail,
@@ -199,6 +233,17 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     setDesign: (next: EmailDesign) => {
       setDesign(next)
       setDesignEdited(true)
+      setDirty(true)
+    },
+    /** Kiểu `visual`: dự án đã lưu để mở bộ soạn (null = thư mới, bộ soạn dựng thư mở đầu). */
+    visualDesign,
+    /** Bộ soạn trực quan gắn / gỡ mình (unmount truyền null). */
+    attachVisual: (handle: VisualEditorHandle | null) => {
+      visualRef.current = handle
+    },
+    /** Bộ soạn trực quan báo vừa có thay đổi — `mjml` để tìm biến chưa khai. */
+    onVisualChange: (mjml: string) => {
+      setVisualMjml(mjml)
       setDirty(true)
     },
     /** Chữ thường đang xem — kiểu blocks là bản backend sinh, chỉ đọc. */

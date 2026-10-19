@@ -1,8 +1,8 @@
 'use client'
-import { useState, useTransition } from 'react'
-import { ArrowLeft, CheckCircle2, Code2, FilePlus2, LayoutTemplate, type LucideIcon } from 'lucide-react'
+import { useEffect, useState, useTransition } from 'react'
+import { ArrowLeft, CheckCircle2, Code2, FilePlus2, LayoutTemplate, MousePointerClick, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { createTemplateAction } from '@/app/templates/actions'
+import { createTemplateAction, loadTemplateEditorOptionsAction } from '@/app/templates/actions'
 import { useApp } from '@/components/app-context'
 import { useAppRouter } from '@/components/app-link'
 import { PageHeader } from '@/components/page-header'
@@ -19,8 +19,17 @@ import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '
 import { FieldHint } from './field-hint'
 import { PresetGallery } from './preset-gallery'
 
-/** Hai kiểu soạn, hiện thành hai thẻ lớn — thẻ đang chọn có viền sáng + dấu tích, không chỉ đổi màu nền. */
-const EDITOR_CHOICES: ReadonlyArray<{ value: TemplateEditor; icon: LucideIcon; label: 'editorBlocks' | 'editorHtml'; hint: 'editorBlocksHint' | 'editorHtmlHint' }> = [
+/**
+ * Các kiểu soạn, hiện thành thẻ lớn — thẻ đang chọn có viền sáng + dấu tích, không chỉ đổi màu nền. "Trực quan"
+ * (ADR-0036) chỉ hiện khi Super Admin bật cờ `templates.visual_editor_enabled`.
+ */
+const EDITOR_CHOICES: ReadonlyArray<{
+  value: TemplateEditor
+  icon: LucideIcon
+  label: 'editorBlocks' | 'editorHtml' | 'editorVisual'
+  hint: 'editorBlocksHint' | 'editorHtmlHint' | 'editorVisualHint'
+}> = [
+  { value: 'visual', icon: MousePointerClick, label: 'editorVisual', hint: 'editorVisualHint' },
   { value: 'blocks', icon: LayoutTemplate, label: 'editorBlocks', hint: 'editorBlocksHint' },
   { value: 'html', icon: Code2, label: 'editorHtml', hint: 'editorHtmlHint' },
 ]
@@ -29,7 +38,8 @@ const EDITOR_CHOICES: ReadonlyArray<{ value: TemplateEditor; icon: LucideIcon; l
  * Tạo template, hai bước: chọn "Bắt đầu từ trống" hoặc một mẫu dựng sẵn (ADR-0035 — `<PresetGallery>`), rồi
  * với trang trắng thì điền form dưới đây. Mẫu đi thẳng từ hộp xem trước sang màn soạn.
  *
- * Trang trắng: chỉ cần TÊN (+ nhóm, mặc định "Khác"; kiểu soạn, mặc định Kéo-thả — ADR-0034). Backend tạo kèm bản nháp v1 rỗng, trả `id` — soạn tiếp ở màn chi tiết.
+ * Trang trắng: chỉ cần TÊN (+ nhóm, mặc định "Khác"; kiểu soạn, mặc định Kéo-thả — ADR-0034; "Trực quan"
+ * khi cờ bật — ADR-0036). Backend tạo kèm bản nháp v1 rỗng, trả `id` — soạn tiếp ở màn chi tiết.
  * Không có ô "mã template (key)": app gửi bằng `templateId` do hệ thống sinh (ADR-0020).
  */
 export function TemplateCreate() {
@@ -45,6 +55,18 @@ export function TemplateCreate() {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [blank, setBlank] = useState(false)
+  /** Cờ bộ soạn trực quan — đọc lỗi thì coi như tắt (không hiện lối tạo mà backend sẽ từ chối). */
+  const [visualEnabled, setVisualEnabled] = useState(false)
+  useEffect(() => {
+    let alive = true
+    void loadTemplateEditorOptionsAction().then((result) => {
+      if (alive && result.ok) setVisualEnabled(result.data.visualEditor)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const choices = EDITOR_CHOICES.filter((c) => c.value !== 'visual' || visualEnabled)
 
   const create = () =>
     startTransition(async () => {
@@ -120,9 +142,9 @@ export function TemplateCreate() {
                   if (next) setEditor(next)
                 }}
                 aria-label={tt('editorType')}
-                className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2"
+                className={cn('grid w-full grid-cols-1 gap-3', choices.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}
               >
-                {EDITOR_CHOICES.map(({ value, icon: Icon, label, hint }) => {
+                {choices.map(({ value, icon: Icon, label, hint }) => {
                   const selected = editor === value
                   return (
                     <ToggleGroupItem

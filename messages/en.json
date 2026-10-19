@@ -125,7 +125,9 @@
     "SETTING_OUT_OF_RANGE": "The value is outside the allowed range",
     "SETTING_INVALID_URL": "The domain must be https://… without ?query or #fragment",
     "SETTING_UNKNOWN": "Unknown setting",
-    "EDITOR_MISMATCH": "The draft uses a different editor. Reload the page and try again."
+    "EDITOR_MISMATCH": "The draft uses a different editor. Reload the page and try again.",
+    "VISUAL_EDITOR_DISABLED": "The visual editor is turned off in System settings. Choose another editor or ask a Super Admin to turn it on.",
+    "SETTING_INVALID_BOOLEAN": "Value must be on or off"
   },
   "common": {
     "loadErrorTitle": "Could not read data from the API",
@@ -595,7 +597,13 @@
     "DESIGN_TOO_LARGE": "The design is too large. Shorten text or HTML blocks.",
     "DESIGN_TOO_MANY_ROWS": "Too many rows (max 40).",
     "DESIGN_TOO_MANY_BLOCKS": "Too many blocks (max 100).",
-    "DESIGN_INVALID_COLUMNS": "Each row has 1 to 3 columns."
+    "DESIGN_INVALID_COLUMNS": "Each row has 1 to 3 columns.",
+    "HTML_TAG_NOT_ALLOWED": "The email contains an element that is not allowed (e.g. script, embedded frame). Remove the block you just added and save again.",
+    "HTML_ATTRIBUTE_NOT_ALLOWED": "The email contains an unsafe attribute (e.g. code that runs on click). Remove the block you just added and save again.",
+    "HTML_URL_NOT_ALLOWED": "There is an unsafe link (e.g. javascript:). Links may only be https://, mailto: or a variable.",
+    "HTML_STYLE_NOT_ALLOWED": "A style contains something that is not allowed (e.g. external fonts, code in CSS).",
+    "HTML_MALFORMED": "The email content is broken and cannot be read. Undo the last change and save again.",
+    "HTML_TOO_LARGE": "The email is too large (max 256 KB). Remove some content."
   },
   "templateEditor": {
     "notInApp": "This template is not in the app",
@@ -677,7 +685,14 @@
     "leaveTitle": "Leave this page?",
     "leaveBody": "Unsaved changes will be lost. To keep them, stay and click Save draft.",
     "leaveConfirm": "Leave and discard changes",
-    "leaveStay": "Stay"
+    "leaveStay": "Stay",
+    "editorVisual": "visual",
+    "textAutoVisual": "Generated from the email content every time the draft is saved (shown: last saved version).",
+    "deviceDesktop": "Desktop",
+    "deviceMobile": "Phone",
+    "device": "Preview on",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "aiCompose": {
     "title": "Ask AI to draft",
@@ -741,7 +756,9 @@
     "editorBlocksHint": "Drag blocks into the email. No HTML needed.",
     "editorHtmlHint": "Write HTML yourself. AI compose is available.",
     "editorChoiceSelected": "Selected",
-    "hintFor": "About: {field}"
+    "hintFor": "About: {field}",
+    "editorVisual": "Visual (beta)",
+    "editorVisualHint": "Type directly in the email, undo, preview on a phone."
   },
   "templateCategory": {
     "alert": "Alerts",
@@ -1372,7 +1389,12 @@
     "maxEndpointsLabel": "Maximum webhook URLs per app",
     "maxEndpointsHelp": "Each URL adds one call for every email that finishes. At this number a URL must be deleted before another is added.",
     "unitHooks": "hooks",
-    "unitUrls": "URLs"
+    "unitUrls": "URLs",
+    "templatesTitle": "Templates",
+    "visualEditorLabel": "Visual editor (beta)",
+    "visualEditorHelp": "When on, Create template offers a \"Visual\" editor: type directly in the email, undo, preview on a phone. Turning it off only hides creating new ones — existing visual templates can still be opened, edited and published.",
+    "on": "On",
+    "off": "Off"
   },
   "quota": {
     "title": "Channels & Quota",
@@ -1831,5 +1853,26 @@
     "insertVariable": "Insert variable",
     "noVariables": "No variables declared",
     "hintFor": "About: {field}"
+  },
+  "visualEditor": {
+    "loading": "Opening the editor…",
+    "loadFailed": "Could not open the editor: {message}. Reload the page to try again.",
+    "blocks": "Blocks",
+    "blocksHint": "Drag blocks into the email. Double-click text to edit it.",
+    "properties": "Properties",
+    "starterHeading": "Email title",
+    "starterBody": "Double-click this text to edit it. Drag blocks from the left panel into the email; click '{x}' on the formatting bar to insert a variable.",
+    "footerNote": "The footer and unsubscribe link are added by the system when sending.",
+    "insertVariable": "Insert variable",
+    "insertTitle": "Insert variable",
+    "insertBody": "Choose the information that will be filled in when the email is sent. In the editor the variable shows as a coloured pill.",
+    "insertConfirm": "Insert",
+    "insertDeclared": "Declared variables",
+    "insertNoVariables": "This template has no variables yet — type a new variable name below.",
+    "insertNew": "Or a new variable",
+    "insertBadKey": "Variable names use letters without accents, digits and underscores; they cannot start with a digit.",
+    "insertFallback": "Shown when missing (optional)",
+    "insertFallbackRequired": "Shown when missing (required for optional variables)",
+    "insertBadFallback": "Do not use the characters \" ' < > '{' '}' |"
   }
 }

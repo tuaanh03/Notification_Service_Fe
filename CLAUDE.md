@@ -75,6 +75,8 @@ webservice/ews-astrolink/
 │   │                         # contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend);
 │   │                         # blocks/* = trình kéo-thả (block-editor, block-palette, design-canvas, block-view, block-inspector, variable-field)
+│   │                         # visual/* = bộ soạn trực quan GrapesJS + MJML (visual-editor + -loader nạp động, chip-plugin,
+│   │                         # grapes-i18n, insert-variable-dialog, visual-editor.css) — ADR-0036 của backend
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng (thiếu app -> trang Tổ chức), link tự mang app (mục 2.9)
@@ -574,6 +576,36 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     `@dnd-kit`; mọi thao tác kéo có đường bấm tương ứng (bấm khối ở bảng trái = thêm). Bản chữ thường chỉ đọc (trong
     "Nâng cao"); "Nhờ AI soạn" ẩn ở kiểu này. "Chuyển sang HTML" = lưu nháp rồi chuyển, có hộp xác nhận, một chiều, bản
     đã xuất bản không đổi. Xem trước có nút Máy tính / Điện thoại (375px) cho cả hai kiểu.
+*   **Bộ soạn trực quan (ADR-0036 của backend) — NGOẠI LỆ của luật "HTML thư do BACKEND sinh".** Kiểu soạn thứ ba
+    `visual`: GrapesJS 0.23.8 + grapesjs-mjml 1.0.8 (ghim đúng bản, không `^`) chạy ở trình duyệt, **grapesjs-mjml sinh
+    HTML**, backend KIỂM (`checkEmailHtml`) và từ chối 422 nếu không an toàn (`HTML_TAG_NOT_ALLOWED`…, câu ở
+    `templateIssues`), rồi tự sinh bản chữ thường. Console vẫn KHÔNG tự viết hàm sinh HTML — chỉ gọi grapesjs-mjml;
+    lưu nháp gửi `{ editor: 'visual', subject, html, design: { format: 'grapesjs-mjml', version: 1, project, mjml } }`
+    (không gửi `text`). Kiểu `blocks` giữ nguyên luật cũ.
+    *   **Cờ** là cài đặt hệ thống `templates.visual_editor_enabled` (mặc định TẮT, Super Admin gạt ở `/admin/settings`).
+        Màn tạo đọc `loadTemplateEditorOptionsAction` (`GET /admin/template-editor-options`) để hiện thẻ "Trực quan (thử
+        nghiệm)"; cờ tắt chỉ ẩn lối tạo — template trực quan đã có vẫn mở / sửa / xuất bản (backend chặn tạo mới bằng 403
+        `VISUAL_EDITOR_DISABLED`). Không dùng `.env`.
+    *   **Nạp động, chỉ client**: `visual-editor-loader.tsx` (`next/dynamic`, `ssr: false`) — GrapesJS + mjml-browser
+        ~650 KB nén, không vào gói trang khác. `telemetry: false` (mặc định GrapesJS gọi `app.grapesjs.com`), `cssIcons: ''` (mặc định tải Font Awesome từ cdnjs — biểu tượng bảng kiểu chữ vẽ bằng SVG mặt nạ trong `visual-editor.css`; thêm biểu tượng `fa-*` mới thì thêm luật ở đó), không font
+        Google (`fonts: {}`, font hệ thống `VISUAL_FONT_STACK`), không tải ảnh lên (asset manager chỉ dán link https),
+        gỡ hết thanh nút của GrapesJS / grapesjs-mjml (không có xem / nhập mã). Khối mở: 1–3 cột, chữ, nút, ảnh, đường
+        kẻ, khoảng trống.
+    *   **Màn soạn**: thanh đầu DÍNH (`sticky top-14`) có Máy tính / Điện thoại + Hoàn tác / Làm lại + Lưu nháp / Xuất bản
+        / ⋯; tab Soạn thư là một khung trọn chiều cao — tiêu đề thư trên đầu, giữa là thư thật (không còn khung xem trước
+        riêng), bảng trái khối, bảng phải thuộc tính (bảng tối thiểu của GrapesJS, Việt hoá bằng `grapesjs/locale/vi` +
+        `grapes-i18n.ts`; bảng tự dựng theo phác thảo là UX-3). Không có nháp / App Viewer -> hiện HTML đã lưu bằng
+        `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id bản nháp: lưu cùng bản không dựng lại.
+    *   **Chip biến** (`chip-plugin.ts`): trên khung `{{ payload.x }}` hiện thành viên có nhãn (mô tả biến, không có thì tên
+        ngắn; biến chưa khai thì viên đỏ), là một khối nguyên (`contenteditable=false`); JSON dự án giữ chip, MJML / HTML
+        giữ Liquid. Nút `{x}` trên thanh định dạng mở `<InsertVariableDialog>` (bấm ra ngoài khung thư làm GrapesJS tắt chế độ sửa chữ — chèn / huỷ chạy SAU khi hộp đóng hẳn (`onClosed` của `<ConfirmDialog>`, hộp không tự trả focus), bật lại sửa chữ rồi đặt con trỏ theo số ký tự đã nhớ; chèn dùng `useDomContent` để chữ vừa gõ không mất) (chọn biến đã khai hoặc khai mới; biến
+        không bắt buộc phải có giá trị khi thiếu; giá trị cấm `" ' < > { } |`). `{{ }}` gõ / dán tay tự thành chip khi
+        sửa xong; `"` trong biến của link tự đổi sang `'` (MJML không thoát `"` trong thuộc tính).
+    *   **Chưa lưu** = GrapesJS báo thay đổi (`getDirtyCount`) -> `ed.onVisualChange` -> `useLeaveGuard` như mọi kiểu.
+        Lưu xong `markSaved()` đếm lại từ đầu.
+    *   **Màu trong THƯ là hex** (dữ liệu người soạn, như kéo-thả). Giao diện bộ soạn dùng token: `visual-editor.css` đè lớp
+        `.gjs-*` bằng `var(--…)` trong phạm vi `.visual-editor`; màu chip lấy token lúc chạy (`getComputedStyle`) vì khung
+        thư là iframe.
 *   **Thư viện mẫu (ADR-0035 của backend).** `/templates/new` mở bằng bước chọn (`<PresetGallery>`): ô "Bắt đầu
     từ trống" (form ở giữa: tên + nhóm, kiểu soạn là hai thẻ lớn có dấu tích; nút quay lại "Quay lại thư viện mẫu") + lưới thẻ mẫu lọc theo nhóm (chỉ nhóm có mẫu). Mẫu nạp qua `loadTemplatePresetsAction`
     (`hooks/use-template-presets.ts`, giữ theo ngôn ngữ thư); ảnh thu nhỏ là iframe `sandbox=""` của `html` backend
@@ -627,7 +659,8 @@ nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đ�
 ADR-0030 của backend. Server Component đọc `GET /admin/system-settings`, ghi qua
 `app/admin/settings/actions.ts` (`PUT`). Mỗi dòng một nút Lưu (gửi đúng khoá đó) + "Về mặc định" (gửi
 `null`) — đổi một con số không ghi đè con số khác. Ô số chặn ngoài khoảng `min`–`max` ngay ở client (backend
-vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — next-intl coi là tầng lồng). Giá trị mới tới
+vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — next-intl coi là tầng lồng). Cài đặt kiểu `bool`
+(vd `templates.visual_editor_enabled`, nhóm "Template") là công tắc lưu ngay khi gạt, không có nút Lưu. Giá trị mới tới
 mọi máy chủ API trong tối đa 30 giây (đệm của backend) — màn hình nói rõ điều đó.
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá

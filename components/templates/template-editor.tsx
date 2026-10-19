@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Archive, CopyPlus, FileWarning, Pencil, Save, Sparkles, UploadCloud } from 'lucide-react'
+import { Archive, CopyPlus, FileWarning, Monitor, Pencil, Redo2, Save, Smartphone, Sparkles, Undo2, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { cn } from '@/lib/utils'
 import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
 import { AiComposeDialog } from './ai-compose-dialog'
 import { ComposeTab } from './compose-tab'
@@ -26,6 +28,7 @@ import { useIssueText } from './issue-text'
 import { SchemaPane } from './schema-pane'
 import { TemplateActionsMenu } from './template-actions-menu'
 import { VersionsPanel } from './versions-panel'
+import type { VisualControls, VisualDevice, VisualHistory } from './visual/visual-editor'
 
 /** Tab của màn soạn, giữ trên đường dẫn (`?tab=`) để tải lại / gửi link vẫn mở đúng tab. "compose" = không có tham số. */
 const EDITOR_TABS = ['compose', 'variables', 'integration', 'versions'] as const
@@ -63,6 +66,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [dupName, setDupName] = useState('')
   /** Mỗi lần mở hộp thoại AI là dựng lại từ đầu — không mang mô tả / đề xuất của lần trước. */
   const [aiRound, setAiRound] = useState(0)
+  /** Bộ soạn trực quan (ADR-0036): thiết bị xem + nút hoàn tác ở thanh trên, điều khiển bộ soạn qua `visualControls`. */
+  const [device, setDevice] = useState<VisualDevice>('desktop')
+  const [visualControls, setVisualControls] = useState<VisualControls | null>(null)
+  const [visualHistory, setVisualHistory] = useState<VisualHistory>({ canUndo: false, canRedo: false })
 
   const savedName = ed.detail?.name ?? ''
   const name = nameEdit ?? savedName
@@ -134,6 +141,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     if (await ed.convertToHtml()) toast.success(t('convertedToHtml'))
   }
   const blocks = ed.editor === 'blocks'
+  const visual = ed.editor === 'visual'
+  const editorLabel = blocks ? t('editorBlocks') : visual ? t('editorVisual') : t('editorHtml')
+  /** Thanh thiết bị + hoàn tác chỉ khi bộ soạn trực quan đang mở (tab Soạn thư, có nháp). */
+  const visualTools = visual && tab === 'compose' && !ed.locked
   const onSave = async () => {
     if (await ed.saveDraft()) toast.success(t('saved', { version: ed.draft?.version ?? nextVersion }))
   }
@@ -146,16 +157,43 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
 
   return (
     <>
+      {/* Kiểu trực quan: thanh đầu DÍNH dưới thanh của khung (h-14) — Lưu / Xuất bản / thiết bị luôn trong tầm tay. */}
+      <div className={cn(visual && 'sticky top-14 z-20 -mx-4 mb-4 bg-[var(--void)]/90 px-4 pt-2 backdrop-blur-md lg:-mx-6 lg:px-6 [&>header]:mb-3')}>
       <PageHeader
         title={detail.name}
         breadcrumb={[{ label: tt('title'), href: '/templates' }, { label: detail.name }]}
         subtitle={
           shown
-            ? `v${shown.version} · ${blocks ? t('editorBlocks') : t('editorHtml')} · ${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
+            ? `v${shown.version} · ${editorLabel} · ${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
             : undefined
         }
         actions={
           <>
+            {visualTools && (
+              <>
+                <ToggleGroup
+                  variant="outline"
+                  size="sm"
+                  value={[device]}
+                  onValueChange={(v) => (v[0] === 'desktop' || v[0] === 'mobilePortrait') && setDevice(v[0])}
+                  aria-label={t('device')}
+                  data-testid="visual-device"
+                >
+                  <ToggleGroupItem value="desktop" aria-label={t('deviceDesktop')}>
+                    <Monitor /> <span className="hidden xl:inline">{t('deviceDesktop')}</span>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="mobilePortrait" aria-label={t('deviceMobile')}>
+                    <Smartphone /> <span className="hidden xl:inline">{t('deviceMobile')}</span>
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <Button variant="ghost" size="icon-sm" aria-label={t('undo')} title={t('undo')} disabled={!visualHistory.canUndo} onClick={() => visualControls?.undo()} data-testid="visual-undo">
+                  <Undo2 />
+                </Button>
+                <Button variant="ghost" size="icon-sm" aria-label={t('redo')} title={t('redo')} disabled={!visualHistory.canRedo} onClick={() => visualControls?.redo()} data-testid="visual-redo">
+                  <Redo2 />
+                </Button>
+              </>
+            )}
             <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
             {writable && !ed.archived && ed.draft && (
               <>
@@ -182,6 +220,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           </>
         }
       />
+      </div>
 
       <div className="space-y-5">
         {ed.error && <ErrorAlert error={ed.error} />}
@@ -237,6 +276,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 setAiOpen(true)
               }}
               onShowVariables={() => setTab('variables')}
+              visual={{ device, onControls: setVisualControls, onHistory: setVisualHistory }}
             />
           </TabsContent>
           <TabsContent value="variables" className="min-w-0">

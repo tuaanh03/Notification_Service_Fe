@@ -37,6 +37,11 @@ type ConfirmDialogProps = {
   cancelLabel?: string
   /** khoá nút confirm khi form trong `children` chưa hợp lệ */
   confirmDisabled?: boolean
+  /**
+   * Gọi khi hộp đã ĐÓNG HẲN (hết hiệu ứng). Có prop này thì hộp KHÔNG tự trả focus về nút đã mở nó — người gọi
+   * tự đặt focus (vd bộ soạn trực quan trả con trỏ về khung thư sau "Chèn biến").
+   */
+  onClosed?: () => void
 }
 
 /**
@@ -57,13 +62,15 @@ export function ConfirmDialog({
   confirmHref,
   cancelLabel,
   confirmDisabled = false,
+  onClosed,
 }: ConfirmDialogProps) {
   const tc = useTranslations('common')
   const Icon = icon ?? (tone === 'blocking' ? Ban : AlertTriangle)
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
+    <Dialog open={open} onOpenChange={(next) => !next && onCancel()} onOpenChangeComplete={(next) => !next && onClosed?.()}>
       <DialogContent
         showCloseButton={false}
+        finalFocus={onClosed ? false : undefined}
         // grid-cols-[minmax(0,1fr)]: `children` có thể chứa <pre>/chuỗi mono dài; cột grid `auto`
         // sẽ phình theo max-content và làm dialog cắt mất nội dung bên trái (bẫy mục 6).
         className="z-[100] grid-cols-[minmax(0,1fr)] max-w-lg rounded-2xl p-6 shadow-[var(--glow-panel)] ring-0 sm:max-w-lg"

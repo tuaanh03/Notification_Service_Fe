@@ -17,6 +17,15 @@ import { BlockEditor } from './blocks/block-editor'
 import { EditorPane, Highlight } from './editor-pane'
 import { FieldHint } from './field-hint'
 import { PreviewPane } from './preview-pane'
+import type { VisualControls, VisualDevice, VisualHistory } from './visual/visual-editor'
+import { VisualEditorLoader } from './visual/visual-editor-loader'
+
+/** Điều khiển bộ soạn trực quan — thiết bị / hoàn tác nằm ở thanh trên của màn soạn (`template-editor.tsx`). */
+export type VisualBinding = {
+  device: VisualDevice
+  onControls: (controls: VisualControls | null) => void
+  onHistory: (history: VisualHistory) => void
+}
 
 /**
  * Tab "Soạn thư" (mặc định): tiêu đề trên cùng → khung soạn + xem thử → "Nâng cao" thu gọn (tên, nhóm,
@@ -31,8 +40,10 @@ export function ComposeTab({
   savedName,
   onAi,
   onShowVariables,
+  visual,
 }: {
   ed: TemplateEditorState
+  visual: VisualBinding
   writable: boolean
   name: string
   onNameChange: (name: string) => void
@@ -45,6 +56,9 @@ export function ComposeTab({
   const detail = ed.detail
   if (!detail) return null
   const blocks = ed.editor === 'blocks'
+  const visualKind = ed.editor === 'visual'
+  /** Bản chữ thường do backend sinh (kéo-thả, trực quan) — chỉ đọc. */
+  const autoText = blocks || visualKind
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
   return (
@@ -61,6 +75,10 @@ export function ComposeTab({
         </Alert>
       )}
 
+      {visualKind ? (
+        <VisualFrame ed={ed} visual={visual} />
+      ) : (
+      <>
       <Panel className="min-w-0 space-y-2 p-5">
         <Label htmlFor="tpl-subject" className="text-xs font-semibold">{t('subject')}</Label>
         <Input
@@ -104,6 +122,8 @@ export function ComposeTab({
             <PreviewPane ed={ed} />
           </ResizablePanel>
         </ResizablePanelGroup>
+      )}
+      </>
       )}
 
       <Collapsible className="cosmic-surface rounded-2xl border border-[var(--orbit)] shadow-xs">
@@ -158,21 +178,59 @@ export function ComposeTab({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
-                <FieldHint text={blocks ? t('textAuto') : t('textHint')} label={t('hintFor', { field: t('text') })} />
+                <FieldHint text={blocks ? t('textAuto') : visualKind ? t('textAutoVisual') : t('textHint')} label={t('hintFor', { field: t('text') })} />
               </div>
-              {/* Kiểu kéo-thả: bản chữ thường do backend sinh từ các khối — chỉ đọc. */}
+              {/* Kéo-thả / trực quan: bản chữ thường do backend sinh — chỉ đọc (trực quan: bản của lần lưu gần nhất). */}
               <Textarea
                 id="tpl-text"
                 value={blocks ? ed.bodyText : ed.text}
                 onChange={(e) => ed.setText(e.target.value)}
                 className="min-h-20 font-mono text-xs"
                 disabled={ed.locked}
-                readOnly={blocks}
+                readOnly={autoText}
               />
             </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
     </div>
+  )
+}
+
+/**
+ * Kiểu trực quan (ADR-0036): một khung trọn chiều cao — tiêu đề thư ngay trên đầu, giữa là thư thật (GrapesJS).
+ * Không có khung xem trước riêng. Bản chỉ đọc (không có nháp / App Viewer) hiện HTML đã lưu, không mở bộ soạn.
+ */
+function VisualFrame({ ed, visual }: { ed: TemplateEditorState; visual: VisualBinding }) {
+  const t = useTranslations('templateEditor')
+  const tv = useTranslations('visualEditor')
+  return (
+    <Panel className="flex h-[calc(100dvh-12rem)] min-h-[560px] min-w-0 flex-col overflow-hidden p-0" data-testid="visual-frame">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--orbit)] px-4 py-3">
+        <Label htmlFor="tpl-subject" className="shrink-0 text-xs font-semibold">{t('subject')}</Label>
+        <Input
+          id="tpl-subject"
+          value={ed.subject}
+          onChange={(e) => ed.setSubject(e.target.value)}
+          className="min-w-0 flex-1 text-sm"
+          disabled={ed.locked}
+          placeholder={t('subjectPlaceholder')}
+        />
+        {ed.subject.includes('{{') && (
+          <p className="w-full font-mono text-xs" data-testid="subject-highlight">
+            <Highlight text={ed.subject} declared={ed.declared} />
+          </p>
+        )}
+      </div>
+      <div className="min-h-0 flex-1">
+        {ed.locked ? (
+          <PreviewPane ed={ed} />
+        ) : (
+          // Dựng lại bộ soạn khi đổi sang bản khác (vd "Sửa" tạo nháp mới) — cùng bản thì giữ nguyên lúc lưu.
+          <VisualEditorLoader key={ed.draft?.id ?? 'none'} ed={ed} device={visual.device} onControls={visual.onControls} onHistory={visual.onHistory} />
+        )}
+      </div>
+      <p className="border-t border-[var(--orbit)] px-4 py-2 text-[11px] text-[var(--text-muted)]">{tv('footerNote')}</p>
+    </Panel>
   )
 }

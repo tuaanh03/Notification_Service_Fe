@@ -1,8 +1,16 @@
 import 'server-only'
 import { adminFetch } from './client'
-import type { AiComposeResultDto, TemplateDetailDto, TemplatePresetDto, TemplateSummaryDto, TemplateVariableDto } from './types'
+import type {
+  AiComposeResultDto,
+  TemplateDetailDto,
+  TemplateEditorOptionsDto,
+  TemplatePresetDto,
+  TemplateSummaryDto,
+  TemplateVariableDto,
+} from './types'
 import type { Locale } from '@/i18n/locales'
 import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
+import type { VisualDesign } from '@/lib/visual-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 
 export type { TemplateDetailDto, TemplateSummaryDto }
@@ -17,11 +25,14 @@ const one = (appId: string, id: string) => `${base(appId)}/${encodeURIComponent(
 
 /**
  * Nội dung soạn được của một bản nháp — đúng body `PUT .../draft`. Kiểu `blocks` KHÔNG gửi `html` / `text`:
- * backend sinh từ `design` (ADR-0034). Nháp đang khác kiểu -> 409 EDITOR_MISMATCH.
+ * backend sinh từ `design` (ADR-0034). Kiểu `visual` gửi `html` do grapesjs-mjml sinh + dự án, KHÔNG gửi
+ * `text` — backend kiểm HTML (422 nếu không an toàn) rồi tự sinh chữ thường (ADR-0036). Nháp đang khác kiểu
+ * -> 409 EDITOR_MISMATCH.
  */
 export type TemplateContentInput =
   | { editor: 'html'; subject: string; html: string; text: string; variables: TemplateVariableDto[] }
   | { editor: 'blocks'; subject: string; design: EmailDesign; variables: TemplateVariableDto[] }
+  | { editor: 'visual'; subject: string; html: string; design: VisualDesign; variables: TemplateVariableDto[] }
 
 /** Lọc danh sách: `search` khớp một phần tên, không phân biệt hoa thường và dấu (backend so theo collation). */
 export type TemplateListFilter = { category?: TemplateCategory; search?: string }
@@ -40,7 +51,18 @@ export async function getTemplate(appId: string, id: string): Promise<TemplateDe
   return adminFetch<TemplateDetailDto>(one(appId, id))
 }
 
-/** POST /admin/apps/:appId/templates — tạo kèm nháp v1. Trùng tên trong app -> 409 TEMPLATE_NAME_TAKEN. */
+/**
+ * GET /admin/template-editor-options — cờ bộ soạn trực quan (cài đặt hệ thống, ADR-0036). Không thuộc app nào;
+ * ai đăng nhập cũng đọc được. Cờ tắt chỉ ẩn lối TẠO MỚI kiểu trực quan.
+ */
+export async function getTemplateEditorOptions(): Promise<TemplateEditorOptionsDto> {
+  return adminFetch<TemplateEditorOptionsDto>('/template-editor-options')
+}
+
+/**
+ * POST /admin/apps/:appId/templates — tạo kèm nháp v1. Trùng tên trong app -> 409 TEMPLATE_NAME_TAKEN.
+ * `visual` khi cờ đang tắt -> 403 VISUAL_EDITOR_DISABLED.
+ */
 export async function createTemplate(
   appId: string,
   input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },

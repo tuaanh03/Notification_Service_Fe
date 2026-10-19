@@ -9,6 +9,7 @@ import {
   draftFromVersion,
   duplicateTemplate,
   getTemplate,
+  getTemplateEditorOptions,
   listTemplatePresets,
   listTemplates,
   previewDesign,
@@ -23,7 +24,7 @@ import type { Locale } from '@/i18n/locales'
 import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 import { toResult, type ActionResult } from '@/lib/api/result'
-import type { AiComposeResultDto, TemplateDetailDto, TemplatePresetDto, TemplateSummaryDto } from '@/lib/api/types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplateEditorOptionsDto, TemplatePresetDto, TemplateSummaryDto } from '@/lib/api/types'
 
 /**
  * Lớp BFF của màn Templates. Server Action vì dữ liệu thuộc app đang chọn (`?app=`, CLAUDE.md mục 2.2).
@@ -48,6 +49,11 @@ export async function createTemplateAction(
   input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplate(appId, input))
+}
+
+/** Cờ bộ soạn trực quan (ADR-0036) — màn Tạo template đọc để hiện / ẩn thẻ "Trực quan". */
+export async function loadTemplateEditorOptionsAction(): Promise<ActionResult<TemplateEditorOptionsDto>> {
+  return toResult(() => getTemplateEditorOptions())
 }
 
 /** Thư viện mẫu theo ngôn ngữ thư — không thuộc app nào, nhưng vẫn đi qua BFF (token nằm ở server). */

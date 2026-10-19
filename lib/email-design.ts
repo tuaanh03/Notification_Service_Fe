@@ -7,7 +7,8 @@
  * Màu trong đây là màu của THƯ (dữ liệu người soạn chọn), không phải token console.
  */
 
-export const TEMPLATE_EDITORS = ['blocks', 'html'] as const
+/** Kiểu soạn của một version. `visual` = bộ soạn trực quan GrapesJS (ADR-0036 của backend, `lib/visual-design.ts`). */
+export const TEMPLATE_EDITORS = ['blocks', 'html', 'visual'] as const
 export type TemplateEditor = (typeof TEMPLATE_EDITORS)[number]
 
 export const DESIGN_FONTS = ['sans', 'serif', 'mono'] as const

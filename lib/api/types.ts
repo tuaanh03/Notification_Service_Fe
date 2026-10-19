@@ -1,5 +1,6 @@
 import type { Locale } from '@/i18n/locales'
 import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
+import type { VisualDesign } from '@/lib/visual-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 
 /**
@@ -365,9 +366,12 @@ export type TemplateVersionDto = {
   version: number
   /** draft | published | superseded */
   status: string
-  /** Kiểu soạn (ADR-0034 của backend); thiếu = `html`. `blocks`: `html` / `text` do backend sinh từ `design`. */
+  /**
+   * Kiểu soạn (ADR-0034, ADR-0036 của backend); thiếu = `html`. `blocks`: `html` / `text` do backend sinh từ
+   * `design` (`EmailDesign`). `visual`: `design` là dự án GrapesJS + MJML (`VisualDesign`), `text` backend sinh.
+   */
   editor?: TemplateEditor
-  design?: EmailDesign | null
+  design?: EmailDesign | VisualDesign | null
   subject: string
   html: string
   text: string
@@ -513,12 +517,15 @@ export type HookPreviewDto = {
 }
 
 /** Một dòng Cài đặt hệ thống (ADR-0030). `value` = giá trị hiệu lực (đã gộp mặc định). */
+/** Sao đúng `GET /admin/template-editor-options` (ADR-0036): kiểu soạn nào đang mở cho người TẠO template. */
+export type TemplateEditorOptionsDto = { visualEditor: boolean }
+
 export type SystemSettingDto = {
   key: string
-  /** int | url */
+  /** int | url | bool */
   kind: string
-  value: number | string | null
-  default: number | string | null
+  value: number | string | boolean | null
+  default: number | string | boolean | null
   min: number | null
   max: number | null
   /** false = đang dùng mặc định */

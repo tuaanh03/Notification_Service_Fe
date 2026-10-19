@@ -125,7 +125,9 @@
     "SETTING_OUT_OF_RANGE": "Giá trị nằm ngoài khoảng cho phép",
     "SETTING_INVALID_URL": "Domain phải là https://… và không có ?query hay #fragment",
     "SETTING_UNKNOWN": "Cài đặt không tồn tại",
-    "EDITOR_MISMATCH": "Bản nháp đang dùng kiểu soạn khác. Tải lại trang rồi thử lại."
+    "EDITOR_MISMATCH": "Bản nháp đang dùng kiểu soạn khác. Tải lại trang rồi thử lại.",
+    "VISUAL_EDITOR_DISABLED": "Bộ soạn trực quan đang tắt trong Cài đặt hệ thống. Chọn kiểu soạn khác hoặc nhờ Super Admin bật.",
+    "SETTING_INVALID_BOOLEAN": "Giá trị phải là bật hoặc tắt"
   },
   "common": {
     "loadErrorTitle": "Không đọc được dữ liệu từ API",
@@ -595,7 +597,13 @@
     "DESIGN_TOO_LARGE": "Thiết kế quá lớn. Bớt chữ hoặc khối HTML.",
     "DESIGN_TOO_MANY_ROWS": "Quá nhiều hàng (tối đa 40).",
     "DESIGN_TOO_MANY_BLOCKS": "Quá nhiều khối (tối đa 100).",
-    "DESIGN_INVALID_COLUMNS": "Mỗi hàng có 1 đến 3 cột."
+    "DESIGN_INVALID_COLUMNS": "Mỗi hàng có 1 đến 3 cột.",
+    "HTML_TAG_NOT_ALLOWED": "Thư có thành phần không được phép trong email (vd mã script, khung nhúng). Xoá khối vừa thêm rồi lưu lại.",
+    "HTML_ATTRIBUTE_NOT_ALLOWED": "Thư có thuộc tính không an toàn (vd mã chạy khi bấm). Xoá khối vừa thêm rồi lưu lại.",
+    "HTML_URL_NOT_ALLOWED": "Có link không an toàn (vd javascript:). Link chỉ được là https://, mailto: hoặc biến.",
+    "HTML_STYLE_NOT_ALLOWED": "Kiểu chữ / màu có đoạn không được phép (vd tải font ngoài, mã chạy trong CSS).",
+    "HTML_MALFORMED": "Nội dung thư bị hỏng cấu trúc, không đọc được. Hoàn tác thay đổi gần nhất rồi lưu lại.",
+    "HTML_TOO_LARGE": "Thư quá lớn (tối đa 256 KB). Bớt nội dung."
   },
   "templateEditor": {
     "notInApp": "Không có template này trong app",
@@ -677,7 +685,14 @@
     "leaveTitle": "Rời trang?",
     "leaveBody": "Thay đổi chưa lưu sẽ mất. Muốn giữ thì ở lại và bấm Lưu nháp.",
     "leaveConfirm": "Rời trang, bỏ thay đổi",
-    "leaveStay": "Ở lại"
+    "leaveStay": "Ở lại",
+    "editorVisual": "trực quan",
+    "textAutoVisual": "Tự tạo từ nội dung thư mỗi lần lưu nháp (bản dưới đây là của lần lưu gần nhất).",
+    "deviceDesktop": "Máy tính",
+    "deviceMobile": "Điện thoại",
+    "device": "Xem trên",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại"
   },
   "aiCompose": {
     "title": "Nhờ AI soạn",
@@ -741,7 +756,9 @@
     "editorBlocksHint": "Kéo khối vào thư, không cần viết HTML.",
     "editorHtmlHint": "Tự viết HTML, có Nhờ AI soạn.",
     "editorChoiceSelected": "Đang chọn",
-    "hintFor": "Giải thích: {field}"
+    "hintFor": "Giải thích: {field}",
+    "editorVisual": "Trực quan (thử nghiệm)",
+    "editorVisualHint": "Gõ chữ thẳng trên thư, hoàn tác, xem trên điện thoại."
   },
   "templateCategory": {
     "alert": "Cảnh báo",
@@ -1372,7 +1389,12 @@
     "maxEndpointsLabel": "Số URL nhận webhook tối đa mỗi app",
     "maxEndpointsHelp": "Mỗi URL là thêm một lần gọi cho mỗi thư gửi xong. Đủ số này thì phải xoá một URL trước khi thêm.",
     "unitHooks": "hook",
-    "unitUrls": "URL"
+    "unitUrls": "URL",
+    "templatesTitle": "Template",
+    "visualEditorLabel": "Bộ soạn trực quan (thử nghiệm)",
+    "visualEditorHelp": "Bật thì màn Tạo template có thêm kiểu soạn \"Trực quan\": gõ chữ thẳng trên thư, hoàn tác, xem trên điện thoại. Tắt chỉ ẩn lối tạo mới — template trực quan đã có vẫn mở, sửa và xuất bản được.",
+    "on": "Đang bật",
+    "off": "Đang tắt"
   },
   "quota": {
     "title": "Kênh & Quota",
@@ -1831,5 +1853,26 @@
     "insertVariable": "Chèn biến",
     "noVariables": "Chưa khai biến nào",
     "hintFor": "Giải thích: {field}"
+  },
+  "visualEditor": {
+    "loading": "Đang mở bộ soạn…",
+    "loadFailed": "Không mở được bộ soạn: {message}. Tải lại trang để thử lại.",
+    "blocks": "Khối",
+    "blocksHint": "Kéo khối vào thư. Bấm đúp vào chữ để sửa.",
+    "properties": "Thuộc tính",
+    "starterHeading": "Tiêu đề thư",
+    "starterBody": "Bấm đúp vào đoạn chữ này để sửa. Kéo khối từ bảng bên trái vào thư; bấm nút '{x}' trên thanh định dạng để chèn biến.",
+    "footerNote": "Chân thư và link huỷ nhận do hệ thống tự thêm khi gửi.",
+    "insertVariable": "Chèn biến",
+    "insertTitle": "Chèn biến",
+    "insertBody": "Chọn thông tin sẽ được điền khi gửi thư. Trên khung soạn biến hiện thành một ô màu.",
+    "insertConfirm": "Chèn",
+    "insertDeclared": "Biến đã khai",
+    "insertNoVariables": "Template chưa có biến nào — gõ tên biến mới bên dưới.",
+    "insertNew": "Hoặc biến mới",
+    "insertBadKey": "Tên biến chỉ gồm chữ không dấu, số và dấu gạch dưới; không bắt đầu bằng số.",
+    "insertFallback": "Hiện khi thiếu (tuỳ chọn)",
+    "insertFallbackRequired": "Hiện khi thiếu (bắt buộc với biến không bắt buộc)",
+    "insertBadFallback": "Không dùng các ký tự \" ' < > '{' '}' |"
   }
 }
