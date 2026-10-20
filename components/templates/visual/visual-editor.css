@@ -37,20 +37,52 @@
   background-color: var(--void);
 }
 
-/* Thanh định dạng nổi trên khối chữ. */
+/*
+ * Thanh định dạng nổi trên khối chữ (bản phác Main, UX-5A): nền tối đặc — không để chữ của khối phía trên lộ qua —,
+ * nút 32px dễ bấm, "{ } Chèn biến" có chữ và nền màu nhấn (`.ews-rte-insert` do chip-plugin đặt trong nút).
+ */
 .visual-editor .gjs-rte-toolbar {
-  border: 1px solid var(--orbit);
-  border-radius: 10px;
-  background-color: var(--deep);
+  border: none;
+  border-radius: 8px;
+  padding: 4px;
+  background-color: var(--text-primary);
   box-shadow: var(--glow-panel);
 }
+.visual-editor .gjs-rte-actionbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 .visual-editor .gjs-rte-action {
-  color: var(--text-secondary);
-  border-right-color: var(--orbit);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  /* GrapesJS đặt cứng `width: 25px` cho mỗi nút — nút có chữ ("Chèn biến") bị cắt nếu không gỡ. */
+  width: auto;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 6px;
+  color: var(--deep);
+  font-size: 14px;
 }
 .visual-editor .gjs-rte-active,
 .visual-editor .gjs-rte-action:hover {
-  color: var(--starlight);
+  background-color: color-mix(in srgb, var(--deep) 18%, transparent);
+}
+.visual-editor .gjs-rte-action:has(.ews-rte-insert) {
+  margin-left: 4px;
+  padding: 0 10px;
+  background-color: var(--starlight);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.visual-editor .ews-rte-insert {
+  font-family: monospace;
+  font-weight: 700;
 }
 
 /* Khung chọn / thanh công cụ của khối đang chọn. */

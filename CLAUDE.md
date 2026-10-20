@@ -70,7 +70,8 @@ webservice/ews-astrolink/
 │   │                         # users-table, add-user-dialog, user-detail (+ profile-panel, subscriptions-panel,
 │   │                         # data-tags-panel, event-log-panel) nay KHÔNG ai dùng (mục 2.7);
 │   │                         # re-enable-dialog, fix-address-dialog, import-wizard (+ step-spec, step-preview), subscriptions-page
-│   ├── templates/*           # templates-page/-table, template-create, template-editor (+ compose-tab, integration-tab,
+│   ├── templates/*           # templates-page/-table, template-create, template-editor (+ editor-top-bar, editor-error-alert,
+│   │                         # compose-tab, integration-tab,
 │   │                         # template-actions-menu, field-hint, editor-pane, preview-pane, schema-pane, versions-panel,
 │   │                         # contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend);
@@ -594,9 +595,16 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         Khối tự khai ở `blocks.ts` (bộ khối của grapesjs-mjml tắt `blocks: []`): Tiêu đề, Đoạn chữ, Nút, Ảnh, Đường kẻ,
         Khoảng trống + bố cục 1 / 2 / 3 cột, hẹp|rộng, rộng|hẹp — chữ mẫu theo ngôn ngữ màn; ảnh chưa có link để `src`
         rỗng (`imageDefaultsPlugin` — mặc định GrapesJS là ảnh SVG giả, lọt ra HTML bị backend chặn).
-    *   **Màn soạn**: thanh đầu DÍNH (`sticky top-14`) có Máy tính / Điện thoại + Hoàn tác / Làm lại + Lưu nháp / Xuất bản
-        / ⋯; tab Soạn thư là một khung trọn chiều cao — tiêu đề thư trên đầu, giữa là thư thật (không còn khung xem trước
-        riêng). Không có nháp / App Viewer -> hiện HTML đã lưu bằng `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id
+    *   **Màn soạn là BÀN LÀM VIỆC (UX-5A, bản phác Main / DienThoai)** — áp cho MỌI kiểu soạn. `isWorkspaceRoute`
+        (`lib/app-routes.ts`, `/templates/<id>` trừ `/templates/new`): `<AppShell>` thu menu trái (trạng thái riêng — rời
+        màn là menu về đúng như người dùng để), bỏ thanh breadcrumb và lề của `<main>`. Màn soạn tự dựng một khối DÍNH
+        `top-0`: `<EditorTopBar>` (‹ Templates · tên · dòng "vN · kiểu · trạng thái" · Máy tính / Điện thoại + Hoàn tác /
+        Làm lại + trạng thái + Lưu nháp / Xuất bản / ⋯; cao 64px, điện thoại 56px chỉ còn mũi tên, Xuất bản, ⋯) + hàng tab
+        GẠCH CHÂN (một hàng, điện thoại cuộn ngang; gạch là `after:` của `TabsTrigger` — `border` bị `* { border-color }`
+        của globals.css đè thành ô viền). Lề trang (`PAGE_PAD`) do từng tab tự chừa; tab Soạn thư kiểu trực quan là khung
+        TRÀN MÉP cao `100dvh` trừ khối dính (6.25rem điện thoại / 6.75rem máy tính), không bọc `<Panel>` (viền / bóng của
+        `.cosmic-surface` ngoài layer, không gỡ được). Tab Soạn thư: tiêu đề thư trên đầu, giữa là thư thật (không còn
+        khung xem trước riêng). Không có nháp / App Viewer -> hiện HTML đã lưu bằng `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id
         bản nháp: lưu cùng bản không dựng lại.
     *   **Bảng trái** (`left-panel.tsx`, bản phác Main): tab Khối / Bố cục / Cài đặt. Thẻ khối KÉO vào thư
         (`editor.Blocks.startDrag` / `endDrag`) hoặc BẤM để thêm (`appendBlock`: ngay sau khối đang chọn trong cùng cột,
@@ -622,7 +630,9 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         sớm — lỗi 422 của backend vẫn hiện như cũ.
     *   **Chip biến** (`chip-plugin.ts`): trên khung `{{ payload.x }}` hiện thành viên có nhãn (`variableLabel` của
         `lib/variable-labels.ts`: mô tả biến, không có thì tên tự sinh "Ten nguoi nhan"; biến chưa khai thì viên đỏ), là một khối nguyên (`contenteditable=false`); JSON dự án giữ chip, MJML / HTML
-        giữ Liquid. Nút `{x}` trên thanh định dạng mở `<InsertVariableDialog>` (bấm ra ngoài khung thư làm GrapesJS tắt chế độ sửa chữ — chèn / huỷ chạy SAU khi hộp đóng hẳn (`onClosed` của `<ConfirmDialog>`, hộp không tự trả focus), bật lại sửa chữ rồi đặt con trỏ theo số ký tự đã nhớ; chèn dùng `useDomContent` để chữ vừa gõ không mất) Hộp theo bản phác ChenBien: tìm, danh sách (nhãn
+        giữ Liquid. Thanh định dạng nổi (UX-5A): nền tối đặc, nút 32px, chỉ Đậm / Nghiêng / Gạch chân / Link
+        (`richTextEditor.actions` — bỏ gạch ngang và "bọc khối" của GrapesJS) + nút có chữ "{ } Chèn biến" (`.ews-rte-insert`;
+        CSS gỡ `width: 25px` cứng của GrapesJS); `canvasCss` bỏ viền focus đen quanh đoạn đang gõ. Nút "{ } Chèn biến" mở `<InsertVariableDialog>` (bấm ra ngoài khung thư làm GrapesJS tắt chế độ sửa chữ — chèn / huỷ chạy SAU khi hộp đóng hẳn (`onClosed` của `<ConfirmDialog>`, hộp không tự trả focus), bật lại sửa chữ rồi đặt con trỏ theo số ký tự đã nhớ; chèn dùng `useDomContent` để chữ vừa gõ không mất) Hộp theo bản phác ChenBien: tìm, danh sách (nhãn
         + ví dụ + bắt buộc / có sẵn — `user.external_id` "Mã người nhận" luôn có, chọn thì tự khai), "+ Thêm biến mới"
         (tên dễ đọc -> mã `payload.<slug không dấu>` hiện mờ, ví dụ, app bắt buộc gửi) -> `ed.addVariable` vào bảng Biến
         (mô tả = tên, giá trị mẫu = ví dụ); biến không bắt buộc phải có "Khi app không gửi thì hiện", cấm `" ' < > { } |`.
@@ -717,7 +727,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 |---|---|---|---|
 | `<CosmicBackground>` | `components/cosmic-background.tsx` | ✓ | nền nebula + starfield seeded, fixed |
 | `<Panel glow? ring?>` | `components/panel.tsx` | ✓ | glass surface (`.cosmic-surface`), orbit ring tuỳ chọn; forward mọi prop `<section>` |
-| `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, `<AppSwitcher>`, top bar — KHÔNG có nhóm Quản trị EWS |
+| `<AppShell>` | `components/app-shell.tsx` | ✓ | khung console APP: left rail 240px, `<AppSwitcher>`, top bar — KHÔNG có nhóm Quản trị EWS; ở bàn làm việc (`isWorkspaceRoute`) thu menu, bỏ top bar + lề `<main>` (mục 2.12) |
 | `<AppSwitcher>` | `components/app-switcher.tsx` | ✓ | ô chuyển app / org đầu sidebar (mục 2.9): app của org đang xem + menu con `consoleOrgs`; ô tìm khi org có > 6 app |
 | `<OrgsShell>` / `<OrgList>` / `<OrgApps orgId>` / `<CreateOrgDialog>` | `components/orgs-shell.tsx`, `components/orgs/*` | ✓ | trang Tổ chức `/orgs` (mục 2.9): khung riêng, bảng org (+ nút Tạo tổ chức), bảng app của một org (+ Tạo app cho Owner / Org Admin) |
 | `<OrgMembers>` + `member-dialogs.tsx` | `components/orgs/org-members.tsx` | ✓ | màn Thành viên `/orgs/<orgId>/members` (mục 2.9): bảng + 4 hộp (Thêm, Đổi vai, Quyền app, Gỡ) đều bọc `<ConfirmDialog>` |

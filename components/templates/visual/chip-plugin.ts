@@ -106,8 +106,9 @@ export function chipPlugin(options: ChipOptions) {
           options.onCaret?.('body')
         }
       })
+      // Nút có CHỮ "{ } Chèn biến" (bản phác Main) — `ews-rte-insert` để visual-editor.css tô nền màu nhấn cho nút.
       editor.RichTextEditor.add('insertVar', {
-        icon: '<span style="font-family:monospace;font-weight:700">{x}</span>',
+        icon: `<span class="ews-rte-insert">{ }</span> ${escapeHtml(options.insertTitle)}`,
         attributes: { title: options.insertTitle },
         result: () => {
           requestChipInsert(editor, options)
@@ -278,4 +279,9 @@ export function chipifyText(component: Component): void {
     child.remove()
     collection.add(parts, { at })
   })
+}
+
+/** Chữ thường -> an toàn để ghép vào HTML (nhãn nút trên thanh định dạng). */
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

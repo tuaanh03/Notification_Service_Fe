@@ -13,6 +13,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Textarea } from '@/components/ui/textarea'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
 import { isTemplateCategory, TEMPLATE_CATEGORIES } from '@/lib/template-categories'
+import { cn } from '@/lib/utils'
 import { EditorPane, Highlight } from './editor-pane'
 import { FieldHint } from './field-hint'
 import { PreviewPane } from './preview-pane'
@@ -60,10 +61,13 @@ export function ComposeTab({
   const autoText = visualKind
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
+  // Trực quan: khung soạn tràn mép (bàn làm việc, UX-5A) — thông báo và "Nâng cao" tự chừa lề vì tab không có lề.
+  const pad = visualKind && 'mx-4 w-auto lg:mx-6'
+
   return (
-    <div className="space-y-5" data-testid="compose-tab">
+    <div className={cn(visualKind ? 'pb-6' : 'space-y-5')} data-testid="compose-tab">
       {varProblems > 0 && (
-        <Alert className="bg-[var(--supernova)]/5" data-testid="variables-notice">
+        <Alert className={cn('bg-[var(--supernova)]/5', pad, visualKind && 'my-3')} data-testid="variables-notice">
           <AlertTriangle className="text-[var(--supernova)]" />
           <AlertDescription className="flex flex-wrap items-center gap-2">
             <span>{t('variablesNotice', { count: varProblems })}</span>
@@ -114,7 +118,7 @@ export function ComposeTab({
       </>
       )}
 
-      <Collapsible className="cosmic-surface rounded-2xl border border-[var(--orbit)] shadow-xs">
+      <Collapsible className={cn('cosmic-surface rounded-2xl border border-[var(--orbit)] shadow-xs', pad, visualKind && 'mt-5')}>
         <CollapsibleTrigger
           className="group/adv flex w-full items-center gap-2 px-5 py-3.5 text-left text-sm font-semibold text-[var(--text-primary)]"
           data-testid="advanced-toggle"
@@ -188,12 +192,19 @@ export function ComposeTab({
 /**
  * Kiểu trực quan (ADR-0036): một khung trọn chiều cao — tiêu đề thư ngay trên đầu, giữa là thư thật (GrapesJS).
  * Không có khung xem trước riêng. Bản chỉ đọc (không có nháp / App Viewer) hiện HTML đã lưu, không mở bộ soạn.
+ *
+ * Bàn làm việc (UX-5A): khung TRÀN MÉP, cao đúng phần khung nhìn còn lại dưới thanh dính của màn soạn (thanh trên
+ * 56px điện thoại / 64px máy tính + hàng tab 44px). Không dùng `<Panel>`: viền / bóng của `.cosmic-surface` nằm ngoài
+ * layer, utility không gỡ được — khung tràn mép mà còn viền bo góc thì trông như hộp lơ lửng.
  */
 function VisualFrame({ ed, visual }: { ed: TemplateEditorState; visual: VisualBinding }) {
   const t = useTranslations('templateEditor')
   const tv = useTranslations('visualEditor')
   return (
-    <Panel className="flex h-[calc(100dvh-12rem)] min-h-[560px] min-w-0 flex-col overflow-hidden p-0" data-testid="visual-frame">
+    <section
+      className="flex h-[calc(100dvh-6.25rem)] min-h-[520px] min-w-0 flex-col overflow-hidden bg-[var(--deep)] md:h-[calc(100dvh-6.75rem)]"
+      data-testid="visual-frame"
+    >
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--orbit)] px-4 py-3">
         <Label htmlFor="tpl-subject" className="shrink-0 text-xs font-semibold">{t('subject')}</Label>
         {/* Biến trong tiêu đề hiện thành chip có nhãn như trong thư (UX-3), không lộ `{{ }}`. */}
@@ -208,6 +219,6 @@ function VisualFrame({ ed, visual }: { ed: TemplateEditorState; visual: VisualBi
         )}
       </div>
       <p className="border-t border-[var(--orbit)] px-4 py-2 text-[11px] text-[var(--text-muted)]">{tv('footerNote')}</p>
-    </Panel>
+    </section>
   )
 }

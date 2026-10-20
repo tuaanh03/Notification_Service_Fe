@@ -12,7 +12,7 @@ import { StatusPill } from '@/components/status-pill'
 import { useApp } from '@/components/app-context'
 import { useAppRouter, useLeaveGuard } from '@/components/app-link'
 import { useRole } from '@/components/role-context'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,11 +20,12 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
-import { useTemplateEditor, type EditorError } from '@/hooks/use-template-editor'
+import { useTemplateEditor } from '@/hooks/use-template-editor'
 import { AiComposeDialog } from './ai-compose-dialog'
 import { ComposeTab } from './compose-tab'
+import { EditorErrorAlert } from './editor-error-alert'
+import { EditorTopBar } from './editor-top-bar'
 import { IntegrationTab } from './integration-tab'
-import { useIssueText } from './issue-text'
 import { SchemaPane } from './schema-pane'
 import { TemplateActionsMenu } from './template-actions-menu'
 import { VersionsPanel } from './versions-panel'
@@ -35,6 +36,18 @@ const EDITOR_TABS = ['compose', 'variables', 'integration', 'versions'] as const
 type EditorTab = (typeof EDITOR_TABS)[number]
 const TAB_PARAM = 'tab'
 const tabOf = (raw: string | null): EditorTab => EDITOR_TABS.find((x) => x === raw) ?? 'compose'
+
+/** Lề trang thường — khung app không chừa lề ở bàn làm việc (`isWorkspaceRoute`). */
+const PAGE_PAD = 'px-4 py-5 lg:px-6'
+/**
+ * Hàng tab gạch chân (bản phác Main): một hàng, điện thoại cuộn ngang thay vì xuống dòng. Viền dưới của tab đang chọn
+ * là `after:` của `TabsTrigger` — KHÔNG dùng `border`: `* { border-color }` của globals.css (ngoài layer) thắng mọi
+ * `border-transparent`, tab nào cũng thành ô có viền.
+ */
+const TAB_LIST =
+  'h-11 w-full justify-start gap-5 overflow-x-auto overflow-y-hidden rounded-none p-0 px-4 [scrollbar-width:none] group-data-horizontal/tabs:h-11 md:gap-6 md:px-5'
+const TAB_TRIGGER =
+  'h-full flex-none rounded-none border-0 px-0.5 data-active:text-[var(--starlight)] after:bg-[var(--starlight)] group-data-horizontal/tabs:after:bottom-0'
 
 /**
  * Màn soạn một template (ADR-0020). Bốn tab: Soạn thư (mặc định, cho người không biết code) · Biến ·
@@ -86,9 +99,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
   }
 
+  // Khung app bỏ lề `<main>` ở bàn làm việc (`isWorkspaceRoute`) — các màn tạm (đang tải / lỗi) tự chừa lề.
   if (ed.loadError) {
     return (
-      <>
+      <div className={PAGE_PAD}>
         <PageHeader title="Template" breadcrumb={[{ label: tt('title'), href: '/templates' }, { label: templateId }]} />
         <EmptyState
           icon={FileWarning}
@@ -100,11 +114,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             </Button>
           }
         />
-      </>
+      </div>
     )
   }
   if (!ed.detail) {
-    return <PageHeader title={t('loading')} breadcrumb={[{ label: tt('title'), href: '/templates' }]} />
+    return (
+      <div className={PAGE_PAD}>
+        <PageHeader title={t('loading')} breadcrumb={[{ label: tt('title'), href: '/templates' }]} />
+      </div>
+    )
   }
 
   const detail = ed.detail
@@ -148,105 +166,84 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   }
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
+  const meta = shown
+    ? `v${shown.version} · ${editorLabel} · ${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
+    : undefined
+  /** Soạn thư kiểu trực quan là bộ soạn tràn mép dưới thanh dính; các tab khác (và kiểu HTML) có lề như trang thường. */
+  const fullBleed = visual && tab === 'compose'
+
   return (
     <>
-      {/* Kiểu trực quan: thanh đầu DÍNH dưới thanh của khung (h-14) — Lưu / Xuất bản / thiết bị luôn trong tầm tay. */}
-      <div className={cn(visual && 'sticky top-14 z-20 -mx-4 mb-4 bg-[var(--void)]/90 px-4 pt-2 backdrop-blur-md lg:-mx-6 lg:px-6 [&>header]:mb-3')}>
-      <PageHeader
-        title={detail.name}
-        breadcrumb={[{ label: tt('title'), href: '/templates' }, { label: detail.name }]}
-        subtitle={
-          shown
-            ? `v${shown.version} · ${editorLabel} · ${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
-            : undefined
-        }
-        actions={
-          <>
-            {visualTools && (
-              // Điện thoại: không có Máy tính / Điện thoại (đang là điện thoại), Hoàn tác ở thanh dưới, Làm lại ở ⋯.
-              <div className="hidden items-center gap-2 md:flex">
-                <ToggleGroup
-                  variant="outline"
-                  size="sm"
-                  value={[device]}
-                  onValueChange={(v) => (v[0] === 'desktop' || v[0] === 'mobilePortrait') && setDevice(v[0])}
-                  aria-label={t('device')}
-                  data-testid="visual-device"
-                >
-                  <ToggleGroupItem value="desktop" aria-label={t('deviceDesktop')}>
-                    <Monitor /> <span className="hidden xl:inline">{t('deviceDesktop')}</span>
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="mobilePortrait" aria-label={t('deviceMobile')}>
-                    <Smartphone /> <span className="hidden xl:inline">{t('deviceMobile')}</span>
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                <Button variant="ghost" size="icon-sm" aria-label={t('undo')} title={t('undo')} disabled={!visualHistory.canUndo} onClick={() => visualControls?.undo()} data-testid="visual-undo">
-                  <Undo2 />
-                </Button>
-                <Button variant="ghost" size="icon-sm" aria-label={t('redo')} title={t('redo')} disabled={!visualHistory.canRedo} onClick={() => visualControls?.redo()} data-testid="visual-redo">
-                  <Redo2 />
-                </Button>
-              </div>
-            )}
-            <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
-            {writable && !ed.archived && ed.draft && (
+      <Tabs value={tab} onValueChange={(v) => setTab(v as EditorTab)} className="gap-0">
+        {/* Bàn làm việc (UX-5A, bản phác Main): thanh trên + hàng tab DÍNH đầu khung nhìn — Lưu / Xuất bản / thiết bị
+            luôn trong tầm tay, ở mọi tab và mọi kiểu soạn. */}
+        <div className="sticky top-0 z-30 border-b border-[var(--orbit)] bg-[var(--deep)]/95 backdrop-blur-md" data-testid="editor-topbar">
+          <EditorTopBar
+            name={detail.name}
+            meta={meta}
+            actions={
               <>
-                {/* Kiểu trực quan trên điện thoại: Lưu nháp vào ⋯ để thanh đầu không tràn; Xuất bản vẫn thấy. */}
-                <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()} className={cn(visual && 'hidden md:inline-flex')}>
-                  <Save /> {t('saveDraft')}
-                </Button>
-                <Button disabled={ed.pending} onClick={onPublish} data-testid="publish-btn">
-                  <UploadCloud /> {t('publish', { version: ed.draft.version })}
-                </Button>
+                {visualTools && (
+                  // Điện thoại: không có Máy tính / Điện thoại (đang là điện thoại), Hoàn tác ở thanh dưới, Làm lại ở ⋯.
+                  <div className="hidden items-center gap-2 md:flex">
+                    <ToggleGroup
+                      variant="outline"
+                      size="sm"
+                      value={[device]}
+                      onValueChange={(v) => (v[0] === 'desktop' || v[0] === 'mobilePortrait') && setDevice(v[0])}
+                      aria-label={t('device')}
+                      data-testid="visual-device"
+                    >
+                      <ToggleGroupItem value="desktop" aria-label={t('deviceDesktop')}>
+                        <Monitor /> <span className="hidden xl:inline">{t('deviceDesktop')}</span>
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="mobilePortrait" aria-label={t('deviceMobile')}>
+                        <Smartphone /> <span className="hidden xl:inline">{t('deviceMobile')}</span>
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                    <Button variant="ghost" size="icon-sm" aria-label={t('undo')} title={t('undo')} disabled={!visualHistory.canUndo} onClick={() => visualControls?.undo()} data-testid="visual-undo">
+                      <Undo2 />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" aria-label={t('redo')} title={t('redo')} disabled={!visualHistory.canRedo} onClick={() => visualControls?.redo()} data-testid="visual-redo">
+                      <Redo2 />
+                    </Button>
+                  </div>
+                )}
+                {/* Điện thoại: trạng thái đã nằm trong dòng nhỏ dưới tên — bỏ viên trạng thái cho thanh khỏi tràn. */}
+                <span className="hidden sm:inline-flex">
+                  <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
+                </span>
+                {writable && !ed.archived && ed.draft && (
+                  <>
+                    {/* Kiểu trực quan trên điện thoại: Lưu nháp vào ⋯ để thanh đầu không tràn; Xuất bản vẫn thấy. */}
+                    <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()} className={cn(visual && 'hidden md:inline-flex')}>
+                      <Save /> {t('saveDraft')}
+                    </Button>
+                    <Button disabled={ed.pending} onClick={onPublish} data-testid="publish-btn">
+                      <UploadCloud /> {t('publish', { version: ed.draft.version })}
+                    </Button>
+                  </>
+                )}
+                {writable && !ed.archived && !ed.draft && ed.published && (
+                  <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
+                    <Pencil /> {t('edit', { version: nextVersion })}
+                  </Button>
+                )}
+                <TemplateActionsMenu
+                  disabled={ed.pending}
+                  onCopyId={copyId}
+                  onDuplicate={writable ? openDuplicate : undefined}
+                  onArchive={writable && !ed.archived ? () => setArchiveConfirm(true) : undefined}
+                  onSaveMobile={visual && writable && !ed.archived && ed.draft ? () => void onSave() : undefined}
+                  onRedoMobile={visualTools ? () => visualControls?.redo() : undefined}
+                  redoDisabled={!visualHistory.canRedo}
+                />
               </>
-            )}
-            {writable && !ed.archived && !ed.draft && ed.published && (
-              <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
-                <Pencil /> {t('edit', { version: nextVersion })}
-              </Button>
-            )}
-            <TemplateActionsMenu
-              disabled={ed.pending}
-              onCopyId={copyId}
-              onDuplicate={writable ? openDuplicate : undefined}
-              onArchive={writable && !ed.archived ? () => setArchiveConfirm(true) : undefined}
-              onSaveMobile={visual && writable && !ed.archived && ed.draft ? () => void onSave() : undefined}
-              onRedoMobile={visualTools ? () => visualControls?.redo() : undefined}
-              redoDisabled={!visualHistory.canRedo}
-            />
-          </>
-        }
-      />
-      </div>
-
-      <div className="space-y-5">
-        {ed.error && <ErrorAlert error={ed.error} />}
-        {ed.aiBanner && (
-          <Alert className="bg-[var(--pulsar)]/10" data-testid="ai-banner">
-            <Sparkles className="text-[var(--pulsar)]" />
-            <AlertDescription>{t('aiBanner')}</AlertDescription>
-          </Alert>
-        )}
-        {ed.archived && (
-          <Alert data-testid="archived-notice">
-            <Archive />
-            <AlertDescription>
-              {t.rich('archivedNotice', { mono: (chunks) => <span className="font-mono">{chunks}</span> })}
-            </AlertDescription>
-          </Alert>
-        )}
-        {writable && !ed.archived && ed.locked && ed.published && (
-          <Alert data-testid="locked-notice">
-            <AlertDescription className="text-[var(--text-secondary)]">
-              {t.rich('lockedNotice', { version: ed.published.version, em: (chunks) => <em>{chunks}</em> })}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Tabs value={tab} onValueChange={(v) => setTab(v as EditorTab)}>
-          <TabsList variant="line" className="mb-2 h-auto w-full flex-wrap justify-start gap-1 group-data-horizontal/tabs:h-auto">
-            <TabsTrigger value="compose" className="flex-none px-2.5" data-testid="tab-compose">{t('tabCompose')}</TabsTrigger>
-            <TabsTrigger value="variables" className="flex-none px-2.5" data-testid="tab-variables">
+            }
+          />
+          <TabsList variant="line" className={TAB_LIST}>
+            <TabsTrigger value="compose" className={TAB_TRIGGER} data-testid="tab-compose">{t('tabCompose')}</TabsTrigger>
+            <TabsTrigger value="variables" className={TAB_TRIGGER} data-testid="tab-variables">
               {t('variables')}
               <Badge variant="outline" className="font-mono text-[10px] tabular-nums">{ed.variables.length}</Badge>
               {varProblems > 0 && (
@@ -258,39 +255,66 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 />
               )}
             </TabsTrigger>
-            <TabsTrigger value="integration" className="flex-none px-2.5" data-testid="tab-integration">{t('tabIntegration')}</TabsTrigger>
-            <TabsTrigger value="versions" className="flex-none px-2.5" data-testid="tab-versions">{t('versions')}</TabsTrigger>
+            <TabsTrigger value="integration" className={TAB_TRIGGER} data-testid="tab-integration">{t('tabIntegration')}</TabsTrigger>
+            <TabsTrigger value="versions" className={TAB_TRIGGER} data-testid="tab-versions">{t('versions')}</TabsTrigger>
           </TabsList>
-          <TabsContent value="compose" className="min-w-0">
-            <ComposeTab
-              ed={ed}
-              writable={writable}
-              name={name}
-              onNameChange={setName}
-              savedName={savedName}
-              onAi={() => {
-                setAiRound((n) => n + 1)
-                setAiOpen(true)
-              }}
-              onShowVariables={() => setTab('variables')}
-              visual={{ device, onControls: setVisualControls, onHistory: setVisualHistory }}
-            />
-          </TabsContent>
-          <TabsContent value="variables" className="min-w-0">
-            <Panel className="min-w-0 p-5">
-              <SchemaPane ed={ed} locked={ed.locked} />
-            </Panel>
-          </TabsContent>
-          <TabsContent value="integration" className="min-w-0">
-            <IntegrationTab ed={ed} onCopyId={copyId} />
-          </TabsContent>
-          <TabsContent value="versions" className="min-w-0">
-            <Panel className="min-w-0 p-5">
-              <VersionsPanel ed={ed} />
-            </Panel>
-          </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+
+        {/* `empty:hidden`: không có thông báo nào thì khối này không chiếm chỗ (bộ soạn tràn mép sát hàng tab). */}
+        <div className="space-y-3 px-4 pt-4 empty:hidden lg:px-6">
+          {ed.error && <EditorErrorAlert error={ed.error} />}
+          {ed.aiBanner && (
+            <Alert className="bg-[var(--pulsar)]/10" data-testid="ai-banner">
+              <Sparkles className="text-[var(--pulsar)]" />
+              <AlertDescription>{t('aiBanner')}</AlertDescription>
+            </Alert>
+          )}
+          {ed.archived && (
+            <Alert data-testid="archived-notice">
+              <Archive />
+              <AlertDescription>
+                {t.rich('archivedNotice', { mono: (chunks) => <span className="font-mono">{chunks}</span> })}
+              </AlertDescription>
+            </Alert>
+          )}
+          {writable && !ed.archived && ed.locked && ed.published && (
+            <Alert data-testid="locked-notice">
+              <AlertDescription className="text-[var(--text-secondary)]">
+                {t.rich('lockedNotice', { version: ed.published.version, em: (chunks) => <em>{chunks}</em> })}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <TabsContent value="compose" className={cn('min-w-0', !fullBleed && PAGE_PAD)}>
+          <ComposeTab
+            ed={ed}
+            writable={writable}
+            name={name}
+            onNameChange={setName}
+            savedName={savedName}
+            onAi={() => {
+              setAiRound((n) => n + 1)
+              setAiOpen(true)
+            }}
+            onShowVariables={() => setTab('variables')}
+            visual={{ device, onControls: setVisualControls, onHistory: setVisualHistory }}
+          />
+        </TabsContent>
+        <TabsContent value="variables" className={cn('min-w-0', PAGE_PAD)}>
+          <Panel className="min-w-0 p-5">
+            <SchemaPane ed={ed} locked={ed.locked} />
+          </Panel>
+        </TabsContent>
+        <TabsContent value="integration" className={cn('min-w-0', PAGE_PAD)}>
+          <IntegrationTab ed={ed} onCopyId={copyId} />
+        </TabsContent>
+        <TabsContent value="versions" className={cn('min-w-0', PAGE_PAD)}>
+          <Panel className="min-w-0 p-5">
+            <VersionsPanel ed={ed} />
+          </Panel>
+        </TabsContent>
+      </Tabs>
 
       {/* Còn thay đổi chưa lưu mà bấm link nội bộ / đổi app (useLeaveGuard). Đóng tab / tải lại do trình duyệt tự hỏi. */}
       <ConfirmDialog
@@ -360,36 +384,5 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         onCancel={() => setArchiveConfirm(false)}
       />
     </>
-  )
-}
-
-/** Lỗi của lệnh ghi. Xuất bản bị 422 thì liệt kê TỪNG vi phạm, kèm biến / ô bị sai. */
-function ErrorAlert({ error }: { error: EditorError }) {
-  const t = useTranslations('templateEditor')
-  const issueText = useIssueText()
-  return (
-    <Alert variant="destructive" className="bg-[var(--supernova)]/10" data-testid="editor-error">
-      <FileWarning />
-      <AlertTitle>{error.issues.length ? t('publishFailed', { count: error.issues.length }) : error.message}</AlertTitle>
-      <AlertDescription>
-        {error.issues.length > 0 ? (
-          <ul className="mt-1 space-y-0.5 text-xs">
-            {error.issues.map((issue, i) => (
-              <li key={i}>
-                {issue.path && <span className="font-mono">{issue.path}: </span>}
-                {issueText(issue)}{' '}
-                {/* Bộ kiểm HTML (ADR-0036 / 0038): chi tiết của backend chỉ đúng chỗ sai (vd thẻ <script>) — giữ nguyên văn. */}
-                {issue.code.startsWith('HTML_') && issue.message && (
-                  <span className="font-mono text-[var(--text-muted)]">— {issue.message} </span>
-                )}
-                <span className="font-mono text-[var(--text-muted)]">({issue.code})</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <span className="font-mono text-xs">{t('code', { code: error.code })}</span>
-        )}
-      </AlertDescription>
-    </Alert>
   )
 }

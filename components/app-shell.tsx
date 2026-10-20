@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -15,7 +16,7 @@ import {
 import type { AdminDto } from '@/lib/api/auth'
 import { useAppSelection } from './app-context'
 import { AppLink } from './app-link'
-import { ADMIN_HOME } from '@/lib/app-routes'
+import { ADMIN_HOME, isWorkspaceRoute } from '@/lib/app-routes'
 import { useRole } from './role-context'
 import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
@@ -98,10 +99,22 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
     .filter((l) => (l.href === '/' ? path === '/' : path.startsWith(l.href)))
     .sort((a, b) => b.href.length - a.href.length)[0]
 
+  // Bàn làm việc (màn soạn template): menu trái thu gọn mỗi lần vào, mở được tạm; rời màn thì menu về đúng trạng thái
+  // người dùng chọn ở các màn khác — hai trạng thái tách nhau để thu menu tự động không ghi đè lựa chọn đó.
+  const workspace = isWorkspaceRoute(path)
+  const [menuOpen, setMenuOpen] = useState(true)
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
+  useEffect(() => {
+    if (workspace) setWorkspaceMenuOpen(false)
+  }, [workspace])
+
   return (
     <div className="min-h-screen relative flex">
       <CosmicBackground />
-      <SidebarProvider defaultOpen>
+      <SidebarProvider
+        open={workspace ? workspaceMenuOpen : menuOpen}
+        onOpenChange={workspace ? setWorkspaceMenuOpen : setMenuOpen}
+      >
         <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar/95 backdrop-blur-xl">
           {/* Header: System Brand Logo & App Service Switcher */}
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] space-y-2 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:space-y-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
@@ -299,6 +312,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
 
         {/* Main Content Area */}
         <SidebarInset className="bg-transparent min-w-0">
+          {!workspace && (
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-[var(--orbit)] bg-[var(--deep)]/85 px-4 lg:px-6 backdrop-blur-xl transition-[width,height] ease-linear">
             <Breadcrumb>
               <BreadcrumbList>
@@ -321,8 +335,9 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
             </Breadcrumb>
 
           </header>
+          )}
 
-          <main className="w-full px-4 lg:px-6 py-6 min-w-0">
+          <main className={cn('w-full min-w-0', !workspace && 'px-4 lg:px-6 py-6')}>
             <PreviewBanner />
             {children}
           </main>

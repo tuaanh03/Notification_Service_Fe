@@ -175,6 +175,11 @@ export default function VisualEditor({
         // Ảnh chỉ dán link https:// ở bảng phải — tắt hẳn tải lên / kéo file vào (người dùng đã bỏ tải ảnh).
         assetManager: { upload: false, dropzone: false, embedAsBase64: false },
         canvas: { allowExternalDrop: false },
+        // Thanh định dạng theo bản phác Main: Đậm / Nghiêng / Gạch chân / Link + "Chèn biến" (chip-plugin thêm vào cuối).
+        // Bỏ gạch ngang và "bọc khối" (biểu tượng cọ) mặc định của GrapesJS — người soạn không biết nó làm gì.
+        richTextEditor: { actions: ['bold', 'italic', 'underline', 'link'] },
+        // Trong khung thư: bỏ viền focus đen của trình duyệt quanh đoạn đang gõ — khối đang chọn đã có viền màu nhấn.
+        canvasCss: '[contenteditable="true"]:focus { outline: none; }',
         i18n: {
           locale: locale === 'vi' ? 'vi' : 'en',
           localeFallback: 'en',

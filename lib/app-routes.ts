@@ -113,6 +113,14 @@ export const APP_DETAIL_ROUTES: ReadonlyArray<{ base: string; static: readonly s
 ]
 
 /**
+ * Màn soạn template `/templates/<id>` (không gồm `/templates/new`) là BÀN LÀM VIỆC (UX-5A, bản phác Main): khung app
+ * thu menu trái, bỏ thanh breadcrumb và lề của `<main>` — màn soạn tự dựng thanh trên dính của nó.
+ */
+export function isWorkspaceRoute(pathname: string): boolean {
+  return /^\/templates\/[^/]+$/.test(pathname) && pathname !== '/templates/new'
+}
+
+/**
  * Giá trị `?app=` của một app — LUÔN đi qua hàm này. Là `app_id`: không trùng giữa các org, không
  * bao giờ đổi, nên link gửi cho ai cũng mở đúng app. Không dùng slug — slug chỉ duy nhất trong
  * MỘT org, hai org trùng slug thì cùng một link mở ra app khác nhau tuỳ người xem.
