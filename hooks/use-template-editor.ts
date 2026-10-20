@@ -151,6 +151,11 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     setVariables((vs) => [...vs, { name, source: sourceOf(name), required: true }])
     setDirty(true)
   }
+  /** Khai biến đủ thông tin (hộp "Chèn biến" của bộ soạn trực quan): nhãn = mô tả, ví dụ = giá trị mẫu. Đã có thì thôi. */
+  const addVariable = (variable: TemplateVariableDto) => {
+    setVariables((vs) => (vs.some((v) => v.name === variable.name) ? vs : [...vs, variable]))
+    setDirty(true)
+  }
   const removeVar = (name: string) => {
     setVariables((vs) => vs.filter((v) => v.name !== name))
     setDirty(true)
@@ -252,6 +257,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     variables,
     updateVar,
     declareVar,
+    addVariable,
     removeVar,
     aiBanner,
     setAiBanner,

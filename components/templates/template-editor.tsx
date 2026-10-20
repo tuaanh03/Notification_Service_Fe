@@ -170,7 +170,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         actions={
           <>
             {visualTools && (
-              <>
+              // Điện thoại: không có Máy tính / Điện thoại (đang là điện thoại), Hoàn tác ở thanh dưới, Làm lại ở ⋯.
+              <div className="hidden items-center gap-2 md:flex">
                 <ToggleGroup
                   variant="outline"
                   size="sm"
@@ -192,12 +193,13 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 <Button variant="ghost" size="icon-sm" aria-label={t('redo')} title={t('redo')} disabled={!visualHistory.canRedo} onClick={() => visualControls?.redo()} data-testid="visual-redo">
                   <Redo2 />
                 </Button>
-              </>
+              </div>
             )}
             <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
             {writable && !ed.archived && ed.draft && (
               <>
-                <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()}>
+                {/* Kiểu trực quan trên điện thoại: Lưu nháp vào ⋯ để thanh đầu không tràn; Xuất bản vẫn thấy. */}
+                <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()} className={cn(visual && 'hidden md:inline-flex')}>
                   <Save /> {t('saveDraft')}
                 </Button>
                 <Button disabled={ed.pending} onClick={onPublish} data-testid="publish-btn">
@@ -216,6 +218,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               onDuplicate={writable ? openDuplicate : undefined}
               onToHtml={writable && !ed.archived && ed.draft && blocks ? () => setToHtmlOpen(true) : undefined}
               onArchive={writable && !ed.archived ? () => setArchiveConfirm(true) : undefined}
+              onSaveMobile={visual && writable && !ed.archived && ed.draft ? () => void onSave() : undefined}
+              onRedoMobile={visualTools ? () => visualControls?.redo() : undefined}
+              redoDisabled={!visualHistory.canRedo}
             />
           </>
         }

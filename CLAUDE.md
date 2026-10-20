@@ -76,6 +76,7 @@ webservice/ews-astrolink/
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend);
 │   │                         # blocks/* = trình kéo-thả (block-editor, block-palette, design-canvas, block-view, block-inspector, variable-field)
 │   │                         # visual/* = bộ soạn trực quan GrapesJS + MJML (visual-editor + -loader nạp động, chip-plugin,
+│   │                         # left-panel, properties-panel, color-field, blocks, email-settings, block-lint, subject-field,
 │   │                         # grapes-i18n, insert-variable-dialog, visual-editor.css) — ADR-0036 của backend
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-link.tsx · app-switcher.tsx
@@ -587,19 +588,47 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         nghiệm)"; cờ tắt chỉ ẩn lối tạo — template trực quan đã có vẫn mở / sửa / xuất bản (backend chặn tạo mới bằng 403
         `VISUAL_EDITOR_DISABLED`). Không dùng `.env`.
     *   **Nạp động, chỉ client**: `visual-editor-loader.tsx` (`next/dynamic`, `ssr: false`) — GrapesJS + mjml-browser
-        ~650 KB nén, không vào gói trang khác. `telemetry: false` (mặc định GrapesJS gọi `app.grapesjs.com`), `cssIcons: ''` (mặc định tải Font Awesome từ cdnjs — biểu tượng bảng kiểu chữ vẽ bằng SVG mặt nạ trong `visual-editor.css`; thêm biểu tượng `fa-*` mới thì thêm luật ở đó), không font
+        ~650 KB nén, không vào gói trang khác. `telemetry: false` (mặc định GrapesJS gọi `app.grapesjs.com`), `cssIcons: ''` (mặc định tải Font Awesome từ cdnjs — biểu tượng bảng kiểu chữ vẽ bằng SVG mặt nạ trong bảng của GrapesJS không dùng nữa nên không cần biểu tượng `fa-*`), không font
         Google (`fonts: {}`, font hệ thống `VISUAL_FONT_STACK`), không tải ảnh lên (asset manager chỉ dán link https),
-        gỡ hết thanh nút của GrapesJS / grapesjs-mjml (không có xem / nhập mã). Khối mở: 1–3 cột, chữ, nút, ảnh, đường
-        kẻ, khoảng trống.
+        gỡ hết thanh nút của GrapesJS / grapesjs-mjml (không có xem / nhập mã), bảng mặc định tắt (`custom: true` cho
+        block / trait / style / layer / selector manager), bấm đúp ảnh không mở hộp ảnh (`core:open-assets` rỗng).
+        Khối tự khai ở `blocks.ts` (bộ khối của grapesjs-mjml tắt `blocks: []`): Tiêu đề, Đoạn chữ, Nút, Ảnh, Đường kẻ,
+        Khoảng trống + bố cục 1 / 2 / 3 cột, hẹp|rộng, rộng|hẹp — chữ mẫu theo ngôn ngữ màn; ảnh chưa có link để `src`
+        rỗng (`imageDefaultsPlugin` — mặc định GrapesJS là ảnh SVG giả, lọt ra HTML bị backend chặn).
     *   **Màn soạn**: thanh đầu DÍNH (`sticky top-14`) có Máy tính / Điện thoại + Hoàn tác / Làm lại + Lưu nháp / Xuất bản
         / ⋯; tab Soạn thư là một khung trọn chiều cao — tiêu đề thư trên đầu, giữa là thư thật (không còn khung xem trước
-        riêng), bảng trái khối, bảng phải thuộc tính (bảng tối thiểu của GrapesJS, Việt hoá bằng `grapesjs/locale/vi` +
-        `grapes-i18n.ts`; bảng tự dựng theo phác thảo là UX-3). Không có nháp / App Viewer -> hiện HTML đã lưu bằng
-        `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id bản nháp: lưu cùng bản không dựng lại.
-    *   **Chip biến** (`chip-plugin.ts`): trên khung `{{ payload.x }}` hiện thành viên có nhãn (mô tả biến, không có thì tên
-        ngắn; biến chưa khai thì viên đỏ), là một khối nguyên (`contenteditable=false`); JSON dự án giữ chip, MJML / HTML
-        giữ Liquid. Nút `{x}` trên thanh định dạng mở `<InsertVariableDialog>` (bấm ra ngoài khung thư làm GrapesJS tắt chế độ sửa chữ — chèn / huỷ chạy SAU khi hộp đóng hẳn (`onClosed` của `<ConfirmDialog>`, hộp không tự trả focus), bật lại sửa chữ rồi đặt con trỏ theo số ký tự đã nhớ; chèn dùng `useDomContent` để chữ vừa gõ không mất) (chọn biến đã khai hoặc khai mới; biến
-        không bắt buộc phải có giá trị khi thiếu; giá trị cấm `" ' < > { } |`). `{{ }}` gõ / dán tay tự thành chip khi
+        riêng). Không có nháp / App Viewer -> hiện HTML đã lưu bằng `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id
+        bản nháp: lưu cùng bản không dựng lại.
+    *   **Bảng trái** (`left-panel.tsx`, bản phác Main): tab Khối / Bố cục / Cài đặt. Thẻ khối KÉO vào thư
+        (`editor.Blocks.startDrag` / `endDrag`) hoặc BẤM để thêm (`appendBlock`: ngay sau khối đang chọn trong cùng cột,
+        không chọn gì thì hàng mới cuối thư). "Cài đặt thư" (`email-settings.ts`: rộng Hẹp/Vừa/Rộng = 480/540/600, nền
+        ngoài / nền thư, màu chữ, màu nút, font) áp THẲNG vào thuộc tính từng khối (khung soạn của grapesjs-mjml không
+        dựng phần `<mj-head>`), lưu ở `project.ewsSettings`; khối thêm sau nhận cài đặt hiện tại.
+    *   **Bảng phải** (`properties-panel.tsx`): thuộc tính THEO LOẠI KHỐI — Chữ (cỡ Nhỏ/Vừa/Lớn, độ đậm, màu, căn lề, biến
+        trong khối), Nút (chữ, link + "Chèn biến", màu nút / chữ, góc Vuông/Bo nhẹ/Tròn, căn lề), Ảnh (link https, chữ
+        thay ảnh, rộng %, link khi bấm, căn lề), Đường kẻ, Khoảng trống, Hàng / Cột (nền, số cột). Màu chọn bằng 6 ô gợi
+        ý + "màu khác" (`color-field.tsx`, hex của THƯ khai ở `PALETTES`); px / mã màu chỉ trong "Nâng cao" thu gọn. Đầu
+        bảng: Nhân đôi / Xoá. Ô chữ ghi khi rời ô / Enter (gõ từng phím không vẽ lại khung thư). Link là biến hiện thành
+        nhãn, không lộ `{{ }}`; link biến luôn ghi nháy đơn.
+    *   **Điện thoại (< md, bản phác DienThoai)**: hai bảng ẩn, thay bằng thanh dưới 4 nút cao 56px DÍNH ĐÁY khung nhìn (render qua `createPortal(document.body)` — Panel `backdrop-filter` / motion `transform` của console làm `fixed` bám theo tổ tiên; `fixed bottom-0`, `pb-[env(safe-area-inset-bottom)]`, `z-40` dưới Sheet / Dialog `z-[100]`, ẩn khi bàn phím ảo mở — `visualViewport`; khung soạn chừa một khoảng cùng cao) — Thêm khối (`<Sheet>`
+        từ dưới chứa bảng trái; bấm khối = thêm sau khối đang chọn rồi đóng), Chèn biến (vào chỗ người soạn vừa đặt con
+        trỏ: ô tiêu đề hay khối chữ — `insert-target.ts` nhớ; khối chữ dùng `requestChipInsert` của `chip-plugin.ts`
+        với chỗ con trỏ nhớ theo số ký tự; không có chỗ thì toast nhẹ), Thuộc tính (`<Sheet>` chứa bảng phải), Hoàn tác.
+        Chạm một lần chọn khối, chạm lần nữa vào khối chữ / nút đang chọn thì vào sửa chữ (`pointer: coarse`); thêm khối
+        bằng chạm, không bắt kéo. Thanh đầu: Máy tính / Điện thoại + Hoàn tác / Làm lại ẩn, Lưu nháp + Làm lại vào ⋯
+        (`onSaveMobile` / `onRedoMobile` của `<TemplateActionsMenu>`, mục `md:hidden`); Xuất bản vẫn thấy.
+    *   **Lỗi từng khối** (`block-lint.ts`): biến chưa khai / thiếu nguồn / không bắt buộc mà thiếu chữ khi thiếu, nút chưa
+        có link, link không https / mailto, ảnh trống / không https — tô viền đỏ khối trên khung (chỉ sửa `style` của
+        phần tử trong khung, không vào thư) + dải "N chỗ cần sửa" trên khung, bấm một dòng thì chọn đúng khối. Chỉ để báo
+        sớm — lỗi 422 của backend vẫn hiện như cũ.
+    *   **Chip biến** (`chip-plugin.ts`): trên khung `{{ payload.x }}` hiện thành viên có nhãn (`variableLabel` của
+        `lib/variable-labels.ts`: mô tả biến, không có thì tên tự sinh "Ten nguoi nhan"; biến chưa khai thì viên đỏ), là một khối nguyên (`contenteditable=false`); JSON dự án giữ chip, MJML / HTML
+        giữ Liquid. Nút `{x}` trên thanh định dạng mở `<InsertVariableDialog>` (bấm ra ngoài khung thư làm GrapesJS tắt chế độ sửa chữ — chèn / huỷ chạy SAU khi hộp đóng hẳn (`onClosed` của `<ConfirmDialog>`, hộp không tự trả focus), bật lại sửa chữ rồi đặt con trỏ theo số ký tự đã nhớ; chèn dùng `useDomContent` để chữ vừa gõ không mất) Hộp theo bản phác ChenBien: tìm, danh sách (nhãn
+        + ví dụ + bắt buộc / có sẵn — `user.external_id` "Mã người nhận" luôn có, chọn thì tự khai), "+ Thêm biến mới"
+        (tên dễ đọc -> mã `payload.<slug không dấu>` hiện mờ, ví dụ, app bắt buộc gửi) -> `ed.addVariable` vào bảng Biến
+        (mô tả = tên, giá trị mẫu = ví dụ); biến không bắt buộc phải có "Khi app không gửi thì hiện", cấm `" ' < > { } |`.
+        Ô "Tiêu đề thư" cũng có chip (`subject-field.tsx`: một dòng `contenteditable`, chip `contenteditable=false`,
+        Enter bị chặn, dán thành chữ thường, `{{ }}` gõ tay tự thành chip; lưu vẫn là chuỗi Liquid). `{{ }}` gõ / dán tay tự thành chip khi
         sửa xong; `"` trong biến của link tự đổi sang `'` (MJML không thoát `"` trong thuộc tính).
     *   **Chưa lưu** = GrapesJS báo thay đổi (`getDirtyCount`) -> `ed.onVisualChange` -> `useLeaveGuard` như mọi kiểu.
         Lưu xong `markSaved()` đếm lại từ đầu.

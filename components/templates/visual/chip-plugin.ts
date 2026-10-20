@@ -12,9 +12,6 @@ import type { Component, Editor } from 'grapesjs'
 /** Liquid một biến: `{{ path }}` hoặc `{{ path | default: "x" }}` / `'x'`. */
 const LIQUID_RE = /\{\{\s*([A-Za-z_][\w.]*)\s*(?:\|\s*default:\s*(?:"([^"]*)"|'([^']*)'))?\s*\}\}/g
 
-/** Ký tự không cho trong giá trị mặc định: phá cú pháp Liquid / MJML hoặc thành HTML (spike, mục "Điều kiện"). */
-export const FORBIDDEN_DEFAULT_RE = /["'<>{}|]/
-
 export const CHIP_TYPE = 'var-chip'
 
 export function chipLiquid(path: string, fallback?: string | null): string {
@@ -38,6 +35,8 @@ export type ChipOptions = {
   onRequestVariable: (actions: VariableRequest) => void
   /** Chữ của nút trên thanh định dạng. */
   insertTitle: string
+  /** Con trỏ vừa đặt trong một khối chữ của thư (để "Chèn biến" ngoài khung biết chèn vào đâu). */
+  onCaret?: (where: 'body') => void
 }
 
 export function chipPlugin(options: ChipOptions) {
@@ -93,66 +92,96 @@ export function chipPlugin(options: ChipOptions) {
     })
 
     editor.onReady(() => {
+      // Nhớ chỗ con trỏ trong khối đang sửa (theo số ký tự — khối vẽ lại khi tắt sửa chữ).
+      const doc = editor.Canvas.getDocument()
+      doc?.addEventListener('selectionchange', () => {
+        const editing = editor.getEditing()
+        const sel = doc.getSelection()
+        const root = editing?.getEl()
+        if (!editing || !root || !sel?.rangeCount) return
+        const editable = root.querySelector<HTMLElement>('[contenteditable="true"]') ?? (root.isContentEditable ? root : null)
+        const range = sel.getRangeAt(0)
+        if (editable?.contains(range.startContainer)) {
+          lastCaret.set(editor, { component: editing, offset: textOffset(doc, editable, range) })
+          options.onCaret?.('body')
+        }
+      })
       editor.RichTextEditor.add('insertVar', {
         icon: '<span style="font-family:monospace;font-weight:700">{x}</span>',
         attributes: { title: options.insertTitle },
         result: () => {
-          const selected = editor.getSelected()
-          const view = selected?.getView() as unknown as TextView | undefined
-          const doc = editor.Canvas.getDocument()
-          if (!selected || !view?.insertComponent || !doc) return
-          const editableOf = (): HTMLElement | null => {
-            const el = selected.getEl()
-            return el?.querySelector<HTMLElement>('[contenteditable="true"]') ?? (el?.isContentEditable ? el : null)
-          }
-          // Hộp chọn biến lấy focus khỏi khung thư, và bấm chuột ra ngoài làm GrapesJS TẮT chế độ sửa chữ (vẽ lại
-          // khối). Giữ chỗ con trỏ bằng cả vùng chọn lẫn số ký tự tính từ đầu khối — vùng chọn cũ có thể đã mất.
-          const range = doc.getSelection()?.rangeCount ? doc.getSelection()!.getRangeAt(0).cloneRange() : null
-          const startRoot = editableOf()
-          const offset = range && startRoot?.contains(range.startContainer) ? textOffset(doc, startRoot, range) : null
-
-          /** Bật lại chế độ sửa chữ của khối (nếu đã tắt), focus, đặt con trỏ về chỗ cũ. */
-          const resume = async () => {
-            if (editor.getEditing() !== selected) {
-              await view.onActive?.()
-              // Bật lại xong GrapesJS còn tự đặt con trỏ ở nhịp sau — chờ nó rồi mới đặt con trỏ của mình.
-              await new Promise((resolve) => setTimeout(resolve, 0))
-            }
-            const root = editableOf()
-            if (!root) return
-            editor.Canvas.getWindow()?.focus()
-            root.focus()
-            // Ưu tiên số ký tự: Range cũ là "sống", GrapesJS ghi lại nội dung khi tắt sửa chữ thì nó tụt về đầu khối.
-            const target = offset === null && range?.startContainer.isConnected && root.contains(range.startContainer) ? range : rangeAtOffset(doc, root, offset)
-            placeCaret(doc, target)
-          }
-          options.onRequestVariable({
-            insert: (path, fallback) =>
-              void resume().then(() => {
-                // useDomContent: chữ vừa gõ (chưa vào model) không bị mất khi tách nút chữ để chèn chip.
-                const added = view.insertComponent({ type: CHIP_TYPE, varPath: path, varDefault: fallback ?? undefined }, { useDomContent: true })
-                const chip = Array.isArray(added) ? added[0] : added
-                const id = chip?.getId()
-                // Con trỏ ngay sau chip để gõ tiếp liền (chèn xong GrapesJS vẽ lại khối chữ — chờ một nhịp).
-                setTimeout(() => {
-                  const el = id ? doc.getElementById(id) : null
-                  const root = editableOf()
-                  if (!el || !root) return
-                  editor.Canvas.getWindow()?.focus()
-                  root.focus()
-                  const after = doc.createRange()
-                  after.setStartAfter(el)
-                  after.collapse(true)
-                  placeCaret(doc, after)
-                }, 0)
-              }),
-            // Huỷ: con trỏ về đúng chỗ cũ để gõ tiếp.
-            cancel: () => void resume(),
-          })
+          requestChipInsert(editor, options)
         },
       })
     })
   }
+}
+
+/** Chỗ con trỏ gần nhất trong khối chữ đang sửa — để "Chèn biến" từ nút NGOÀI khung (thanh dưới trên điện thoại). */
+const lastCaret = new WeakMap<Editor, { component: Component; offset: number }>()
+
+/**
+ * Mở hộp "Chèn biến" cho khối chữ đang sửa (hoặc vừa sửa) rồi chèn chip đúng chỗ con trỏ. Trả false khi không có
+ * khối chữ nào để chèn (màn báo cho người soạn chọn đoạn chữ trước). Dùng chung cho nút {x} trên thanh định dạng và
+ * nút "Chèn biến" của thanh dưới trên điện thoại.
+ */
+export function requestChipInsert(editor: Editor, options: ChipOptions): boolean {
+  const doc = editor.Canvas.getDocument()
+  // Khối đang sửa chữ; không có (điện thoại: chạm nút ngoài khung đã tắt sửa chữ) thì khối vừa sửa gần nhất.
+  const editing = editor.getEditing() ?? null
+  const last = lastCaret.get(editor)
+  const selected = editing ?? (last && last.component === editor.getSelected() ? last.component : null)
+  const view = selected?.getView() as unknown as TextView | undefined
+  if (!selected || !view?.insertComponent || !doc) return false
+  const editableOf = (): HTMLElement | null => {
+    const el = selected.getEl()
+    return el?.querySelector<HTMLElement>('[contenteditable="true"]') ?? (el?.isContentEditable ? el : null)
+  }
+  // Hộp chọn biến lấy focus khỏi khung thư, và bấm chuột ra ngoài làm GrapesJS TẮT chế độ sửa chữ (vẽ lại
+  // khối). Giữ chỗ con trỏ bằng cả vùng chọn lẫn số ký tự tính từ đầu khối — vùng chọn cũ có thể đã mất.
+  const range = doc.getSelection()?.rangeCount ? doc.getSelection()!.getRangeAt(0).cloneRange() : null
+  const startRoot = editableOf()
+  const offset = range && startRoot?.contains(range.startContainer) ? textOffset(doc, startRoot, range) : (last?.component === selected ? last.offset : null)
+
+  /** Bật lại chế độ sửa chữ của khối (nếu đã tắt), focus, đặt con trỏ về chỗ cũ. */
+  const resume = async () => {
+    if (editor.getEditing() !== selected) {
+      await view.onActive?.()
+      // Bật lại xong GrapesJS còn tự đặt con trỏ ở nhịp sau — chờ nó rồi mới đặt con trỏ của mình.
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    const root = editableOf()
+    if (!root) return
+    editor.Canvas.getWindow()?.focus()
+    root.focus()
+    // Ưu tiên số ký tự: Range cũ là "sống", GrapesJS ghi lại nội dung khi tắt sửa chữ thì nó tụt về đầu khối.
+    const target = offset === null && range?.startContainer.isConnected && root.contains(range.startContainer) ? range : rangeAtOffset(doc, root, offset)
+    placeCaret(doc, target)
+  }
+  options.onRequestVariable({
+    insert: (path, fallback) =>
+      void resume().then(() => {
+        // useDomContent: chữ vừa gõ (chưa vào model) không bị mất khi tách nút chữ để chèn chip.
+        const added = view.insertComponent({ type: CHIP_TYPE, varPath: path, varDefault: fallback ?? undefined }, { useDomContent: true })
+        const chip = Array.isArray(added) ? added[0] : added
+        const id = chip?.getId()
+        // Con trỏ ngay sau chip để gõ tiếp liền (chèn xong GrapesJS vẽ lại khối chữ — chờ một nhịp).
+        setTimeout(() => {
+          const el = id ? doc.getElementById(id) : null
+          const root = editableOf()
+          if (!el || !root) return
+          editor.Canvas.getWindow()?.focus()
+          root.focus()
+          const after = doc.createRange()
+          after.setStartAfter(el)
+          after.collapse(true)
+          placeCaret(doc, after)
+        }, 0)
+      }),
+    // Huỷ: con trỏ về đúng chỗ cũ để gõ tiếp.
+    cancel: () => void resume(),
+  })
+  return true
 }
 
 /** View của khối chữ GrapesJS — chỉ phần dùng ở đây. */

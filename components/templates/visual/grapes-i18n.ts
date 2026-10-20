@@ -21,6 +21,32 @@ const VI_OVERRIDES: Messages = {
     },
   },
   styleManager: { empty: 'Chọn một khối trong thư để chỉnh kiểu chữ, màu, khoảng cách.' },
+  // Nhãn khối hiện trên khung soạn (badge khi rê / chọn) — grapesjs-mjml chỉ có tiếng Anh.
+  'grapesjs-mjml': {
+    components: {
+      names: {
+        body: 'Thân thư',
+        button: 'Nút',
+        column: 'Cột',
+        oneColumn: '1 cột',
+        twoColumn: '2 cột',
+        threeColumn: '3 cột',
+        divider: 'Đường kẻ',
+        group: 'Nhóm cột',
+        hero: 'Ảnh lớn',
+        image: 'Ảnh',
+        navBar: 'Menu',
+        navLink: 'Mục menu',
+        section: 'Hàng',
+        socialGroup: 'Mạng xã hội',
+        socialElement: 'Mạng xã hội',
+        spacer: 'Khoảng trống',
+        text: 'Đoạn chữ',
+        wrapper: 'Vùng bọc',
+        raw: 'Mã HTML',
+      },
+    },
+  },
 }
 
 const EN_OVERRIDES: Messages = {
@@ -55,29 +81,4 @@ function merge(base: Messages, extra: Messages): Messages {
 
 export function grapesMessages(vi: Messages): Record<string, Messages> {
   return { vi: merge(vi, VI_OVERRIDES), en: EN_OVERRIDES }
-}
-
-/** Nhãn khối của grapesjs-mjml (gói đó không có tiếng Việt). */
-export function mjmlBlockLabels(locale: string): Record<string, string> {
-  return locale === 'vi'
-    ? {
-        'mj-1-column': '1 cột',
-        'mj-2-columns': '2 cột',
-        'mj-3-columns': '3 cột',
-        'mj-text': 'Đoạn chữ',
-        'mj-button': 'Nút',
-        'mj-image': 'Ảnh',
-        'mj-divider': 'Đường kẻ',
-        'mj-spacer': 'Khoảng trống',
-      }
-    : {
-        'mj-1-column': '1 column',
-        'mj-2-columns': '2 columns',
-        'mj-3-columns': '3 columns',
-        'mj-text': 'Text',
-        'mj-button': 'Button',
-        'mj-image': 'Image',
-        'mj-divider': 'Divider',
-        'mj-spacer': 'Spacer',
-      }
 }

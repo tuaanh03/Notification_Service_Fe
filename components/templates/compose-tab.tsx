@@ -18,6 +18,7 @@ import { EditorPane, Highlight } from './editor-pane'
 import { FieldHint } from './field-hint'
 import { PreviewPane } from './preview-pane'
 import type { VisualControls, VisualDevice, VisualHistory } from './visual/visual-editor'
+import { SubjectField } from './visual/subject-field'
 import { VisualEditorLoader } from './visual/visual-editor-loader'
 
 /** Điều khiển bộ soạn trực quan — thiết bị / hoàn tác nằm ở thanh trên của màn soạn (`template-editor.tsx`). */
@@ -208,19 +209,8 @@ function VisualFrame({ ed, visual }: { ed: TemplateEditorState; visual: VisualBi
     <Panel className="flex h-[calc(100dvh-12rem)] min-h-[560px] min-w-0 flex-col overflow-hidden p-0" data-testid="visual-frame">
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--orbit)] px-4 py-3">
         <Label htmlFor="tpl-subject" className="shrink-0 text-xs font-semibold">{t('subject')}</Label>
-        <Input
-          id="tpl-subject"
-          value={ed.subject}
-          onChange={(e) => ed.setSubject(e.target.value)}
-          className="min-w-0 flex-1 text-sm"
-          disabled={ed.locked}
-          placeholder={t('subjectPlaceholder')}
-        />
-        {ed.subject.includes('{{') && (
-          <p className="w-full font-mono text-xs" data-testid="subject-highlight">
-            <Highlight text={ed.subject} declared={ed.declared} />
-          </p>
-        )}
+        {/* Biến trong tiêu đề hiện thành chip có nhãn như trong thư (UX-3), không lộ `{{ }}`. */}
+        <SubjectField ed={ed} label={t('subject')} placeholder={t('subjectPlaceholder')} />
       </div>
       <div className="min-h-0 flex-1">
         {ed.locked ? (
