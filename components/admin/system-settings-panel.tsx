@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import type { SystemSettingDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
 
@@ -18,8 +19,8 @@ const LABEL: Partial<
   Record<
     string,
     {
-      label: 'dedupeLabel' | 'rateLabel' | 'maxHooksLabel' | 'baseUrlLabel' | 'maxKeysLabel' | 'maxEndpointsLabel'
-      help: 'dedupeHelp' | 'rateHelp' | 'maxHooksHelp' | 'baseUrlHelp' | 'maxKeysHelp' | 'maxEndpointsHelp'
+      label: 'dedupeLabel' | 'rateLabel' | 'maxHooksLabel' | 'baseUrlLabel' | 'maxKeysLabel' | 'maxEndpointsLabel' | 'htmlCheckLabel'
+      help: 'dedupeHelp' | 'rateHelp' | 'maxHooksHelp' | 'baseUrlHelp' | 'maxKeysHelp' | 'maxEndpointsHelp' | 'htmlCheckHelp'
       unit?: 'unitMinutes' | 'unitPerMinute' | 'unitKeys' | 'unitHooks' | 'unitUrls'
     }
   >
@@ -30,10 +31,12 @@ const LABEL: Partial<
   'api.public_base_url': { label: 'baseUrlLabel', help: 'baseUrlHelp' },
   'apps.max_active_api_keys': { label: 'maxKeysLabel', help: 'maxKeysHelp', unit: 'unitKeys' },
   'webhooks.max_endpoints_per_app': { label: 'maxEndpointsLabel', help: 'maxEndpointsHelp', unit: 'unitUrls' },
+  'templates.html_check_enabled': { label: 'htmlCheckLabel', help: 'htmlCheckHelp' },
 }
 
-/** Cài đặt `apps.*` / `webhooks.*` nằm ở nhóm Ứng dụng; còn lại thuộc nhóm Incoming webhook. */
-const isAppsSetting = (key: string) => key.startsWith('apps.') || key.startsWith('webhooks.')
+/** Nhóm trên màn: `apps.*` / `webhooks.*` -> Ứng dụng; `templates.*` -> Template; còn lại -> Incoming webhook. */
+const groupOf = (key: string): 'apps' | 'templates' | 'incoming' =>
+  key.startsWith('apps.') || key.startsWith('webhooks.') ? 'apps' : key.startsWith('templates.') ? 'templates' : 'incoming'
 
 /**
  * Cài đặt hệ thống (ADR-0030 của backend) — con số vận hành Super Admin chỉnh không cần deploy. Mỗi
@@ -50,7 +53,7 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const save = (setting: SystemSettingDto, value: number | string | null) =>
+  const save = (setting: SystemSettingDto, value: number | string | boolean | null) =>
     startTransition(async () => {
       const result = await updateSystemSettingsAction({ [setting.key]: value })
       if (!result.ok) {
@@ -63,7 +66,7 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
       toast.success(t('saved'))
     })
 
-  const parsed = (s: SystemSettingDto): number | string | null | undefined => {
+  const parsed = (s: SystemSettingDto): number | string | boolean | null | undefined => {
     const raw = (drafts[s.key] ?? '').trim()
     if (s.kind === 'int') {
       const n = Number(raw)
@@ -72,26 +75,50 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
     return raw === '' ? null : raw
   }
 
-  const row = (s: SystemSettingDto) => {
+  const row = (s: SystemSettingDto) => (s.kind === 'bool' ? boolRow(s) : valueRow(s))
+
+  const meta = (s: SystemSettingDto) => {
+    const label = LABEL[s.key]
+    const shownDefault = s.default === null ? '—' : typeof s.default === 'boolean' ? t(s.default ? 'on' : 'off') : String(s.default)
+    return (
+      <div className="min-w-0">
+        <Label htmlFor={`setting-${s.key}`} className="text-sm">
+          {label ? t(label.label) : s.key}
+        </Label>
+        <p className="mt-1 text-xs text-[var(--text-secondary)]">{label ? t(label.help) : null}</p>
+        <p className="mt-1 font-mono text-[11px] text-[var(--text-muted)]">
+          {s.key}
+          {s.kind === 'int' && ` · ${t('range', { min: s.min ?? 0, max: s.max ?? 0 })}`}
+          {` · ${t('default', { value: shownDefault })}`}
+        </p>
+        <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+          {s.customized && s.updatedAt ? t('customized', { at: fmtDateTime(s.updatedAt) }) : t('usingDefault')}
+        </p>
+      </div>
+    )
+  }
+
+  /** Bật / tắt lưu ngay khi gạt — một khoá, không có ô gõ nên không cần nút Lưu riêng. */
+  const boolRow = (s: SystemSettingDto) => (
+    <div key={s.key} className="grid gap-2 border-b border-[var(--orbit)] pb-5 last:border-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:gap-6">
+      {meta(s)}
+      <div className="flex min-w-0 items-center gap-3">
+        <Switch id={`setting-${s.key}`} checked={s.value === true} disabled={pending} onCheckedChange={(checked) => save(s, checked)} />
+        <span className="text-xs text-[var(--text-secondary)]">{t(s.value === true ? 'on' : 'off')}</span>
+        <Button size="sm" variant="ghost" disabled={!s.customized || pending} onClick={() => save(s, null)}>
+          <RotateCcw /> {t('reset')}
+        </Button>
+      </div>
+    </div>
+  )
+
+  const valueRow = (s: SystemSettingDto) => {
     const label = LABEL[s.key]
     const next = parsed(s)
     const changed = next !== undefined && next !== s.value
     return (
       <div key={s.key} className="grid gap-2 border-b border-[var(--orbit)] pb-5 last:border-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:gap-6">
-        <div className="min-w-0">
-          <Label htmlFor={`setting-${s.key}`} className="text-sm">
-            {label ? t(label.label) : s.key}
-          </Label>
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">{label ? t(label.help) : null}</p>
-          <p className="mt-1 font-mono text-[11px] text-[var(--text-muted)]">
-            {s.key}
-            {s.kind === 'int' && ` · ${t('range', { min: s.min ?? 0, max: s.max ?? 0 })}`}
-            {` · ${t('default', { value: s.default === null ? '—' : String(s.default) })}`}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            {s.customized && s.updatedAt ? t('customized', { at: fmtDateTime(s.updatedAt) }) : t('usingDefault')}
-          </p>
-        </div>
+        {meta(s)}
         <div className="min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             <Input
@@ -132,12 +159,18 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
       <Panel className="p-5" ring>
         <h2 className="text-sm font-semibold">{t('incomingTitle')}</h2>
         <p className="mt-1 mb-5 text-xs text-[var(--text-secondary)]">{t('incomingIntro')}</p>
-        <div className="space-y-6">{settings.filter((s) => !isAppsSetting(s.key)).map(row)}</div>
+        <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'incoming').map(row)}</div>
       </Panel>
       <Panel className="mt-5 p-5">
         <h2 className="mb-5 text-sm font-semibold">{t('appsTitle')}</h2>
-        <div className="space-y-6">{settings.filter((s) => isAppsSetting(s.key)).map(row)}</div>
+        <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'apps').map(row)}</div>
       </Panel>
+      {settings.some((s) => groupOf(s.key) === 'templates') && (
+        <Panel className="mt-5 p-5">
+          <h2 className="mb-5 text-sm font-semibold">{t('templatesTitle')}</h2>
+          <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'templates').map(row)}</div>
+        </Panel>
+      )}
       <p className="mt-4 text-xs text-[var(--text-muted)]">{t('propagation')}</p>
     </>
   )

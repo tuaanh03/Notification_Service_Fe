@@ -125,7 +125,8 @@
     "SETTING_OUT_OF_RANGE": "The value is outside the allowed range",
     "SETTING_INVALID_URL": "The domain must be https://… without ?query or #fragment",
     "SETTING_UNKNOWN": "Unknown setting",
-    "EDITOR_MISMATCH": "The draft uses a different editor. Reload the page and try again."
+    "EDITOR_MISMATCH": "The draft uses a different editor. Reload the page and try again.",
+    "SETTING_INVALID_BOOLEAN": "Value must be on or off"
   },
   "common": {
     "loadErrorTitle": "Could not read data from the API",
@@ -593,11 +594,11 @@
     "VERSION_SUPERSEDED": "This version has been superseded — create a new draft instead of republishing.",
     "IMAGE_URL_NOT_ALLOWED": "Image links must be https:// and contain no variables.",
     "DESIGN_TOO_LARGE": "The design is too large. Shorten text or HTML blocks.",
-    "HTML_TAG_NOT_ALLOWED": "The email contains an element that is not allowed (e.g. script, embedded frame). Remove the block you just added and save again.",
-    "HTML_ATTRIBUTE_NOT_ALLOWED": "The email contains an unsafe attribute (e.g. code that runs on click). Remove the block you just added and save again.",
+    "HTML_TAG_NOT_ALLOWED": "The email contains a tag that is not allowed in email (e.g. script, iframe, form). Remove it and save again.",
+    "HTML_ATTRIBUTE_NOT_ALLOWED": "The email contains an unsafe attribute (e.g. onclick, onerror). Remove it and save again.",
     "HTML_URL_NOT_ALLOWED": "There is an unsafe link (e.g. javascript:). Links may only be https://, mailto: or a variable.",
     "HTML_STYLE_NOT_ALLOWED": "A style contains something that is not allowed (e.g. external fonts, code in CSS).",
-    "HTML_MALFORMED": "The email content is broken and cannot be read. Undo the last change and save again.",
+    "HTML_MALFORMED": "The email content is broken and cannot be read (an unclosed tag, quote or comment). Fix or undo it and save again.",
     "HTML_TOO_LARGE": "The email is too large (max 256 KB). Remove some content."
   },
   "templateEditor": {
@@ -1374,7 +1375,12 @@
     "maxEndpointsLabel": "Maximum webhook URLs per app",
     "maxEndpointsHelp": "Each URL adds one call for every email that finishes. At this number a URL must be deleted before another is added.",
     "unitHooks": "hooks",
-    "unitUrls": "URLs"
+    "unitUrls": "URLs",
+    "templatesTitle": "Template",
+    "htmlCheckLabel": "Check HTML safety on publish",
+    "htmlCheckHelp": "When on, HTML templates cannot be published if they contain runnable code (script, onclick…), javascript: links, non-https:// images or broken HTML — same as Visual templates. Published versions are not affected. Off = publish as before.",
+    "on": "On",
+    "off": "Off"
   },
   "quota": {
     "title": "Channels & Quota",

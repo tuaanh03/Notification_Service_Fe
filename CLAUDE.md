@@ -551,6 +551,10 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
 *   **Kiểm tra chính thức ở backend.** Lỗi 422 hiện TỪNG vi phạm (`issues[].code` + `path`, câu tiếng
     Việt ở `TEMPLATE_ISSUE_MESSAGES` của `problem.ts`) — `ActionResult` vì vậy mang thêm `issues`.
     `lib/template-syntax.ts` chỉ để tô màu / xem thử, đừng biến nó thành cổng chặn thứ hai.
+*   **Xuất bản kiểu HTML chạy bộ kiểm HTML an toàn** (ADR-0038 của backend, công tắc `templates.html_check_enabled` ở Cài
+    đặt hệ thống, mặc định bật): thẻ / thuộc tính / link / ảnh / CSS không an toàn -> 422 cùng mã kiểu Trực quan
+    (`HTML_TAG_NOT_ALLOWED`…, `path = html`). Lưu nháp KHÔNG bị chặn; bản đã xuất bản không bị đụng. `<ErrorAlert>` hiện
+    thêm chi tiết nguyên văn của backend cho mã `HTML_*` (chỉ đúng thẻ / thuộc tính sai).
 *   **Biến bắt buộc mới so với bản đang xuất bản → hộp chặn trước khi xuất bản**: app chưa gửi biến đó
     thì mọi lần gửi bị `MISSING_VARIABLE`.
 *   **Lưu trữ không có đường quay lại** — `tone="blocking"`, nêu `TEMPLATE_ARCHIVED`.
@@ -689,8 +693,9 @@ nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đ�
 ADR-0030 của backend. Server Component đọc `GET /admin/system-settings`, ghi qua
 `app/admin/settings/actions.ts` (`PUT`). Mỗi dòng một nút Lưu (gửi đúng khoá đó) + "Về mặc định" (gửi
 `null`) — đổi một con số không ghi đè con số khác. Ô số chặn ngoài khoảng `min`–`max` ngay ở client (backend
-vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — next-intl coi là tầng lồng). Chỉ có kiểu `int` / `url`
-(cờ `templates.visual_editor_enabled` + kiểu `bool` đã gỡ — ADR-0037 của backend). Giá trị mới tới
+vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — next-intl coi là tầng lồng). Cài đặt kiểu `bool`
+(hiện chỉ `templates.html_check_enabled`, nhóm "Template" — ADR-0038 của backend) là công tắc lưu ngay khi gạt, không có
+nút Lưu. Giá trị mới tới
 mọi máy chủ API trong tối đa 30 giây (đệm của backend) — màn hình nói rõ điều đó.
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá

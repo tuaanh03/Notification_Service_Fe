@@ -125,7 +125,8 @@
     "SETTING_OUT_OF_RANGE": "Giá trị nằm ngoài khoảng cho phép",
     "SETTING_INVALID_URL": "Domain phải là https://… và không có ?query hay #fragment",
     "SETTING_UNKNOWN": "Cài đặt không tồn tại",
-    "EDITOR_MISMATCH": "Bản nháp đang dùng kiểu soạn khác. Tải lại trang rồi thử lại."
+    "EDITOR_MISMATCH": "Bản nháp đang dùng kiểu soạn khác. Tải lại trang rồi thử lại.",
+    "SETTING_INVALID_BOOLEAN": "Giá trị phải là bật hoặc tắt"
   },
   "common": {
     "loadErrorTitle": "Không đọc được dữ liệu từ API",
@@ -593,11 +594,11 @@
     "VERSION_SUPERSEDED": "Bản này đã bị thay thế — tạo bản nháp mới thay vì xuất bản lại.",
     "IMAGE_URL_NOT_ALLOWED": "Link ảnh chỉ được là https:// và không chứa biến.",
     "DESIGN_TOO_LARGE": "Thiết kế quá lớn. Bớt chữ hoặc khối HTML.",
-    "HTML_TAG_NOT_ALLOWED": "Thư có thành phần không được phép trong email (vd mã script, khung nhúng). Xoá khối vừa thêm rồi lưu lại.",
-    "HTML_ATTRIBUTE_NOT_ALLOWED": "Thư có thuộc tính không an toàn (vd mã chạy khi bấm). Xoá khối vừa thêm rồi lưu lại.",
+    "HTML_TAG_NOT_ALLOWED": "Thư có thẻ không được phép trong email (vd script, iframe, form). Xoá phần đó rồi lưu lại.",
+    "HTML_ATTRIBUTE_NOT_ALLOWED": "Thư có thuộc tính không an toàn (vd onclick, onerror). Xoá thuộc tính đó rồi lưu lại.",
     "HTML_URL_NOT_ALLOWED": "Có link không an toàn (vd javascript:). Link chỉ được là https://, mailto: hoặc biến.",
     "HTML_STYLE_NOT_ALLOWED": "Kiểu chữ / màu có đoạn không được phép (vd tải font ngoài, mã chạy trong CSS).",
-    "HTML_MALFORMED": "Nội dung thư bị hỏng cấu trúc, không đọc được. Hoàn tác thay đổi gần nhất rồi lưu lại.",
+    "HTML_MALFORMED": "Nội dung thư bị hỏng cấu trúc, không đọc được (thẻ / nháy / chú thích chưa đóng). Sửa hoặc hoàn tác rồi lưu lại.",
     "HTML_TOO_LARGE": "Thư quá lớn (tối đa 256 KB). Bớt nội dung."
   },
   "templateEditor": {
@@ -1374,7 +1375,12 @@
     "maxEndpointsLabel": "Số URL nhận webhook tối đa mỗi app",
     "maxEndpointsHelp": "Mỗi URL là thêm một lần gọi cho mỗi thư gửi xong. Đủ số này thì phải xoá một URL trước khi thêm.",
     "unitHooks": "hook",
-    "unitUrls": "URL"
+    "unitUrls": "URL",
+    "templatesTitle": "Template",
+    "htmlCheckLabel": "Kiểm HTML an toàn khi xuất bản",
+    "htmlCheckHelp": "Bật thì template kiểu HTML bị chặn xuất bản nếu có mã chạy được (script, onclick…), link javascript:, ảnh không https:// hoặc HTML hỏng — như kiểu Trực quan. Bản đã xuất bản không bị ảnh hưởng. Tắt = xuất bản như trước.",
+    "on": "Đang bật",
+    "off": "Đang tắt"
   },
   "quota": {
     "title": "Kênh & Quota",

@@ -520,10 +520,10 @@ export type HookPreviewDto = {
 /** Một dòng Cài đặt hệ thống (ADR-0030). `value` = giá trị hiệu lực (đã gộp mặc định). */
 export type SystemSettingDto = {
   key: string
-  /** int | url */
+  /** int | url | bool */
   kind: string
-  value: number | string | null
-  default: number | string | null
+  value: number | string | boolean | null
+  default: number | string | boolean | null
   min: number | null
   max: number | null
   /** false = đang dùng mặc định */

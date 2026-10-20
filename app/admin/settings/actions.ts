@@ -6,7 +6,7 @@ import type { SystemSettingDto } from '@/lib/api/types'
 
 /** Lưu Cài đặt hệ thống (chỉ Super Admin — backend chặn `platform.manage`). `null` = về mặc định. */
 export async function updateSystemSettingsAction(
-  values: Record<string, number | string | null>,
+  values: Record<string, number | string | boolean | null>,
 ): Promise<ActionResult<SystemSettingDto[]>> {
   return toResult(() => updateSystemSettings(values))
 }

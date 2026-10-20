@@ -378,6 +378,10 @@ function ErrorAlert({ error }: { error: EditorError }) {
               <li key={i}>
                 {issue.path && <span className="font-mono">{issue.path}: </span>}
                 {issueText(issue)}{' '}
+                {/* Bộ kiểm HTML (ADR-0036 / 0038): chi tiết của backend chỉ đúng chỗ sai (vd thẻ <script>) — giữ nguyên văn. */}
+                {issue.code.startsWith('HTML_') && issue.message && (
+                  <span className="font-mono text-[var(--text-muted)]">— {issue.message} </span>
+                )}
                 <span className="font-mono text-[var(--text-muted)]">({issue.code})</span>
               </li>
             ))}
