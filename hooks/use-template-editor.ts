@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import {
   aiComposeAction,
   archiveTemplateAction,
-  convertToHtmlAction,
   draftFromVersionAction,
   duplicateTemplateAction,
   loadTemplateAction,
@@ -15,10 +14,9 @@ import type { Issue } from '@/lib/api/problem'
 import type { ActionResult } from '@/lib/api/result'
 import type { TemplateContentInput } from '@/lib/api/templates'
 import type { AiComposeResultDto, AiSuggestedVariableDto, TemplateDetailDto, TemplateVariableDto, TemplateVersionDto } from '@/lib/api/types'
-import { designTexts, type EmailDesign, type TemplateEditor } from '@/lib/email-design'
+import type { TemplateEditor } from '@/lib/template-editors'
 import { isVisualDesign, type VisualDesign } from '@/lib/visual-design'
 import type { TemplateCategory } from '@/lib/template-categories'
-import { useDesignPreview } from './use-design-preview'
 import { hasSource, renderPreview, sourceOf, usedVariablePaths } from '@/lib/template-syntax'
 
 /**
@@ -41,6 +39,9 @@ export type EditorError = { message: string; code: string; issues: readonly Issu
  * là tạo nháp mới chép từ bản đó (backend không cho sửa tại chỗ bản đã xuất bản).
  *
  * `readOnly` = người xem không cấu hình được app (App Viewer, ADR-0022): mọi bản đều chỉ đọc.
+ *
+ * Kiểu `blocks` (trình kéo-thả cũ, đã ngừng — ADR-0037 của backend): luôn chỉ đọc (`legacy`), hiện HTML đã lưu;
+ * không lưu / xuất bản / tạo nháp / nhân bản được — template này sẽ được dọn.
  */
 export function useTemplateEditor(appId: string, templateId: string, readOnly = false) {
   const [detail, setDetail] = useState<TemplateDetailDto | null>(null)
@@ -52,16 +53,13 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
   const [variables, setVariables] = useState<TemplateVariableDto[]>([])
-  /** Kiểu soạn của bản đang hiện (ADR-0034). `blocks`: `html` / `text` ở trên là bản ĐÃ LƯU do backend sinh. */
+  /** Kiểu soạn của bản đang hiện. `blocks` (đã ngừng): `html` / `text` ở trên là bản đã lưu, chỉ đọc. */
   const [editor, setEditor] = useState<TemplateEditor>('html')
-  const [design, setDesign] = useState<EmailDesign | null>(null)
   /** Kiểu `visual`: dự án ĐÃ LƯU (để mở bộ soạn); nội dung đang soạn nằm trong GrapesJS, đọc qua `visualRef`. */
   const [visualDesign, setVisualDesign] = useState<VisualDesign | null>(null)
   /** MJML đang soạn (bộ soạn báo sau mỗi lần sửa) — chỉ để tìm biến chưa khai, không gửi đi. */
   const [visualMjml, setVisualMjml] = useState<string | null>(null)
   const visualRef = useRef<VisualEditorHandle | null>(null)
-  /** Thiết kế đã sửa sau lần nạp cuối — chỉ khi đó mới hỏi backend xem trước; chưa sửa thì dùng HTML đã lưu. */
-  const [designEdited, setDesignEdited] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [aiBanner, setAiBanner] = useState(false)
 
@@ -70,7 +68,9 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   /** Bản đang hiện trong khung soạn. */
   const shown: TemplateVersionDto | null = draft ?? published ?? detail?.versions[0] ?? null
   const archived = detail?.status === 'archived'
-  const locked = !draft || archived || readOnly
+  /** Template kiểu kéo-thả cũ (ADR-0037 của backend) — chỉ đọc, chờ dọn. */
+  const legacy = shown?.editor === 'blocks'
+  const locked = !draft || archived || readOnly || legacy
 
   /** Nạp bản đang hiện vào ô soạn — sau mỗi lần backend trả chi tiết mới. */
   const adopt = useCallback((next: TemplateDetailDto) => {
@@ -85,10 +85,8 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     setVariables(v?.variables ?? [])
     setEditor(v?.editor ?? 'html')
     const saved = v?.design ?? null
-    setDesign(saved && !isVisualDesign(saved) ? saved : null)
     setVisualDesign(isVisualDesign(saved) ? saved : null)
     setVisualMjml(null)
-    setDesignEdited(false)
     setDirty(false)
   }, [])
 
@@ -107,18 +105,11 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     void load()
   }, [load])
 
-  const designPreview = useDesignPreview(appId, editor === 'blocks' && designEdited ? design : null)
-  /** HTML / chữ thường đang xem: kiểu blocks lấy bản backend vừa sinh (nếu đã sửa), không thì bản đã lưu. */
-  const bodyHtml = editor === 'blocks' ? (designPreview.preview?.html ?? html) : html
-  const bodyText = editor === 'blocks' ? (designPreview.preview?.text ?? text) : text
-
   const derived = useMemo(() => {
     const used =
-      editor === 'blocks' && design
-        ? usedVariablePaths(subject, ...designTexts(design))
-        : editor === 'visual'
-          ? usedVariablePaths(subject, visualMjml ?? visualDesign?.mjml ?? html)
-          : usedVariablePaths(subject, html, text)
+      editor === 'visual'
+        ? usedVariablePaths(subject, visualMjml ?? visualDesign?.mjml ?? html)
+        : usedVariablePaths(subject, html, text)
     const declared = variables.map((v) => v.name)
     return {
       declared,
@@ -128,7 +119,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
       missingSource: used.filter((p) => !hasSource(p)),
       unused: declared.filter((d) => !used.includes(d)),
       previewSubject: renderPreview(subject, variables, { escape: false }),
-      previewHtml: renderPreview(bodyHtml, variables, { escape: true }),
+      previewHtml: renderPreview(html, variables, { escape: true }),
       /** Bắt buộc mới so với bản ĐANG XUẤT BẢN — app chưa gửi biến này thì mọi lần gửi bị MISSING_VARIABLE. */
       newRequired: published
         ? variables
@@ -136,7 +127,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
             .map((v) => v.name)
         : [],
     }
-  }, [subject, html, text, variables, published, editor, design, bodyHtml, visualMjml, visualDesign])
+  }, [subject, html, text, variables, published, editor, visualMjml, visualDesign])
 
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value)
@@ -207,9 +198,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
         ? { editor: 'visual', subject, html: snap.html, design: { ...saved, project: snap.project, mjml: snap.mjml }, variables }
         : { editor: 'visual', subject, html, design: saved, variables }
     }
-    return editor === 'blocks' && design
-      ? { editor: 'blocks', subject, design, variables }
-      : { editor: 'html', subject, html, text, variables }
+    return { editor: 'html', subject, html, text, variables }
   }
 
   return {
@@ -223,6 +212,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     published,
     shown,
     archived,
+    legacy,
     locked,
     readOnly,
     dirty,
@@ -233,13 +223,6 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     text,
     setText: edit(setText),
     editor,
-    design,
-    /** Sửa thiết kế kéo-thả — mọi phép sửa cây trả bản mới (`lib/email-design.ts`). */
-    setDesign: (next: EmailDesign) => {
-      setDesign(next)
-      setDesignEdited(true)
-      setDirty(true)
-    },
     /** Kiểu `visual`: dự án đã lưu để mở bộ soạn (null = thư mới, bộ soạn dựng thư mở đầu). */
     visualDesign,
     /** Bộ soạn trực quan gắn / gỡ mình (unmount truyền null). */
@@ -251,9 +234,6 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
       setVisualMjml(mjml)
       setDirty(true)
     },
-    /** Chữ thường đang xem — kiểu blocks là bản backend sinh, chỉ đọc. */
-    bodyText,
-    designPreview,
     variables,
     updateVar,
     declareVar,
@@ -283,8 +263,6 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
         })
       }),
     archive: () => run(() => archiveTemplateAction(appId, templateId)),
-    /** "Chuyển sang HTML": lưu nháp đang soạn rồi chuyển — một chiều, bản đã xuất bản không đổi. */
-    convertToHtml: () => run(() => convertToHtmlAction(appId, templateId, content())),
     /**
      * Hỏi AI một đề xuất — KHÔNG đụng ô soạn. Gửi biến đã khai (tên / bắt buộc / mô tả), không gửi giá
      * trị mẫu; `revise` gửi kèm nội dung đang soạn (có thể chưa lưu).

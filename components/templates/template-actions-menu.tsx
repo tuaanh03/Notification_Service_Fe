@@ -1,5 +1,5 @@
 'use client'
-import { Archive, Code2, Copy, CopyPlus, MoreHorizontal, Redo2, Save } from 'lucide-react'
+import { Archive, Copy, CopyPlus, MoreHorizontal, Redo2, Save } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +19,6 @@ export function TemplateActionsMenu({
   disabled,
   onCopyId,
   onDuplicate,
-  onToHtml,
   onArchive,
   onSaveMobile,
   onRedoMobile,
@@ -28,7 +27,6 @@ export function TemplateActionsMenu({
   disabled: boolean
   onCopyId: () => void
   onDuplicate?: () => void
-  onToHtml?: () => void
   onArchive?: () => void
   /** Bộ soạn trực quan trên điện thoại (< md): Lưu nháp / Làm lại chuyển vào đây cho thanh đầu không tràn. */
   onSaveMobile?: () => void
@@ -63,11 +61,6 @@ export function TemplateActionsMenu({
         {onDuplicate && (
           <DropdownMenuItem className="cursor-pointer text-xs" disabled={disabled} onClick={onDuplicate} data-testid="menu-duplicate">
             <CopyPlus className="mr-1.5 size-3.5" /> {t('duplicate')}
-          </DropdownMenuItem>
-        )}
-        {onToHtml && (
-          <DropdownMenuItem className="cursor-pointer text-xs" disabled={disabled} onClick={onToHtml} data-testid="to-html-btn">
-            <Code2 className="mr-1.5 size-3.5" /> {t('toHtml')}
           </DropdownMenuItem>
         )}
         {onArchive && (

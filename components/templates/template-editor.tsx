@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Archive, CopyPlus, FileWarning, Monitor, Pencil, Redo2, Save, Smartphone, Sparkles, Undo2, UploadCloud } from 'lucide-react'
+import { Archive, CopyPlus, FileWarning, History, Monitor, Pencil, Redo2, Save, Smartphone, Sparkles, Undo2, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -58,8 +58,6 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
-  /** Hộp "Chuyển sang HTML" (ADR-0034) — một chiều. */
-  const [toHtmlOpen, setToHtmlOpen] = useState(false)
   /** Hộp Nhân bản: `dupRound` đổi mỗi lần mở để ô tên dựng lại, không giữ chữ của lần trước. */
   const [dupOpen, setDupOpen] = useState(false)
   const [dupRound, setDupRound] = useState(0)
@@ -136,13 +134,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       router.push(`/templates/${id}`)
     }
   }
-  const doConvert = async () => {
-    setToHtmlOpen(false)
-    if (await ed.convertToHtml()) toast.success(t('convertedToHtml'))
-  }
-  const blocks = ed.editor === 'blocks'
   const visual = ed.editor === 'visual'
-  const editorLabel = blocks ? t('editorBlocks') : visual ? t('editorVisual') : t('editorHtml')
+  const editorLabel = ed.legacy ? t('editorBlocks') : visual ? t('editorVisual') : t('editorHtml')
   /** Thanh thiết bị + hoàn tác chỉ khi bộ soạn trực quan đang mở (tab Soạn thư, có nháp). */
   const visualTools = visual && tab === 'compose' && !ed.locked
   const onSave = async () => {
@@ -196,7 +189,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               </div>
             )}
             <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
-            {writable && !ed.archived && ed.draft && (
+            {writable && !ed.archived && !ed.legacy && ed.draft && (
               <>
                 {/* Kiểu trực quan trên điện thoại: Lưu nháp vào ⋯ để thanh đầu không tràn; Xuất bản vẫn thấy. */}
                 <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()} className={cn(visual && 'hidden md:inline-flex')}>
@@ -207,7 +200,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 </Button>
               </>
             )}
-            {writable && !ed.archived && !ed.draft && ed.published && (
+            {writable && !ed.archived && !ed.legacy && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
                 <Pencil /> {t('edit', { version: nextVersion })}
               </Button>
@@ -215,8 +208,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             <TemplateActionsMenu
               disabled={ed.pending}
               onCopyId={copyId}
-              onDuplicate={writable ? openDuplicate : undefined}
-              onToHtml={writable && !ed.archived && ed.draft && blocks ? () => setToHtmlOpen(true) : undefined}
+              onDuplicate={writable && !ed.legacy ? openDuplicate : undefined}
               onArchive={writable && !ed.archived ? () => setArchiveConfirm(true) : undefined}
               onSaveMobile={visual && writable && !ed.archived && ed.draft ? () => void onSave() : undefined}
               onRedoMobile={visualTools ? () => visualControls?.redo() : undefined}
@@ -243,7 +235,15 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             </AlertDescription>
           </Alert>
         )}
-        {writable && !ed.archived && ed.locked && ed.published && (
+        {ed.legacy && (
+          // Kiểu kéo-thả cũ đã ngừng (ADR-0037 của backend): chỉ xem, không sửa / xuất bản / nhân bản được.
+          <Alert className="bg-[var(--solar)]/10" data-testid="legacy-notice">
+            <History className="text-[var(--solar)]" />
+            <AlertTitle>{t('legacyTitle')}</AlertTitle>
+            <AlertDescription>{t('legacyBody')}</AlertDescription>
+          </Alert>
+        )}
+        {writable && !ed.archived && !ed.legacy && ed.locked && ed.published && (
           <Alert data-testid="locked-notice">
             <AlertDescription className="text-[var(--text-secondary)]">
               {t.rich('lockedNotice', { version: ed.published.version, em: (chunks) => <em>{chunks}</em> })}
@@ -309,19 +309,6 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         cancelLabel={t('leaveStay')}
         onConfirm={leave.leave}
         onCancel={leave.stay}
-      />
-      {/* Một chiều: không quay lại kéo-thả được; chỉ nháp đổi, bản đã xuất bản giữ nguyên. */}
-      <ConfirmDialog
-        open={toHtmlOpen}
-        title={t('toHtmlTitle')}
-        description={t('toHtmlBody')}
-        facts={[
-          [t('factDraft'), `v${ed.draft?.version ?? ''} → HTML`],
-          [t('factPublished'), ed.published ? t('toHtmlPublishedKept', { version: ed.published.version }) : '—'],
-        ]}
-        confirmLabel={t('toHtmlConfirm')}
-        onConfirm={() => void doConvert()}
-        onCancel={() => setToHtmlOpen(false)}
       />
       <AiComposeDialog key={aiRound} open={aiOpen} ed={ed} onClose={() => setAiOpen(false)} />
       {/* Biến bắt buộc mới: từ lúc xuất bản, app chưa gửi biến đó thì mọi lần gửi bị từ chối. */}

@@ -13,7 +13,6 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Textarea } from '@/components/ui/textarea'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
 import { isTemplateCategory, TEMPLATE_CATEGORIES } from '@/lib/template-categories'
-import { BlockEditor } from './blocks/block-editor'
 import { EditorPane, Highlight } from './editor-pane'
 import { FieldHint } from './field-hint'
 import { PreviewPane } from './preview-pane'
@@ -56,10 +55,9 @@ export function ComposeTab({
   const tcat = useTranslations('templateCategory')
   const detail = ed.detail
   if (!detail) return null
-  const blocks = ed.editor === 'blocks'
   const visualKind = ed.editor === 'visual'
-  /** Bản chữ thường do backend sinh (kéo-thả, trực quan) — chỉ đọc. */
-  const autoText = blocks || visualKind
+  /** Bản chữ thường do backend sinh (trực quan; kéo-thả cũ) — chỉ đọc. */
+  const autoText = visualKind || ed.legacy
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
   return (
@@ -98,15 +96,11 @@ export function ComposeTab({
         )}
       </Panel>
 
-      {blocks ? (
-        <>
-          <Panel className="h-[720px] min-w-0 overflow-hidden p-0">
-            <BlockEditor ed={ed} locked={ed.locked} />
-          </Panel>
-          <div className="cosmic-surface h-[640px] overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs">
-            <PreviewPane ed={ed} />
-          </div>
-        </>
+      {ed.legacy ? (
+        // Kiểu kéo-thả cũ đã ngừng (ADR-0037 của backend): chỉ xem thư đã lưu, không có khung soạn.
+        <div className="cosmic-surface h-[640px] overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs" data-testid="legacy-preview">
+          <PreviewPane ed={ed} />
+        </div>
       ) : (
         <ResizablePanelGroup
           orientation="horizontal"
@@ -179,12 +173,12 @@ export function ComposeTab({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
-                <FieldHint text={blocks ? t('textAuto') : visualKind ? t('textAutoVisual') : t('textHint')} label={t('hintFor', { field: t('text') })} />
+                <FieldHint text={autoText ? t('textAutoVisual') : t('textHint')} label={t('hintFor', { field: t('text') })} />
               </div>
-              {/* Kéo-thả / trực quan: bản chữ thường do backend sinh — chỉ đọc (trực quan: bản của lần lưu gần nhất). */}
+              {/* Trực quan (và kéo-thả cũ): bản chữ thường do backend sinh — chỉ đọc, là bản của lần lưu gần nhất. */}
               <Textarea
                 id="tpl-text"
-                value={blocks ? ed.bodyText : ed.text}
+                value={ed.text}
                 onChange={(e) => ed.setText(e.target.value)}
                 className="min-h-20 font-mono text-xs"
                 disabled={ed.locked}

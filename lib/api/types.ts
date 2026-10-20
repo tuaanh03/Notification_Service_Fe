@@ -1,5 +1,5 @@
 import type { Locale } from '@/i18n/locales'
-import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
+import type { TemplateEditor } from '@/lib/template-editors'
 import type { VisualDesign } from '@/lib/visual-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 
@@ -367,11 +367,12 @@ export type TemplateVersionDto = {
   /** draft | published | superseded */
   status: string
   /**
-   * Kiểu soạn (ADR-0034, ADR-0036 của backend); thiếu = `html`. `blocks`: `html` / `text` do backend sinh từ
-   * `design` (`EmailDesign`). `visual`: `design` là dự án GrapesJS + MJML (`VisualDesign`), `text` backend sinh.
+   * Kiểu soạn (ADR-0036 của backend); thiếu = `html`. `visual`: `design` là dự án GrapesJS + MJML (`VisualDesign`),
+   * `text` backend sinh. `blocks` = kiểu kéo-thả cũ đã ngừng (ADR-0037): `design` của nó console không đọc — chỉ hiện
+   * `html` đã lưu.
    */
   editor?: TemplateEditor
-  design?: EmailDesign | VisualDesign | null
+  design?: VisualDesign | Record<string, unknown> | null
   subject: string
   html: string
   text: string
@@ -409,8 +410,9 @@ export type TemplateSummaryDto = {
 export type TemplateDetailDto = TemplateSummaryDto & { versions: TemplateVersionDto[] }
 
 /**
- * Sao đúng `TemplatePresetDto` (`GET /admin/template-presets`, ADR-0035 của backend) — một mẫu dựng sẵn ở
- * MỘT ngôn ngữ thư. `html` do backend sinh từ `design`, còn nguyên `{{ … }}`.
+ * Sao đúng `TemplatePresetDto` (`GET /admin/template-presets`, ADR-0035 / ADR-0037 của backend) — một mẫu dựng sẵn
+ * ở MỘT ngôn ngữ thư. `mjml` là thứ "Dùng mẫu" nạp vào GrapesJS (`compileMjml`) để ra HTML + dự án; `html` backend
+ * sinh sẵn chỉ để làm ảnh thu nhỏ. Cả hai còn nguyên `{{ … }}`. (`design` của backend console không đọc.)
  */
 export type TemplatePresetDto = {
   id: string
@@ -421,7 +423,7 @@ export type TemplatePresetDto = {
   description: string
   subject: string
   variables: TemplateVariableDto[]
-  design: EmailDesign
+  mjml: string
   html: string
 }
 
@@ -517,15 +519,12 @@ export type HookPreviewDto = {
 }
 
 /** Một dòng Cài đặt hệ thống (ADR-0030). `value` = giá trị hiệu lực (đã gộp mặc định). */
-/** Sao đúng `GET /admin/template-editor-options` (ADR-0036): kiểu soạn nào đang mở cho người TẠO template. */
-export type TemplateEditorOptionsDto = { visualEditor: boolean }
-
 export type SystemSettingDto = {
   key: string
-  /** int | url | bool */
+  /** int | url */
   kind: string
-  value: number | string | boolean | null
-  default: number | string | boolean | null
+  value: number | string | null
+  default: number | string | null
   min: number | null
   max: number | null
   /** false = đang dùng mặc định */

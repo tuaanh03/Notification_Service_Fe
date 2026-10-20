@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { LayoutTemplate } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { createFromPresetAction } from '@/app/templates/actions'
@@ -16,13 +16,19 @@ import { presetErrorOf, presetsOf, type useTemplatePresets } from '@/hooks/use-t
 import { LOCALES, type Locale } from '@/i18n/locales'
 import type { TemplatePresetDto } from '@/lib/api/types'
 import { renderPreview } from '@/lib/template-syntax'
+import { VISUAL_DESIGN_FORMAT, VISUAL_DESIGN_VERSION } from '@/lib/visual-design'
 import { DevicePreview } from './preview-pane'
+import { compileMjml, type CompiledMjml } from './visual/compile-mjml'
 
 /**
  * Hộp xem trước một mẫu: Máy tính / Điện thoại (dùng chung `DevicePreview` với màn soạn), chọn ngôn ngữ THƯ
- * (mặc định theo màn hình), tên gợi ý sẵn theo ngôn ngữ thư, "Dùng mẫu" -> template mới, sang màn soạn.
+ * (mặc định theo màn hình), tên gợi ý sẵn theo ngôn ngữ thư, "Dùng mẫu" -> template mới kiểu trực quan, sang màn soạn.
  * Lỗi (trùng tên…) hiện ngay trong hộp như hộp Nhân bản. Nơi gọi truyền `key` theo mẫu để ô tên không giữ
  * giá trị của mẫu trước (bẫy mục 6).
+ *
+ * Mở hộp là biên dịch ngay MJML của mẫu (`compileMjml` — GrapesJS + grapesjs-mjml không giao diện, ADR-0037 của
+ * backend): xem trước hiện ĐÚNG thư sẽ được tạo, và "Dùng mẫu" gửi luôn bản đó (`html` + dự án + MJML). Chưa biên
+ * dịch xong thì xem trước tạm bằng `html` ảnh thu nhỏ của backend.
  */
 export function PresetDialog({
   preset,
@@ -47,6 +53,20 @@ export function PresetDialog({
   const [nameEdited, setNameEdited] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  /** Bản biên dịch theo `id/ngôn ngữ` — đổi qua lại ngôn ngữ không biên dịch lại; lỗi thì bỏ để thử lại được. */
+  const builds = useRef(new Map<string, Promise<CompiledMjml>>())
+  const build = useCallback((p: TemplatePresetDto) => {
+    const key = `${p.id}/${p.locale}`
+    let job = builds.current.get(key)
+    if (!job) {
+      job = compileMjml(p.mjml)
+      builds.current.set(key, job)
+      job.catch(() => builds.current.delete(key))
+    }
+    return job
+  }, [])
+  const [compiled, setCompiled] = useState<{ key: string; html: string } | null>(null)
+  const [compileError, setCompileError] = useState<string | null>(null)
 
   const { load } = library
   useEffect(() => load(mailLocale), [mailLocale, load])
@@ -63,10 +83,39 @@ export function PresetDialog({
     if (!nameEdited && shown) setName(shown.name)
   }, [shown, nameEdited])
 
+  const shownKey = shown ? `${shown.id}/${shown.locale}` : null
+  useEffect(() => {
+    if (!shown) return
+    let alive = true
+    const key = `${shown.id}/${shown.locale}`
+    setCompileError(null)
+    build(shown).then(
+      (out) => alive && setCompiled({ key, html: out.html }),
+      (err: unknown) => alive && setCompileError(err instanceof Error ? err.message : String(err)),
+    )
+    return () => {
+      alive = false
+    }
+  }, [shown, build])
+  const previewHtml = compiled && compiled.key === shownKey ? compiled.html : shown?.html
+
   const use = () =>
     startTransition(async () => {
-      if (!preset) return
-      const result = await createFromPresetAction(app.app_id, { presetId: preset.id, locale: mailLocale, name: name.trim() })
+      if (!preset || !shown) return
+      let out: CompiledMjml
+      try {
+        out = await build(shown)
+      } catch (err) {
+        setError(t('compileFailed', { message: err instanceof Error ? err.message : String(err) }))
+        return
+      }
+      const result = await createFromPresetAction(app.app_id, {
+        presetId: preset.id,
+        locale: mailLocale,
+        name: name.trim(),
+        html: out.html,
+        design: { format: VISUAL_DESIGN_FORMAT, version: VISUAL_DESIGN_VERSION, project: out.project, mjml: out.mjml },
+      })
       if (result.ok) router.replace(`/templates/${result.data.id}`)
       else setError(te('withCode', { message: result.message, code: result.code }))
     })
@@ -87,7 +136,15 @@ export function PresetDialog({
             {shown ? (
               <DevicePreview
                 subject={renderPreview(shown.subject, shown.variables, { escape: false })}
-                html={renderPreview(shown.html, shown.variables, { escape: true })}
+                html={renderPreview(previewHtml ?? shown.html, shown.variables, { escape: true })}
+                loading={previewHtml === shown.html && !compileError}
+                notice={
+                  compileError && (
+                    <p className="shrink-0 border-b border-[var(--orbit)] bg-[var(--supernova)]/5 px-4 py-1.5 text-[11px] text-[var(--supernova)]" data-testid="preset-compile-error">
+                      {t('compileFailed', { message: compileError })}
+                    </p>
+                  )
+                }
               />
             ) : (
               <p className="p-4 text-xs text-[var(--text-muted)]">

@@ -3,16 +3,13 @@
 import {
   aiComposeTemplate,
   archiveTemplate,
-  convertDraftToHtml,
   createTemplate,
   createTemplateFromPreset,
   draftFromVersion,
   duplicateTemplate,
   getTemplate,
-  getTemplateEditorOptions,
   listTemplatePresets,
   listTemplates,
-  previewDesign,
   publishTemplate,
   saveDraft,
   updateTemplate,
@@ -21,10 +18,11 @@ import {
   type TemplateListFilter,
 } from '@/lib/api/templates'
 import type { Locale } from '@/i18n/locales'
-import type { EmailDesign, TemplateEditor } from '@/lib/email-design'
 import type { TemplateCategory } from '@/lib/template-categories'
+import type { CreatableEditor } from '@/lib/template-editors'
+import type { VisualDesign } from '@/lib/visual-design'
 import { toResult, type ActionResult } from '@/lib/api/result'
-import type { AiComposeResultDto, TemplateDetailDto, TemplateEditorOptionsDto, TemplatePresetDto, TemplateSummaryDto } from '@/lib/api/types'
+import type { AiComposeResultDto, TemplateDetailDto, TemplatePresetDto, TemplateSummaryDto } from '@/lib/api/types'
 
 /**
  * Lớp BFF của màn Templates. Server Action vì dữ liệu thuộc app đang chọn (`?app=`, CLAUDE.md mục 2.2).
@@ -46,14 +44,9 @@ export async function loadTemplateAction(appId: string, id: string): Promise<Act
 
 export async function createTemplateAction(
   appId: string,
-  input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
+  input: { name: string; category?: TemplateCategory; editor?: CreatableEditor },
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplate(appId, input))
-}
-
-/** Cờ bộ soạn trực quan (ADR-0036) — màn Tạo template đọc để hiện / ẩn thẻ "Trực quan". */
-export async function loadTemplateEditorOptionsAction(): Promise<ActionResult<TemplateEditorOptionsDto>> {
-  return toResult(() => getTemplateEditorOptions())
 }
 
 /** Thư viện mẫu theo ngôn ngữ thư — không thuộc app nào, nhưng vẫn đi qua BFF (token nằm ở server). */
@@ -61,29 +54,15 @@ export async function loadTemplatePresetsAction(locale: Locale): Promise<ActionR
   return toResult(() => listTemplatePresets(locale))
 }
 
-/** "Dùng mẫu" — template mới của app, nháp v1 chép từ mẫu. */
+/**
+ * "Dùng mẫu" — template mới của app, kiểu trực quan: `html` + `design` do trình duyệt biên dịch từ MJML của mẫu
+ * (`compileMjml`, ADR-0037 của backend).
+ */
 export async function createFromPresetAction(
   appId: string,
-  input: { presetId: string; locale: Locale; name: string },
+  input: { presetId: string; locale: Locale; name: string; html: string; design: VisualDesign },
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplateFromPreset(appId, input))
-}
-
-/** Xem trước thiết kế kéo-thả đang soạn — backend sinh HTML, không lưu. */
-export async function previewDesignAction(appId: string, design: EmailDesign): Promise<ActionResult<{ html: string; text: string }>> {
-  return toResult(() => previewDesign(appId, design))
-}
-
-/** "Chuyển sang HTML" — chỉ nháp; bản đã xuất bản giữ nguyên. Console LƯU NHÁP trước rồi mới gọi. */
-export async function convertToHtmlAction(
-  appId: string,
-  id: string,
-  content: TemplateContentInput,
-): Promise<ActionResult<TemplateDetailDto>> {
-  return toResult(async () => {
-    await saveDraft(appId, id, content)
-    return convertDraftToHtml(appId, id)
-  })
 }
 
 /** Đổi tên và / hoặc nhóm — không đụng nội dung đang soạn. */

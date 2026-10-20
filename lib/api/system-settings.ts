@@ -8,6 +8,6 @@ export async function getSystemSettings(): Promise<SystemSettingDto[]> {
 }
 
 /** Gửi MỘT PHẦN các khoá; `null` = về mặc định. Backend kiểm hết rồi mới ghi. */
-export async function updateSystemSettings(values: Record<string, number | string | boolean | null>): Promise<SystemSettingDto[]> {
+export async function updateSystemSettings(values: Record<string, number | string | null>): Promise<SystemSettingDto[]> {
   return (await adminFetch<{ settings: SystemSettingDto[] }>('/system-settings', { method: 'PUT', body: { values } })).settings
 }

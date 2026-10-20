@@ -153,6 +153,8 @@ export default function VisualEditor({
       chipOptionsRef.current = chipOptions
       const project = latest.current.ed.visualDesign?.project
       const hasProject = project !== undefined && Object.keys(project).length > 0
+      // Không có dự án mà có MJML (dữ liệu dựng ngoài bộ soạn) thì nạp MJML; không có gì thì thư mở đầu.
+      const savedMjml = latest.current.ed.visualDesign?.mjml.trim() ?? ''
       instance = grapesjs.init({
         container: canvasRef.current,
         height: '100%',
@@ -187,7 +189,7 @@ export default function VisualEditor({
         ],
         ...(hasProject
           ? { projectData: project }
-          : { components: starterMjml({ heading: t('starterHeading'), body: t('starterBody') }) }),
+          : { components: savedMjml || starterMjml({ heading: t('starterHeading'), body: t('starterBody') }) }),
       })
 
       instance.onReady(() => {

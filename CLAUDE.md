@@ -74,10 +74,10 @@ webservice/ews-astrolink/
 │   │                         # template-actions-menu, field-hint, editor-pane, preview-pane, schema-pane, versions-panel,
 │   │                         # contract-panel) — ĐÃ đấu API (mục 2.12);
 │   │                         # ai-compose-dialog = hộp thoại "Nhờ AI soạn" (gọi backend);
-│   │                         # blocks/* = trình kéo-thả (block-editor, block-palette, design-canvas, block-view, block-inspector, variable-field)
 │   │                         # visual/* = bộ soạn trực quan GrapesJS + MJML (visual-editor + -loader nạp động, chip-plugin,
 │   │                         # left-panel, properties-panel, color-field, blocks, email-settings, block-lint, subject-field,
-│   │                         # grapes-i18n, insert-variable-dialog, visual-editor.css) — ADR-0036 của backend
+│   │                         # grapes-i18n, insert-variable-dialog, compile-mjml, visual-editor.css) — ADR-0036 / 0037 của backend
+│   │                         # (trình kéo-thả cũ `blocks/*` + @dnd-kit đã XOÁ — ADR-0037)
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng (thiếu app -> trang Tổ chức), link tự mang app (mục 2.9)
@@ -535,7 +535,7 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     không có chữ "payload", "templateId", "escape" — thuật ngữ chỉ ở tab Biến / Tích hợp. Biến chưa khai / thiếu
     nguồn vẫn báo ở đầu tab Soạn thư (một dòng + nút sang tab Biến; tab Biến có chấm đỏ) — đừng để cảnh báo chỉ
     nằm ở tab khác. Thanh đầu chỉ có trạng thái + Lưu nháp + Xuất bản (hoặc "Sửa" khi không có nháp); Sao chép
-    mã / Nhân bản / Chuyển sang HTML / Lưu trữ ở menu ⋯ (`<TemplateActionsMenu>`, Lưu trữ cuối, sau vạch ngăn,
+    mã / Nhân bản / Lưu trữ ở menu ⋯ (`<TemplateActionsMenu>`, Lưu trữ cuối, sau vạch ngăn,
     màu nguy hiểm; mục ghi ẩn theo `canManage`). Chú thích dưới ô là dấu (?) `<FieldHint>` (tooltip); lỗi của ô
     (link sai…) vẫn hiện thành dòng đỏ, không giấu vào tooltip.
 *   **Hỏi khi rời trang chưa lưu.** Chưa lưu = `ed.dirty` hoặc ô tên đã gõ mà chưa Đổi tên. `useLeaveGuard(dirty)`
@@ -570,23 +570,20 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     biến là khuôn body mà app và incoming webhook phải gửi.
 *   Lịch sử gửi có cột **Template** ("tên · vN", "—" = nội dung viết thẳng) — `templateLabelOf()` trong
     `notification-outcome.tsx`, dùng chung bảng và panel.
-*   **Trình kéo-thả (ADR-0034 của backend).** Kiểu soạn theo VERSION (`editor`: `blocks` / `html`); tạo mới
-    mặc định Kéo-thả. `lib/email-design.ts` chỉ có KIỂU + phép sửa cây — HTML thư do BACKEND sinh: xem trước
-    gọi `previewDesignAction` (`hooks/use-design-preview.ts`, debounce 500 ms, bỏ kết quả cũ về muộn), lưu nháp
-    gửi `{ editor: 'blocks', design }` (không gửi `html` / `text`). Đừng chép hàm sinh HTML sang console. Kéo bằng
-    `@dnd-kit`; mọi thao tác kéo có đường bấm tương ứng (bấm khối ở bảng trái = thêm). Bản chữ thường chỉ đọc (trong
-    "Nâng cao"); "Nhờ AI soạn" ẩn ở kiểu này. "Chuyển sang HTML" = lưu nháp rồi chuyển, có hộp xác nhận, một chiều, bản
-    đã xuất bản không đổi. Xem trước có nút Máy tính / Điện thoại (375px) cho cả hai kiểu.
-*   **Bộ soạn trực quan (ADR-0036 của backend) — NGOẠI LỆ của luật "HTML thư do BACKEND sinh".** Kiểu soạn thứ ba
-    `visual`: GrapesJS 0.23.8 + grapesjs-mjml 1.0.8 (ghim đúng bản, không `^`) chạy ở trình duyệt, **grapesjs-mjml sinh
+*   **Hai kiểu soạn theo VERSION** (`editor`, `lib/template-editors.ts`): **Trực quan** (`visual`, mặc định) và **HTML**
+    (`html`, tự viết + "Nhờ AI soạn"). Màn tạo mới có đúng hai thẻ đó (`CREATABLE_EDITORS`), không còn cờ bật / tắt.
+*   **Trình kéo-thả cũ ĐÃ XOÁ (ADR-0037 của backend).** Không còn `components/templates/blocks/*`, `@dnd-kit`,
+    `hooks/use-design-preview.ts`, `lib/email-design.ts`, "Chuyển sang HTML". Backend từ chối mọi lệnh ghi kiểu `blocks`
+    (422 `EDITOR_NOT_SUPPORTED`). Template `blocks` còn sót (trước khi `admin-cli purge-blocks-templates` dọn) mở ra CHỈ
+    ĐỌC (`ed.legacy` -> `locked`): dải "Kiểu soạn cũ đã ngừng — template này sẽ được dọn", khung xem HTML đã lưu, không
+    Lưu / Xuất bản / Sửa / Nhân bản / "Tạo nháp từ bản này" (Lưu trữ vẫn còn). Đừng dựng lại trình kéo-thả.
+*   **Bộ soạn trực quan (ADR-0036 của backend) — NGOẠI LỆ của luật "HTML thư do BACKEND sinh".** Kiểu `visual`:
+    GrapesJS 0.23.8 + grapesjs-mjml 1.0.8 (ghim đúng bản, không `^`) chạy ở trình duyệt, **grapesjs-mjml sinh
     HTML**, backend KIỂM (`checkEmailHtml`) và từ chối 422 nếu không an toàn (`HTML_TAG_NOT_ALLOWED`…, câu ở
     `templateIssues`), rồi tự sinh bản chữ thường. Console vẫn KHÔNG tự viết hàm sinh HTML — chỉ gọi grapesjs-mjml;
     lưu nháp gửi `{ editor: 'visual', subject, html, design: { format: 'grapesjs-mjml', version: 1, project, mjml } }`
-    (không gửi `text`). Kiểu `blocks` giữ nguyên luật cũ.
-    *   **Cờ** là cài đặt hệ thống `templates.visual_editor_enabled` (mặc định TẮT, Super Admin gạt ở `/admin/settings`).
-        Màn tạo đọc `loadTemplateEditorOptionsAction` (`GET /admin/template-editor-options`) để hiện thẻ "Trực quan (thử
-        nghiệm)"; cờ tắt chỉ ẩn lối tạo — template trực quan đã có vẫn mở / sửa / xuất bản (backend chặn tạo mới bằng 403
-        `VISUAL_EDITOR_DISABLED`). Không dùng `.env`.
+    (không gửi `text`). Dự án rỗng mà có `mjml` (dữ liệu dựng ngoài bộ soạn) thì bộ soạn nạp MJML đó; không có gì thì
+    thư mở đầu (`starterMjml`).
     *   **Nạp động, chỉ client**: `visual-editor-loader.tsx` (`next/dynamic`, `ssr: false`) — GrapesJS + mjml-browser
         ~650 KB nén, không vào gói trang khác. `telemetry: false` (mặc định GrapesJS gọi `app.grapesjs.com`), `cssIcons: ''` (mặc định tải Font Awesome từ cdnjs — biểu tượng bảng kiểu chữ vẽ bằng SVG mặt nạ trong bảng của GrapesJS không dùng nữa nên không cần biểu tượng `fa-*`), không font
         Google (`fonts: {}`, font hệ thống `VISUAL_FONT_STACK`), không tải ảnh lên (asset manager chỉ dán link https),
@@ -632,15 +629,21 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         sửa xong; `"` trong biến của link tự đổi sang `'` (MJML không thoát `"` trong thuộc tính).
     *   **Chưa lưu** = GrapesJS báo thay đổi (`getDirtyCount`) -> `ed.onVisualChange` -> `useLeaveGuard` như mọi kiểu.
         Lưu xong `markSaved()` đếm lại từ đầu.
-    *   **Màu trong THƯ là hex** (dữ liệu người soạn, như kéo-thả). Giao diện bộ soạn dùng token: `visual-editor.css` đè lớp
+    *   **Màu trong THƯ là hex** (dữ liệu người soạn). Giao diện bộ soạn dùng token: `visual-editor.css` đè lớp
         `.gjs-*` bằng `var(--…)` trong phạm vi `.visual-editor`; màu chip lấy token lúc chạy (`getComputedStyle`) vì khung
         thư là iframe.
-*   **Thư viện mẫu (ADR-0035 của backend).** `/templates/new` mở bằng bước chọn (`<PresetGallery>`): ô "Bắt đầu
-    từ trống" (form ở giữa: tên + nhóm, kiểu soạn là hai thẻ lớn có dấu tích; nút quay lại "Quay lại thư viện mẫu") + lưới thẻ mẫu lọc theo nhóm (chỉ nhóm có mẫu). Mẫu nạp qua `loadTemplatePresetsAction`
+*   **Thư viện mẫu (ADR-0035 / ADR-0037 của backend) — tạo ra template TRỰC QUAN.** `/templates/new` mở bằng bước chọn
+    (`<PresetGallery>`): ô "Bắt đầu từ trống" (form ở giữa: tên + nhóm, kiểu soạn là hai thẻ lớn có dấu tích; nút quay
+    lại "Quay lại thư viện mẫu") + lưới thẻ mẫu lọc theo nhóm (chỉ nhóm có mẫu). Mẫu nạp qua `loadTemplatePresetsAction`
     (`hooks/use-template-presets.ts`, giữ theo ngôn ngữ thư); ảnh thu nhỏ là iframe `sandbox=""` của `html` backend
-    sinh, thay giá trị mẫu bằng `renderPreview`. Bấm thẻ -> `<PresetDialog>`: xem trước `DevicePreview` (dùng chung
-    `preview-pane.tsx`), chọn ngôn ngữ thư (mặc định theo màn), tên gợi ý theo ngôn ngữ thư, "Dùng mẫu" ->
-    `createFromPresetAction` -> màn soạn. Tên bắt buộc, trùng tên hiện trong hộp. Mẫu không đồng bộ về sau.
+    sinh (`renderDesign` — chỉ để làm ảnh, gần giống thư thật), thay giá trị mẫu bằng `renderPreview`. Bấm thẻ ->
+    `<PresetDialog>`: mở hộp là biên dịch NGAY `mjml` của mẫu bằng `compileMjml` (`visual/compile-mjml.ts`: GrapesJS
+    `headless` + grapesjs-mjml, đúng plugin / cấu hình của bộ soạn, nạp động — backend KHÔNG có trình biên dịch MJML),
+    xem trước `DevicePreview` hiện đúng HTML vừa biên dịch (chưa xong thì tạm ảnh thu nhỏ + vòng quay), chọn ngôn ngữ
+    thư (mặc định theo màn), tên gợi ý theo ngôn ngữ thư, "Dùng mẫu" -> `createFromPresetAction` gửi `{ presetId,
+    locale, name, html, design: { format, version, project, mjml } }` -> backend kiểm HTML như lưu nháp -> màn soạn
+    trực quan ra đúng các khối (biến thô tự thành chip lúc mở). Lỗi biên dịch hiện trong hộp (`compileFailed`). Tên bắt
+    buộc, trùng tên hiện trong hộp. Mẫu không đồng bộ về sau.
 *   `/compose`, tab Template của chủ đề, duyệt gửi vẫn là mock (dùng `templates` trong `mock-data.ts`).
 
 ### 2.13. Webhooks (`/settings/webhooks`) — EWS tự báo kết quả gửi thư cho app
@@ -688,8 +691,8 @@ nút ghi (Thêm, Gửi thử, ⋯ Đổi sự kiện / Tắt / Bật lại / Đ�
 ADR-0030 của backend. Server Component đọc `GET /admin/system-settings`, ghi qua
 `app/admin/settings/actions.ts` (`PUT`). Mỗi dòng một nút Lưu (gửi đúng khoá đó) + "Về mặc định" (gửi
 `null`) — đổi một con số không ghi đè con số khác. Ô số chặn ngoài khoảng `min`–`max` ngay ở client (backend
-vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — next-intl coi là tầng lồng). Cài đặt kiểu `bool`
-(vd `templates.visual_editor_enabled`, nhóm "Template") là công tắc lưu ngay khi gạt, không có nút Lưu. Giá trị mới tới
+vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — next-intl coi là tầng lồng). Chỉ có kiểu `int` / `url`
+(cờ `templates.visual_editor_enabled` + kiểu `bool` đã gỡ — ADR-0037 của backend). Giá trị mới tới
 mọi máy chủ API trong tối đa 30 giây (đệm của backend) — màn hình nói rõ điều đó.
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá

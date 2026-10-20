@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
 import { cn } from '@/lib/utils'
-import { useIssueText } from './issue-text'
 
 const SCROLLBAR_HIDE = `<style>
   html, body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
@@ -40,7 +39,8 @@ type Device = (typeof DEVICES)[number]
 
 /**
  * Khung xem trước có tiêu đề + nút Máy tính / Điện thoại — dùng chung màn soạn (`PreviewPane`) và hộp xem
- * trước mẫu dựng sẵn. `notice` hiện ngay dưới thanh trên (lỗi xem trước…), `footer` ở đáy.
+ * trước mẫu dựng sẵn. `loading` = đang dựng bản xem trước (hộp mẫu biên dịch MJML), `notice` hiện ngay dưới
+ * thanh trên, `footer` ở đáy.
  */
 export function DevicePreview({
   subject,
@@ -94,25 +94,14 @@ export function DevicePreview({
 /**
  * Xem thử bằng GIÁ TRỊ MẪU của bảng biến (không có thì `| default:`), escape như backend.
  * Biến chưa có giá trị nào hiện nguyên `{{ ... }}` — đúng chỗ backend sẽ từ chối lúc gửi.
- * Kiểu kéo-thả: HTML do backend sinh (`ed.designPreview`), chờ ~0,5 giây sau lần sửa cuối.
  */
 export function PreviewPane({ ed }: { ed: TemplateEditorState }) {
   const t = useTranslations('previewPane')
-  const issueText = useIssueText()
-  const previewError = ed.editor === 'blocks' ? ed.designPreview.error : null
   return (
     <div className="h-full" data-testid="preview-pane">
       <DevicePreview
         subject={ed.previewSubject}
         html={ed.previewHtml}
-        loading={ed.editor === 'blocks' && ed.designPreview.loading}
-        notice={
-          previewError && (
-            <p className="shrink-0 border-b border-[var(--orbit)] bg-[var(--supernova)]/5 px-4 py-1.5 text-[11px] text-[var(--supernova)]" data-testid="preview-error">
-              {previewError.issues.length ? previewError.issues.map((i) => issueText(i)).join(' · ') : previewError.message} <span className="font-mono">({previewError.issues[0]?.code ?? previewError.code})</span>
-            </p>
-          )
-        }
         footer={<p className="shrink-0 px-4 py-1 text-[11px] text-[var(--text-muted)]">{t('hint')}</p>}
       />
     </div>
