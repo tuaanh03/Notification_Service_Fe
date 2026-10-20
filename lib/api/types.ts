@@ -368,11 +368,10 @@ export type TemplateVersionDto = {
   status: string
   /**
    * Kiểu soạn (ADR-0036 của backend); thiếu = `html`. `visual`: `design` là dự án GrapesJS + MJML (`VisualDesign`),
-   * `text` backend sinh. `blocks` = kiểu kéo-thả cũ đã ngừng (ADR-0037): `design` của nó console không đọc — chỉ hiện
-   * `html` đã lưu.
+   * `text` backend sinh.
    */
   editor?: TemplateEditor
-  design?: VisualDesign | Record<string, unknown> | null
+  design?: VisualDesign | null
   subject: string
   html: string
   text: string

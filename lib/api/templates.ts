@@ -8,7 +8,7 @@ import type {
   TemplateVariableDto,
 } from './types'
 import type { Locale } from '@/i18n/locales'
-import type { CreatableEditor } from '@/lib/template-editors'
+import type { TemplateEditor } from '@/lib/template-editors'
 import type { VisualDesign } from '@/lib/visual-design'
 import type { TemplateCategory } from '@/lib/template-categories'
 
@@ -25,7 +25,7 @@ const one = (appId: string, id: string) => `${base(appId)}/${encodeURIComponent(
 /**
  * Nội dung soạn được của một bản nháp — đúng body `PUT .../draft`. Kiểu `visual` gửi `html` do grapesjs-mjml sinh
  * + dự án, KHÔNG gửi `text` — backend kiểm HTML (422 nếu không an toàn) rồi tự sinh chữ thường (ADR-0036). Nháp
- * đang khác kiểu -> 409 EDITOR_MISMATCH. Kiểu `blocks` đã ngừng (ADR-0037): backend trả 422 EDITOR_NOT_SUPPORTED.
+ * đang khác kiểu -> 409 EDITOR_MISMATCH.
  */
 export type TemplateContentInput =
   | { editor: 'html'; subject: string; html: string; text: string; variables: TemplateVariableDto[] }
@@ -54,7 +54,7 @@ export async function getTemplate(appId: string, id: string): Promise<TemplateDe
  */
 export async function createTemplate(
   appId: string,
-  input: { name: string; category?: TemplateCategory; editor?: CreatableEditor },
+  input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<TemplateDetailDto> {
   return adminFetch<TemplateDetailDto>(base(appId), { method: 'POST', body: input })
 }

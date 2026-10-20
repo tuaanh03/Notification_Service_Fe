@@ -56,8 +56,8 @@ export function ComposeTab({
   const detail = ed.detail
   if (!detail) return null
   const visualKind = ed.editor === 'visual'
-  /** Bản chữ thường do backend sinh (trực quan; kéo-thả cũ) — chỉ đọc. */
-  const autoText = visualKind || ed.legacy
+  /** Bản chữ thường do backend sinh (trực quan) — chỉ đọc. */
+  const autoText = visualKind
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
   return (
@@ -96,28 +96,21 @@ export function ComposeTab({
         )}
       </Panel>
 
-      {ed.legacy ? (
-        // Kiểu kéo-thả cũ đã ngừng (ADR-0037 của backend): chỉ xem thư đã lưu, không có khung soạn.
-        <div className="cosmic-surface h-[640px] overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs" data-testid="legacy-preview">
+      <ResizablePanelGroup
+        orientation="horizontal"
+        style={{ height: '650px', maxHeight: '650px' }}
+        className="cosmic-surface overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs"
+      >
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden">
+          <div className="flex h-full min-w-0 flex-col overflow-hidden p-5">
+            <EditorPane ed={ed} locked={ed.locked} onAi={onAi} />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden bg-white">
           <PreviewPane ed={ed} />
-        </div>
-      ) : (
-        <ResizablePanelGroup
-          orientation="horizontal"
-          style={{ height: '650px', maxHeight: '650px' }}
-          className="cosmic-surface overflow-hidden rounded-2xl border border-[var(--orbit)] shadow-xs"
-        >
-          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden">
-            <div className="flex h-full min-w-0 flex-col overflow-hidden p-5">
-              <EditorPane ed={ed} locked={ed.locked} onAi={onAi} />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={50} minSize={30} className="h-full min-w-0 overflow-hidden bg-white">
-            <PreviewPane ed={ed} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      )}
+        </ResizablePanel>
+      </ResizablePanelGroup>
       </>
       )}
 
@@ -175,7 +168,7 @@ export function ComposeTab({
                 <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
                 <FieldHint text={autoText ? t('textAutoVisual') : t('textHint')} label={t('hintFor', { field: t('text') })} />
               </div>
-              {/* Trực quan (và kéo-thả cũ): bản chữ thường do backend sinh — chỉ đọc, là bản của lần lưu gần nhất. */}
+              {/* Trực quan: bản chữ thường do backend sinh — chỉ đọc, là bản của lần lưu gần nhất. */}
               <Textarea
                 id="tpl-text"
                 value={ed.text}

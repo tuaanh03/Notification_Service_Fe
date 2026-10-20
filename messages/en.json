@@ -598,8 +598,7 @@
     "HTML_URL_NOT_ALLOWED": "There is an unsafe link (e.g. javascript:). Links may only be https://, mailto: or a variable.",
     "HTML_STYLE_NOT_ALLOWED": "A style contains something that is not allowed (e.g. external fonts, code in CSS).",
     "HTML_MALFORMED": "The email content is broken and cannot be read. Undo the last change and save again.",
-    "HTML_TOO_LARGE": "The email is too large (max 256 KB). Remove some content.",
-    "EDITOR_NOT_SUPPORTED": "The drag-and-drop editor has been retired. Create a new template with the Visual or HTML editor."
+    "HTML_TOO_LARGE": "The email is too large (max 256 KB). Remove some content."
   },
   "templateEditor": {
     "notInApp": "This template is not in the app",
@@ -657,7 +656,6 @@
     "duplicateConfirm": "Create copy",
     "duplicated": "Copy created",
     "copySuffix": "(copy)",
-    "editorBlocks": "drag and drop (retired)",
     "editorHtml": "HTML",
     "textHint": "For mailboxes that cannot show HTML. Leave empty to send the HTML version only.",
     "tabCompose": "Compose",
@@ -680,9 +678,7 @@
     "deviceMobile": "Phone",
     "device": "Preview on",
     "undo": "Undo",
-    "redo": "Redo",
-    "legacyTitle": "This editor has been retired — this template will be cleaned up",
-    "legacyBody": "This template was built with the old drag-and-drop editor. You can only view the saved email; it can no longer be edited, published or duplicated. For a similar email, create a new template (Visual or from a preset)."
+    "redo": "Redo"
   },
   "aiCompose": {
     "title": "Ask AI to draft",

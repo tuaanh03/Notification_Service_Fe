@@ -39,9 +39,6 @@ export type EditorError = { message: string; code: string; issues: readonly Issu
  * là tạo nháp mới chép từ bản đó (backend không cho sửa tại chỗ bản đã xuất bản).
  *
  * `readOnly` = người xem không cấu hình được app (App Viewer, ADR-0022): mọi bản đều chỉ đọc.
- *
- * Kiểu `blocks` (trình kéo-thả cũ, đã ngừng — ADR-0037 của backend): luôn chỉ đọc (`legacy`), hiện HTML đã lưu;
- * không lưu / xuất bản / tạo nháp / nhân bản được — template này sẽ được dọn.
  */
 export function useTemplateEditor(appId: string, templateId: string, readOnly = false) {
   const [detail, setDetail] = useState<TemplateDetailDto | null>(null)
@@ -53,7 +50,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
   const [variables, setVariables] = useState<TemplateVariableDto[]>([])
-  /** Kiểu soạn của bản đang hiện. `blocks` (đã ngừng): `html` / `text` ở trên là bản đã lưu, chỉ đọc. */
+  /** Kiểu soạn của bản đang hiện. */
   const [editor, setEditor] = useState<TemplateEditor>('html')
   /** Kiểu `visual`: dự án ĐÃ LƯU (để mở bộ soạn); nội dung đang soạn nằm trong GrapesJS, đọc qua `visualRef`. */
   const [visualDesign, setVisualDesign] = useState<VisualDesign | null>(null)
@@ -68,9 +65,7 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
   /** Bản đang hiện trong khung soạn. */
   const shown: TemplateVersionDto | null = draft ?? published ?? detail?.versions[0] ?? null
   const archived = detail?.status === 'archived'
-  /** Template kiểu kéo-thả cũ (ADR-0037 của backend) — chỉ đọc, chờ dọn. */
-  const legacy = shown?.editor === 'blocks'
-  const locked = !draft || archived || readOnly || legacy
+  const locked = !draft || archived || readOnly
 
   /** Nạp bản đang hiện vào ô soạn — sau mỗi lần backend trả chi tiết mới. */
   const adopt = useCallback((next: TemplateDetailDto) => {
@@ -212,7 +207,6 @@ export function useTemplateEditor(appId: string, templateId: string, readOnly = 
     published,
     shown,
     archived,
-    legacy,
     locked,
     readOnly,
     dirty,

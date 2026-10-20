@@ -598,8 +598,7 @@
     "HTML_URL_NOT_ALLOWED": "Có link không an toàn (vd javascript:). Link chỉ được là https://, mailto: hoặc biến.",
     "HTML_STYLE_NOT_ALLOWED": "Kiểu chữ / màu có đoạn không được phép (vd tải font ngoài, mã chạy trong CSS).",
     "HTML_MALFORMED": "Nội dung thư bị hỏng cấu trúc, không đọc được. Hoàn tác thay đổi gần nhất rồi lưu lại.",
-    "HTML_TOO_LARGE": "Thư quá lớn (tối đa 256 KB). Bớt nội dung.",
-    "EDITOR_NOT_SUPPORTED": "Kiểu soạn kéo-thả đã ngừng. Tạo template mới bằng kiểu Trực quan hoặc HTML."
+    "HTML_TOO_LARGE": "Thư quá lớn (tối đa 256 KB). Bớt nội dung."
   },
   "templateEditor": {
     "notInApp": "Không có template này trong app",
@@ -657,7 +656,6 @@
     "duplicateConfirm": "Tạo bản sao",
     "duplicated": "Đã tạo bản sao",
     "copySuffix": "(bản sao)",
-    "editorBlocks": "kéo-thả (đã ngừng)",
     "editorHtml": "HTML",
     "textHint": "Cho hộp thư không hiện được HTML. Để trống thì chỉ gửi bản HTML.",
     "tabCompose": "Soạn thư",
@@ -680,9 +678,7 @@
     "deviceMobile": "Điện thoại",
     "device": "Xem trên",
     "undo": "Hoàn tác",
-    "redo": "Làm lại",
-    "legacyTitle": "Kiểu soạn cũ đã ngừng — template này sẽ được dọn",
-    "legacyBody": "Template này soạn bằng trình kéo-thả cũ. Chỉ xem được thư đã lưu; không sửa, xuất bản hay nhân bản được nữa. Cần thư tương tự thì tạo template mới (Trực quan hoặc từ mẫu)."
+    "redo": "Làm lại"
   },
   "aiCompose": {
     "title": "Nhờ AI soạn",

@@ -77,7 +77,7 @@ webservice/ews-astrolink/
 │   │                         # visual/* = bộ soạn trực quan GrapesJS + MJML (visual-editor + -loader nạp động, chip-plugin,
 │   │                         # left-panel, properties-panel, color-field, blocks, email-settings, block-lint, subject-field,
 │   │                         # grapes-i18n, insert-variable-dialog, compile-mjml, visual-editor.css) — ADR-0036 / 0037 của backend
-│   │                         # (trình kéo-thả cũ `blocks/*` + @dnd-kit đã XOÁ — ADR-0037)
+│   │                         # (trình kéo-thả cũ đã gỡ hẳn — ADR-0037)
 │   ├── settings/*            # credentials-panel, webhooks-page (2 tab) + webhooks-panel + webhook-dialogs + incoming-hooks-panel + incoming-hook-guide (mục 2.13), quota-panels, sync-panel (client) — page.tsx trong app/settings/* chỉ render
 │   ├── app-context.tsx · app-gate.tsx · app-link.tsx · app-switcher.tsx
 │   │                         # app đọc từ ?app=, cổng (thiếu app -> trang Tổ chức), link tự mang app (mục 2.9)
@@ -571,12 +571,10 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
 *   Lịch sử gửi có cột **Template** ("tên · vN", "—" = nội dung viết thẳng) — `templateLabelOf()` trong
     `notification-outcome.tsx`, dùng chung bảng và panel.
 *   **Hai kiểu soạn theo VERSION** (`editor`, `lib/template-editors.ts`): **Trực quan** (`visual`, mặc định) và **HTML**
-    (`html`, tự viết + "Nhờ AI soạn"). Màn tạo mới có đúng hai thẻ đó (`CREATABLE_EDITORS`), không còn cờ bật / tắt.
-*   **Trình kéo-thả cũ ĐÃ XOÁ (ADR-0037 của backend).** Không còn `components/templates/blocks/*`, `@dnd-kit`,
-    `hooks/use-design-preview.ts`, `lib/email-design.ts`, "Chuyển sang HTML". Backend từ chối mọi lệnh ghi kiểu `blocks`
-    (422 `EDITOR_NOT_SUPPORTED`). Template `blocks` còn sót (trước khi `admin-cli purge-blocks-templates` dọn) mở ra CHỈ
-    ĐỌC (`ed.legacy` -> `locked`): dải "Kiểu soạn cũ đã ngừng — template này sẽ được dọn", khung xem HTML đã lưu, không
-    Lưu / Xuất bản / Sửa / Nhân bản / "Tạo nháp từ bản này" (Lưu trữ vẫn còn). Đừng dựng lại trình kéo-thả.
+    (`html`, tự viết + "Nhờ AI soạn"). Màn tạo mới có đúng hai thẻ đó (`TEMPLATE_EDITORS`), không còn cờ bật / tắt.
+*   **Trình kéo-thả cũ ĐÃ GỠ HẲN (ADR-0037 của backend, migration 0027 — ENUM `editor` chỉ còn `html` / `visual`).**
+    Không còn `components/templates/blocks/*`, `@dnd-kit`, `hooks/use-design-preview.ts`, `lib/email-design.ts`,
+    "Chuyển sang HTML", màn chỉ đọc kiểu cũ. Đừng dựng lại trình kéo-thả.
 *   **Bộ soạn trực quan (ADR-0036 của backend) — NGOẠI LỆ của luật "HTML thư do BACKEND sinh".** Kiểu `visual`:
     GrapesJS 0.23.8 + grapesjs-mjml 1.0.8 (ghim đúng bản, không `^`) chạy ở trình duyệt, **grapesjs-mjml sinh
     HTML**, backend KIỂM (`checkEmailHtml`) và từ chối 422 nếu không an toàn (`HTML_TAG_NOT_ALLOWED`…, câu ở

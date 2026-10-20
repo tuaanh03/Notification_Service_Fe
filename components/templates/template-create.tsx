@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { CREATABLE_EDITORS, type CreatableEditor } from '@/lib/template-editors'
+import { TEMPLATE_EDITORS, type TemplateEditor } from '@/lib/template-editors'
 import { cn } from '@/lib/utils'
 import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
 import { FieldHint } from './field-hint'
@@ -21,10 +21,10 @@ import { PresetGallery } from './preset-gallery'
 
 /**
  * Hai kiểu soạn, hiện thành thẻ lớn — thẻ đang chọn có viền sáng + dấu tích, không chỉ đổi màu nền. Trực quan
- * (ADR-0036) mặc định; trình kéo-thả cũ đã ngừng (ADR-0037).
+ * (ADR-0036) mặc định.
  */
 const EDITOR_CHOICES: ReadonlyArray<{
-  value: CreatableEditor
+  value: TemplateEditor
   icon: LucideIcon
   label: 'editorHtml' | 'editorVisual'
   hint: 'editorHtmlHint' | 'editorVisualHint'
@@ -50,7 +50,7 @@ export function TemplateCreate() {
   const router = useAppRouter()
   const [name, setName] = useState('')
   const [category, setCategory] = useState<TemplateCategory>('other')
-  const [editor, setEditor] = useState<CreatableEditor>('visual')
+  const [editor, setEditor] = useState<TemplateEditor>('visual')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [blank, setBlank] = useState(false)
@@ -125,7 +125,7 @@ export function TemplateCreate() {
                 variant="outline"
                 value={[editor]}
                 onValueChange={(v) => {
-                  const next = CREATABLE_EDITORS.find((e) => e === v[0])
+                  const next = TEMPLATE_EDITORS.find((e) => e === v[0])
                   if (next) setEditor(next)
                 }}
                 aria-label={tt('editorType')}

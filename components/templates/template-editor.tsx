@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Archive, CopyPlus, FileWarning, History, Monitor, Pencil, Redo2, Save, Smartphone, Sparkles, Undo2, UploadCloud } from 'lucide-react'
+import { Archive, CopyPlus, FileWarning, Monitor, Pencil, Redo2, Save, Smartphone, Sparkles, Undo2, UploadCloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -135,7 +135,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     }
   }
   const visual = ed.editor === 'visual'
-  const editorLabel = ed.legacy ? t('editorBlocks') : visual ? t('editorVisual') : t('editorHtml')
+  const editorLabel = visual ? t('editorVisual') : t('editorHtml')
   /** Thanh thiết bị + hoàn tác chỉ khi bộ soạn trực quan đang mở (tab Soạn thư, có nháp). */
   const visualTools = visual && tab === 'compose' && !ed.locked
   const onSave = async () => {
@@ -189,7 +189,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               </div>
             )}
             <StatusPill status={ed.archived ? 'archived' : (shown?.status ?? 'draft')} />
-            {writable && !ed.archived && !ed.legacy && ed.draft && (
+            {writable && !ed.archived && ed.draft && (
               <>
                 {/* Kiểu trực quan trên điện thoại: Lưu nháp vào ⋯ để thanh đầu không tràn; Xuất bản vẫn thấy. */}
                 <Button variant="outline" disabled={ed.pending} onClick={() => void onSave()} className={cn(visual && 'hidden md:inline-flex')}>
@@ -200,7 +200,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 </Button>
               </>
             )}
-            {writable && !ed.archived && !ed.legacy && !ed.draft && ed.published && (
+            {writable && !ed.archived && !ed.draft && ed.published && (
               <Button disabled={ed.pending} onClick={() => void ed.draftFrom(ed.published!.version)}>
                 <Pencil /> {t('edit', { version: nextVersion })}
               </Button>
@@ -208,7 +208,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             <TemplateActionsMenu
               disabled={ed.pending}
               onCopyId={copyId}
-              onDuplicate={writable && !ed.legacy ? openDuplicate : undefined}
+              onDuplicate={writable ? openDuplicate : undefined}
               onArchive={writable && !ed.archived ? () => setArchiveConfirm(true) : undefined}
               onSaveMobile={visual && writable && !ed.archived && ed.draft ? () => void onSave() : undefined}
               onRedoMobile={visualTools ? () => visualControls?.redo() : undefined}
@@ -235,15 +235,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
             </AlertDescription>
           </Alert>
         )}
-        {ed.legacy && (
-          // Kiểu kéo-thả cũ đã ngừng (ADR-0037 của backend): chỉ xem, không sửa / xuất bản / nhân bản được.
-          <Alert className="bg-[var(--solar)]/10" data-testid="legacy-notice">
-            <History className="text-[var(--solar)]" />
-            <AlertTitle>{t('legacyTitle')}</AlertTitle>
-            <AlertDescription>{t('legacyBody')}</AlertDescription>
-          </Alert>
-        )}
-        {writable && !ed.archived && !ed.legacy && ed.locked && ed.published && (
+        {writable && !ed.archived && ed.locked && ed.published && (
           <Alert data-testid="locked-notice">
             <AlertDescription className="text-[var(--text-secondary)]">
               {t.rich('lockedNotice', { version: ed.published.version, em: (chunks) => <em>{chunks}</em> })}

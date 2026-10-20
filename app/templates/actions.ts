@@ -19,7 +19,7 @@ import {
 } from '@/lib/api/templates'
 import type { Locale } from '@/i18n/locales'
 import type { TemplateCategory } from '@/lib/template-categories'
-import type { CreatableEditor } from '@/lib/template-editors'
+import type { TemplateEditor } from '@/lib/template-editors'
 import type { VisualDesign } from '@/lib/visual-design'
 import { toResult, type ActionResult } from '@/lib/api/result'
 import type { AiComposeResultDto, TemplateDetailDto, TemplatePresetDto, TemplateSummaryDto } from '@/lib/api/types'
@@ -44,7 +44,7 @@ export async function loadTemplateAction(appId: string, id: string): Promise<Act
 
 export async function createTemplateAction(
   appId: string,
-  input: { name: string; category?: TemplateCategory; editor?: CreatableEditor },
+  input: { name: string; category?: TemplateCategory; editor?: TemplateEditor },
 ): Promise<ActionResult<TemplateDetailDto>> {
   return toResult(() => createTemplate(appId, input))
 }

@@ -52,8 +52,7 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
                   <GitCompare /> {t('compareWith', { version: prevOf(v)!.version })}
                 </Button>
               )}
-              {/* Bản kiểu kéo-thả cũ (ADR-0037 của backend) không chép ra nháp mới được. */}
-              {v.status !== 'draft' && canCopy && v.editor !== 'blocks' && (
+              {v.status !== 'draft' && canCopy && (
                 <Button variant="ghost" size="xs" onClick={() => setCopyFrom(v)} disabled={ed.pending}>
                   <CopyPlus /> {t('draftFromThis')}
                 </Button>
