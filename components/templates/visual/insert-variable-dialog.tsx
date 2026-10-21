@@ -135,7 +135,10 @@ export function InsertVariableDialog({
                 className={cn('h-auto w-full justify-start gap-3 px-3 py-2 text-left font-normal', selected && 'bg-[var(--nebula-indigo)]/60')}
                 data-testid={`insert-var-${v.name}`}
               >
-                <span className="shrink-0 rounded-full border border-[var(--starlight)]/30 bg-[var(--nebula-indigo)] px-2.5 py-0.5 text-xs font-medium text-[var(--starlight)]">
+                <span
+                  className="max-w-[22ch] shrink-0 truncate rounded-full border border-[var(--starlight)]/30 bg-[var(--nebula-indigo)] px-2.5 py-0.5 text-xs font-medium text-[var(--starlight)]"
+                  title={`${variableLabel(v)} — ${v.name}`}
+                >
                   {variableLabel(v)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-secondary)]">

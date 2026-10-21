@@ -529,6 +529,9 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
 *   **Cú pháp biến là `{{ payload.x }}` / `{{ user.external_id }}`.** `{{ x }}` (thiếu nguồn) bị tô đỏ và
     backend từ chối. Mặc định viết trong nội dung: `{{ payload.x | default: "…" }}` — bảng biến KHÔNG có
     cột "Kiểu" / "Mặc định" (backend không có chỗ chứa, mục 6 "form có ô backend không lưu").
+    **"Tên dễ đọc" = `description` của biến** (UX-5B, không có trường riêng ở backend): cột chính của tab Biến (mã
+    `payload.x` là dòng mờ bên dưới, quá 24 ký tự thì báo nhẹ), nhãn của chip, cột đầu bảng "App phải gửi kèm" ở tab
+    Tích hợp. Tab Biến kiểu trực quan không nhắc cú pháp `| default:` (đặt lúc chèn biến); kiểu HTML vẫn nhắc.
 *   **Bố cục màn soạn `/templates/[id]`** — tách việc soạn thư khỏi phần cho lập trình viên. Bốn tab (`?tab=`,
     đổi bằng `history.replaceState` — không chuyển trang, không mất nội dung chưa lưu): **Soạn thư** (mặc định:
     tiêu đề trên cùng → khung soạn; kiểu HTML thêm xem thử + "Nâng cao" thu gọn chỉ chứa bản chữ thường) · **Biến**
@@ -601,7 +604,7 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         màn là menu về đúng như người dùng để), bỏ thanh breadcrumb và lề của `<main>`. Màn soạn tự dựng một khối DÍNH
         `top-0`: `<EditorTopBar>` (‹ Templates · tên · dòng "vN · kiểu · trạng thái" · Máy tính / Điện thoại + Hoàn tác /
         Làm lại + trạng thái + Lưu nháp / Xuất bản / ⋯; cao 64px, điện thoại 56px chỉ còn mũi tên, Xuất bản, ⋯) + hàng tab
-        GẠCH CHÂN (một hàng, điện thoại cuộn ngang; gạch là `after:` của `TabsTrigger` — `border` bị `* { border-color }`
+        GẠCH CHÂN (`tab-styles.ts`; một hàng, điện thoại cuộn ngang, tab Tích hợp ghi ngắn "Tích hợp"; gạch là `after:` của `TabsTrigger` — `border` bị `* { border-color }`
         của globals.css đè thành ô viền). Lề trang (`PAGE_PAD`) do từng tab tự chừa; tab Soạn thư kiểu trực quan là khung
         TRÀN MÉP cao `100dvh` trừ khối dính (6.25rem điện thoại / 6.75rem máy tính + 1px viền) — cả màn không cuộn, không có
         khối "Nâng cao" bên dưới (UX-5C) —, không bọc `<Panel>` (viền / bóng của
@@ -643,7 +646,8 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         + ví dụ + bắt buộc / có sẵn — `user.external_id` "Mã người nhận" luôn có, chọn thì tự khai), "+ Thêm biến mới"
         (tên dễ đọc -> mã `payload.<slug không dấu>` hiện mờ, ví dụ, app bắt buộc gửi) -> `ed.addVariable` vào bảng Biến
         (mô tả = tên, giá trị mẫu = ví dụ); biến không bắt buộc phải có "Khi app không gửi thì hiện", cấm `" ' < > { } |`.
-        Ô "Tiêu đề thư" cũng có chip (`subject-field.tsx`: một dòng `contenteditable`, chip `contenteditable=false`,
+        Chip tên dài cắt "…" ở `CHIP_MAX_CH` (22) ký tự — khung thư, ô tiêu đề, hộp chèn — không bao giờ xuống dòng; rê
+        chuột thấy tên + mã. Ô "Tiêu đề thư" cũng có chip (`subject-field.tsx`: một dòng `contenteditable`, chip `contenteditable=false`,
         Enter bị chặn, dán thành chữ thường, `{{ }}` gõ tay tự thành chip; lưu vẫn là chuỗi Liquid). `{{ }}` gõ / dán tay tự thành chip khi
         sửa xong; `"` trong biến của link tự đổi sang `'` (MJML không thoát `"` trong thuộc tính).
     *   **Chưa lưu** = GrapesJS báo thay đổi (`getDirtyCount`) -> `ed.onVisualChange` -> `useLeaveGuard` như mọi kiểu.
@@ -771,7 +775,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
 | `<LifecycleTimeline notification compact?>` | `components/lifecycle-timeline.tsx` | ✓ | vòng đời 11 trạng thái (SVG orbital), node đã đi qua + stub nhánh không đi + "event horizon" `queued → sending`; đường đi từ `lifecycleOf()` trong mock; reduced-motion để CSS lo (không `useReducedMotion` → tránh #418) |
 | `<MailFrame subject body|bodyHtml device? header? footerNote?>` | `components/mail-frame.tsx` | ✓ | khung email nền sáng duy nhất (token `--mail-*`), footer opt-out có khoá (tooltip qua `footerNote`) — Composer block 3, chi tiết lần gửi và Template editor dùng chung; `bodyHtml` chỉ nhận HTML đã qua `renderHtmlPreview()` (sanitize + escape) |
-| `<ContractPanel templateId variables>` | `components/templates/contract-panel.tsx` | ✓ | Hợp đồng cho đội app: biến bắt buộc + lời gọi `POST /v1/notifications` mẫu (`templateId` + `payload`) + lỗi template lấy từ `v1-errors.ts` |
+| `<ContractPanel templateId variables>` | `components/templates/contract-panel.tsx` | ✓ | Hợp đồng cho đội app: bảng "App phải gửi kèm" (tên dễ đọc / mã / bắt buộc) + tab con gạch chân (`tab-styles.ts`, dùng chung hàng tab màn soạn): lời gọi `POST /v1/notifications` mẫu (`templateId` + `payload`) · lỗi template lấy từ `v1-errors.ts` |
 | Composer blocks | `components/compose/{recipient,content,preview,send}-block.tsx`, `composer.tsx` | ✓ | 4 khối gated |
 | `RoleContext` | `components/role-context.tsx` | ✓ | vai THẬT từ `GET /admin/me` (`layout.tsx` nạp ở server); `useRole()` trả `isSuperAdmin`, `canManage(app)`, `creatableOrgs` — gate nút ghi; `<AppGate>` dùng `isSuperAdmin` để mở khu Quản trị EWS. Luật ở `lib/access.ts`, sao cùng `decide()` của backend. Không giả lập vai ở client |
 | `<AppRegistrationWizard>`, `<AppAdminList>` | `components/app-registration-wizard.tsx`, `app-admin-list.tsx` | ✓ | thêm từ v0 cho UC-001 — giữ, không tạo bản song song |

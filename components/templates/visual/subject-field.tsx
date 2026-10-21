@@ -11,9 +11,11 @@ import { InsertVariableDialog } from './insert-variable-dialog'
 import { insertTarget } from './insert-target'
 
 /** Lớp của chip — cùng dáng chip trong khung thư, nhưng ở đây là DOM của console nên dùng token. */
+/** Tên dài cắt "…" như chip trong khung thư (`CHIP_MAX_CH`), rê chuột thấy đủ. */
 const CHIP_CLASS =
-  'mx-0.5 inline-block rounded-full border border-[var(--starlight)]/30 bg-[var(--nebula-indigo)] px-2 text-[0.92em] leading-6 font-medium text-[var(--starlight)] select-all'
-const CHIP_PROBLEM_CLASS = 'mx-0.5 inline-block rounded-full bg-[var(--orbit)] px-2 text-[0.92em] leading-6 font-medium text-[var(--supernova)] select-all'
+  'mx-0.5 inline-block max-w-[22ch] truncate rounded-full border border-[var(--starlight)]/30 bg-[var(--nebula-indigo)] px-2 align-bottom text-[0.92em] leading-6 font-medium text-[var(--starlight)] select-all'
+const CHIP_PROBLEM_CLASS =
+  'mx-0.5 inline-block max-w-[22ch] truncate rounded-full bg-[var(--orbit)] px-2 align-bottom text-[0.92em] leading-6 font-medium text-[var(--supernova)] select-all'
 
 function liquidOf(path: string, fallback: string | null): string {
   return fallback ? `{{ ${path} | default: "${fallback}" }}` : `{{ ${path} }}`
@@ -88,7 +90,7 @@ export function SubjectField({
     if (fallback) span.dataset.default = fallback
     span.className = declared ? CHIP_CLASS : CHIP_PROBLEM_CLASS
     span.textContent = declared ? variableLabel(declared) : path
-    span.title = path
+    span.title = declared ? `${variableLabel(declared)} — ${path}` : path
     return span
   }
 

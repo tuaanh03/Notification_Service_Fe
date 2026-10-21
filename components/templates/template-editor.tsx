@@ -29,6 +29,7 @@ import { EditorErrorAlert } from './editor-error-alert'
 import { EditorTopBar } from './editor-top-bar'
 import { IntegrationTab } from './integration-tab'
 import { SchemaPane } from './schema-pane'
+import { UNDERLINE_TAB_LIST, UNDERLINE_TAB_TRIGGER } from './tab-styles'
 import { TemplateActionsMenu } from './template-actions-menu'
 import { VersionsPanel } from './versions-panel'
 import type { VisualControls, VisualDevice, VisualHistory } from './visual/visual-editor'
@@ -41,15 +42,9 @@ const tabOf = (raw: string | null): EditorTab => EDITOR_TABS.find((x) => x === r
 
 /** Lề trang thường — khung app không chừa lề ở bàn làm việc (`isWorkspaceRoute`). */
 const PAGE_PAD = 'px-4 py-5 lg:px-6'
-/**
- * Hàng tab gạch chân (bản phác Main): một hàng, điện thoại cuộn ngang thay vì xuống dòng. Viền dưới của tab đang chọn
- * là `after:` của `TabsTrigger` — KHÔNG dùng `border`: `* { border-color }` của globals.css (ngoài layer) thắng mọi
- * `border-transparent`, tab nào cũng thành ô có viền.
- */
-const TAB_LIST =
-  'h-11 w-full justify-start gap-5 overflow-x-auto overflow-y-hidden rounded-none p-0 px-4 [scrollbar-width:none] group-data-horizontal/tabs:h-11 md:gap-6 md:px-5'
-const TAB_TRIGGER =
-  'h-full flex-none rounded-none border-0 px-0.5 data-active:text-[var(--starlight)] after:bg-[var(--starlight)] group-data-horizontal/tabs:after:bottom-0'
+/** Hàng tab chính: kiểu gạch chân dùng chung (`tab-styles.ts`) + lề hai bên theo thanh trên. */
+const TAB_LIST = cn(UNDERLINE_TAB_LIST, 'px-4 md:px-5')
+const TAB_TRIGGER = UNDERLINE_TAB_TRIGGER
 
 /**
  * Màn soạn một template (ADR-0020). Bốn tab: Soạn thư (mặc định, cho người không biết code) · Biến ·
@@ -278,7 +273,11 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
                 />
               )}
             </TabsTrigger>
-            <TabsTrigger value="integration" className={TAB_TRIGGER} data-testid="tab-integration">{t('tabIntegration')}</TabsTrigger>
+            <TabsTrigger value="integration" className={TAB_TRIGGER} data-testid="tab-integration">
+              {/* Điện thoại: tên ngắn để đủ 4 tab trong một màn (bản phác DienThoai). */}
+              <span className="md:hidden">{t('tabIntegrationShort')}</span>
+              <span className="hidden md:inline">{t('tabIntegration')}</span>
+            </TabsTrigger>
             <TabsTrigger value="versions" className={TAB_TRIGGER} data-testid="tab-versions">{t('versions')}</TabsTrigger>
           </TabsList>
         </div>

@@ -237,13 +237,22 @@ export function repaintChips(editor: Editor, labelOf: ChipOptions['labelOf'], co
   }
 }
 
+/** Chip dài hơn thế này thì cắt "…" — một chip không bao giờ xuống dòng trong thư (bản phác Main: "Tổng số"). */
+export const CHIP_MAX_CH = 22
+
 function paintChip(el: HTMLElement, model: Component, labelOf: ChipOptions['labelOf'], colors: ChipOptions['colors']): void {
   const path = String(model.get('varPath') ?? '')
   const label = labelOf(path)
   el.textContent = label ?? path
-  el.title = path
+  // Tên dài bị cắt "…" (UX-5B) — rê chuột thấy đủ tên + mã.
+  el.title = label ? `${label} — ${path}` : path
   el.style.cssText = [
     'display:inline-block',
+    `max-width:${CHIP_MAX_CH}ch`,
+    'overflow:hidden',
+    'text-overflow:ellipsis',
+    'white-space:nowrap',
+    'vertical-align:bottom',
     'border-radius:999px',
     'padding:0 8px',
     'font-size:0.95em',
