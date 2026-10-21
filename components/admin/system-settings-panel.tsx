@@ -19,9 +19,35 @@ const LABEL: Partial<
   Record<
     string,
     {
-      label: 'dedupeLabel' | 'rateLabel' | 'maxHooksLabel' | 'baseUrlLabel' | 'maxKeysLabel' | 'maxEndpointsLabel' | 'htmlCheckLabel'
-      help: 'dedupeHelp' | 'rateHelp' | 'maxHooksHelp' | 'baseUrlHelp' | 'maxKeysHelp' | 'maxEndpointsHelp' | 'htmlCheckHelp'
-      unit?: 'unitMinutes' | 'unitPerMinute' | 'unitKeys' | 'unitHooks' | 'unitUrls'
+      label:
+        | 'dedupeLabel'
+        | 'rateLabel'
+        | 'maxHooksLabel'
+        | 'baseUrlLabel'
+        | 'maxKeysLabel'
+        | 'maxEndpointsLabel'
+        | 'htmlCheckLabel'
+        | 'lockoutEnabledLabel'
+        | 'maxFailedLabel'
+        | 'failureWindowLabel'
+        | 'lockoutMinutesLabel'
+        | 'ipMaxFailedLabel'
+        | 'permanentAfterLabel'
+      help:
+        | 'dedupeHelp'
+        | 'rateHelp'
+        | 'maxHooksHelp'
+        | 'baseUrlHelp'
+        | 'maxKeysHelp'
+        | 'maxEndpointsHelp'
+        | 'htmlCheckHelp'
+        | 'lockoutEnabledHelp'
+        | 'maxFailedHelp'
+        | 'failureWindowHelp'
+        | 'lockoutMinutesHelp'
+        | 'ipMaxFailedHelp'
+        | 'permanentAfterHelp'
+      unit?: 'unitMinutes' | 'unitPerMinute' | 'unitKeys' | 'unitHooks' | 'unitUrls' | 'unitTimes' | 'unitLockouts'
     }
   >
 > = {
@@ -32,21 +58,32 @@ const LABEL: Partial<
   'apps.max_active_api_keys': { label: 'maxKeysLabel', help: 'maxKeysHelp', unit: 'unitKeys' },
   'webhooks.max_endpoints_per_app': { label: 'maxEndpointsLabel', help: 'maxEndpointsHelp', unit: 'unitUrls' },
   'templates.html_check_enabled': { label: 'htmlCheckLabel', help: 'htmlCheckHelp' },
+  'auth.lockout_enabled': { label: 'lockoutEnabledLabel', help: 'lockoutEnabledHelp' },
+  'auth.max_failed_attempts': { label: 'maxFailedLabel', help: 'maxFailedHelp', unit: 'unitTimes' },
+  'auth.failure_window_minutes': { label: 'failureWindowLabel', help: 'failureWindowHelp', unit: 'unitMinutes' },
+  'auth.lockout_minutes': { label: 'lockoutMinutesLabel', help: 'lockoutMinutesHelp', unit: 'unitMinutes' },
+  'auth.ip_max_failed_attempts': { label: 'ipMaxFailedLabel', help: 'ipMaxFailedHelp', unit: 'unitTimes' },
+  'auth.permanent_lock_after': { label: 'permanentAfterLabel', help: 'permanentAfterHelp', unit: 'unitLockouts' },
 }
+
+/** Nhóm `auth.*` (chặn đăng nhập sai — ADR-0039 của backend) ở mục riêng "Theo dõi & Bảo mật", không ở trang này. */
+export const isSecuritySetting = (key: string): boolean => key.startsWith('auth.')
 
 /** Nhóm trên màn: `apps.*` / `webhooks.*` -> Ứng dụng; `templates.*` -> Template; còn lại -> Incoming webhook. */
 const groupOf = (key: string): 'apps' | 'templates' | 'incoming' =>
   key.startsWith('apps.') || key.startsWith('webhooks.') ? 'apps' : key.startsWith('templates.') ? 'templates' : 'incoming'
 
 /**
- * Cài đặt hệ thống (ADR-0030 của backend) — con số vận hành Super Admin chỉnh không cần deploy. Mỗi
- * dòng lưu riêng (một nút Lưu / một dòng) để đổi một con số không vô tình ghi đè con số khác; "Về mặc
- * định" gửi `null`. Ô số chỉ nhận trong khoảng backend cho phép — backend vẫn kiểm lại.
+ * Sửa cài đặt hệ thống (ADR-0030 của backend) — dùng chung cho trang Cài đặt hệ thống và "Theo dõi & Bảo mật". Mỗi
+ * dòng lưu riêng (một nút Lưu / một dòng) để đổi một con số không vô tình ghi đè con số khác; "Về mặc định" gửi
+ * `null`. Ô số chỉ nhận trong khoảng backend cho phép — backend vẫn kiểm lại. `include` chọn khoá của trang đang xem
+ * (backend luôn trả đủ mọi khoá).
  */
-export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }) {
+export function useSettingsEditor(initial: SystemSettingDto[], include: (key: string) => boolean) {
   const t = useTranslations('systemSettings')
   const te = useTranslations('errors')
-  const [settings, setSettings] = useState(initial)
+  const [all, setSettings] = useState(initial)
+  const settings = all.filter((s) => include(s.key))
   const [drafts, setDrafts] = useState<Record<string, string>>(() =>
     Object.fromEntries(initial.map((s) => [s.key, s.value === null ? '' : String(s.value)])),
   )
@@ -145,6 +182,14 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
       </div>
     )
   }
+
+  return { settings, error, row }
+}
+
+/** Cài đặt hệ thống — con số vận hành Super Admin chỉnh không cần deploy. */
+export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }) {
+  const t = useTranslations('systemSettings')
+  const { settings, error, row } = useSettingsEditor(initial, (key) => !isSecuritySetting(key))
 
   return (
     <>

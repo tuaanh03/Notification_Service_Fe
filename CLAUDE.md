@@ -50,6 +50,7 @@ webservice/ews-astrolink/
 │                             # apps/ có actions.ts (approveAndIssueKeyAction — chỉ còn cho app CŨ chờ duyệt, mục 2.5)
 │                             # apps/[appId]/network/ = Giới hạn IP của một app (mục 2.10) — ĐÃ đấu API
 │                             # settings/ = Cài đặt hệ thống (ADR-0030 của backend, mục 2.14) — ĐÃ đấu API
+│                             # security/ = Theo dõi & Bảo mật (ADR-0039 của backend, mục 2.15) — ĐÃ đấu API
 │                             # directory/ = Danh bạ (ADR-0027 của backend) — ĐÃ đấu API: nút Đồng bộ M365 (CHỈ ở đây,
 │                             # không ở màn Thành viên) + tích ai hiện trong hộp "Thêm thành viên" của các org
 │                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
@@ -718,6 +719,16 @@ vẫn kiểm); nhãn / mô tả theo khoá qua `LABEL` (khoá có dấu `.` — 
 (hiện chỉ `templates.html_check_enabled`, nhóm "Template" — ADR-0038 của backend) là công tắc lưu ngay khi gạt, không có
 nút Lưu. Giá trị mới tới
 mọi máy chủ API trong tối đa 30 giây (đệm của backend) — màn hình nói rõ điều đó.
+Nhóm `auth.*` KHÔNG hiện ở trang này (`isSecuritySetting`) — nó ở mục riêng "Theo dõi & Bảo mật" (mục 2.15).
+
+### 2.15. Theo dõi & Bảo mật (`/admin/security`) — chặn đăng nhập sai, chỉ Super Admin
+
+ADR-0039 của backend. Trên: 6 quy tắc `auth.*` (cùng kho cài đặt hệ thống, cùng `useSettingsEditor` của
+`system-settings-panel.tsx` — mỗi dòng lưu riêng). Dưới: bảng khoá đang giữ (`GET /admin/login-locks`) — khoá tạm theo
+email / IP (tự mở), khoá hẳn (chỉ mở ở đây); "Mở khoá" luôn qua `<ConfirmDialog>` (`POST …/unlock`). Đăng nhập mật khẩu:
+`signIn` gửi IP thật của trình duyệt (`X-Real-IP` của NPM, thiếu thì phần tử CUỐI của `X-Forwarded-For`) kèm
+`LOGIN_CLIENT_IP_SECRET` — biến này phải CÙNG giá trị ở web và api, trống thì backend chỉ đếm theo email. Người bị khoá
+chỉ thấy `INVALID_CREDENTIALS` (câu có nhắc "nhập sai nhiều lần sẽ bị tạm khoá"); M365 bị khoá hẳn -> `ADMIN_LOCKED`.
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 

@@ -76,6 +76,8 @@ interface RequestInit_ {
   token?: string | null
   /** Mặc định 10 giây. Chỉ lời gọi chờ dịch vụ ngoài (AI soạn template) mới cần dài hơn. */
   timeoutMs?: number
+  /** Header thêm — hiện chỉ `/auth/login` dùng để chuyển IP thật của trình duyệt (ADR-0039 của backend). */
+  headers?: Record<string, string>
 }
 
 async function request<T>(path: string, init: RequestInit_): Promise<T> {
@@ -90,6 +92,7 @@ async function request<T>(path: string, init: RequestInit_): Promise<T> {
     response = await fetch(url, {
       method: init.method ?? 'GET',
       headers: {
+        ...init.headers,
         ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
         ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
       },
@@ -127,7 +130,7 @@ export async function adminFetch<T>(
 /** Gọi bề mặt PUBLIC `/auth/*` — nơi lấy và huỷ phiên, nên tự truyền token (hoặc không có). */
 export async function authFetch<T>(
   path: string,
-  init: { method?: string; body?: unknown; token?: string | null } = {},
+  init: { method?: string; body?: unknown; token?: string | null; headers?: Record<string, string> } = {},
 ): Promise<T> {
   return request<T>(`/auth${path}`, { ...init, token: init.token ?? null })
 }

@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Database, History, LayoutDashboard, Layers, Send, SlidersHorizontal } from 'lucide-react'
+import { Database, History, LayoutDashboard, Layers, Send, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { ADMIN_HOME } from '@/lib/app-routes'
 import { AppLink } from './app-link'
@@ -42,6 +42,7 @@ const NAV = (
     { href: '/admin/audit', name: 'audit', icon: History },
     { href: '/admin/directory', name: 'directory', icon: Database },
     { href: '/admin/settings', name: 'systemSettings', icon: SlidersHorizontal },
+    { href: '/admin/security', name: 'security', icon: ShieldCheck },
   ] as const
 ).filter((l) => !isPreviewRoute(l.href))
 

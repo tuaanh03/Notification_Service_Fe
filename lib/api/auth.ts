@@ -1,5 +1,6 @@
 import 'server-only'
-import { cookies } from 'next/headers'
+import { isIP } from 'node:net'
+import { cookies, headers } from 'next/headers'
 import { authFetch, sessionToken, SESSION_COOKIE } from './client'
 
 /** Admin đang đăng nhập — hình dạng backend trả ở `/auth/login` và `/auth/me`. */
@@ -25,9 +26,30 @@ interface SignInDto {
  * - `maxAge`    — khớp hạn phiên của backend, để trình duyệt tự dọn cookie đã chết.
  */
 export async function signIn(email: string, password: string): Promise<AdminDto> {
-  const result = await authFetch<SignInDto>('/login', { method: 'POST', body: { email, password } })
+  const result = await authFetch<SignInDto>('/login', {
+    method: 'POST',
+    body: { email, password },
+    headers: await clientIpHeaders(),
+  })
   await setSessionCookie(result)
   return result.admin
+}
+
+/**
+ * IP thật của trình duyệt cho bộ chặn đăng nhập sai (ADR-0039 của backend). Backend chỉ thấy IP của container console,
+ * nên console chuyển IP kèm khoá chung `LOGIN_CLIENT_IP_SECRET`; backend chỉ tin khi khoá khớp.
+ *
+ * Lấy `X-Real-IP` do Nginx Proxy Manager GHI ĐÈ bằng IP đang kết nối; thiếu thì lấy phần tử CUỐI của
+ * `X-Forwarded-For` (proxy gần nhất thêm vào — phần đầu do trình duyệt tự khai, giả được). Chưa cấu hình khoá hoặc
+ * không đọc được IP -> không gửi gì, backend chỉ đếm theo email.
+ */
+async function clientIpHeaders(): Promise<Record<string, string>> {
+  const secret = process.env.LOGIN_CLIENT_IP_SECRET
+  if (!secret) return {}
+  const h = await headers()
+  const ip = (h.get('x-real-ip') ?? h.get('x-forwarded-for')?.split(',').at(-1) ?? '').trim()
+  if (isIP(ip) === 0) return {}
+  return { 'x-ews-client-ip': ip, 'x-ews-client-ip-key': secret }
 }
 
 async function setSessionCookie(result: SignInDto): Promise<void> {

@@ -565,3 +565,16 @@ export type RenderedTemplateDto = {
 export type ConsoleSendContent =
   | { subject: string; html: string }
   | { templateId: string; payload: Record<string, unknown> }
+
+/** Một khoá đăng nhập đang giữ — màn "Theo dõi & Bảo mật" (ADR-0039 của backend). */
+export type LoginLockDto = {
+  /** `email` / `ip` = khoá tạm (tự mở lúc `until`); `account` = khoá hẳn, chỉ Super Admin mở. */
+  kind: 'email' | 'ip' | 'account'
+  /** Email (chữ thường) hoặc địa chỉ IP. */
+  subject: string
+  /** `null` = IP, hoặc email không có tài khoản EWS. */
+  adminId: string | null
+  displayName: string | null
+  lockedAt: string
+  until: string | null
+}
