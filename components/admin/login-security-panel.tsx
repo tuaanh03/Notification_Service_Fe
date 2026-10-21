@@ -92,9 +92,11 @@ export function LoginSecurityPanel({ initialSettings, initialLocks }: { initialS
       key: 'subject',
       label: t('colSubject'),
       render: (l) => (
-        <div className="min-w-0">
-          <p className="truncate font-mono text-xs">{l.subject}</p>
-          <p className="truncate text-[11px] text-[var(--text-muted)]">
+        // Ô bảng của shadcn là `whitespace-nowrap` (bảng giãn theo nội dung, `truncate` không ăn): email dài phải được
+        // xuống dòng, không thì nút Mở khoá bị đẩy ra ngoài khung điện thoại.
+        <div className="min-w-0 whitespace-normal">
+          <p className="break-all font-mono text-xs">{l.subject}</p>
+          <p className="text-[11px] text-[var(--text-muted)]">
             {l.kind === 'ip' ? t('ipAddress') : (l.displayName ?? (l.adminId === null ? t('noAccount') : ''))}
           </p>
           {/* Điện thoại: cột Loại ẩn để nút Mở khoá còn trong khung — nhãn loại xuống dưới email. */}
