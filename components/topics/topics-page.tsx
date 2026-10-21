@@ -305,6 +305,7 @@ export function TopicsPage() {
       <CreateTopicDialog
         open={creating}
         appName={app.name}
+        existingKeys={(rows ?? []).map((r) => r.key)}
         pending={pending}
         onCancel={() => setCreating(false)}
         onSubmit={handleCreate}

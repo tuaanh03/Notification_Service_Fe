@@ -29,6 +29,7 @@ import {
 } from '@/app/settings/webhooks/actions'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
+import { InfoHint } from '@/components/info-hint'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
@@ -271,8 +272,21 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
       <Panel className="p-5" ring>
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
-            <h2 className="text-sm font-semibold">{t('endpoints')}</h2>
-            <p className="mt-2 text-xs text-[var(--text-secondary)]">{t('intro')}</p>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold">{t('endpoints')}</h2>
+              {/* Cách EWS gọi webhook: gom vào ⓘ (UX-12) — trước là một khối chữ riêng cuối màn. */}
+              <InfoHint
+                label={t('howTitle')}
+                summary={t('intro')}
+                items={[
+                  { term: t('howTermCall'), definition: t('howCall') },
+                  { term: t('howTermSignature'), definition: t('howSignature') },
+                  { term: t('howTermRetry'), definition: t('howRetry') },
+                  { term: t('howTermDuplicate'), definition: t('howDuplicate') },
+                ]}
+              />
+            </div>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">{t('intro')}</p>
           </div>
           {/* Trần số URL là cài đặt hệ thống — console không biết con số; vượt thì backend trả 422 WEBHOOK_LIMIT_REACHED. */}
           {writable && (
@@ -399,16 +413,6 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
         />
       )}
 
-      <Panel className="mt-5 p-5">
-        <h2 className="mb-3 text-sm font-semibold">{t('howTitle')}</h2>
-        <ul className="list-disc space-y-1.5 pl-5 text-xs text-[var(--text-secondary)]">
-          <li>{t('howCall')}</li>
-          <li>{t.rich('howSignature', { mono: (c) => <span className="font-mono">{c}</span> })}</li>
-          <li>{t('howRetry')}</li>
-          <li>{t.rich('howDuplicate', { mono: (c) => <span className="font-mono">{c}</span> })}</li>
-          <li>{t('howPrivacy')}</li>
-        </ul>
-      </Panel>
 
       {dialog?.kind === 'create' && (
         <WebhookFormDialog

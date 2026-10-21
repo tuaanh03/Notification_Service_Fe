@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { removeMemberAction, setAppRolesAction, setMemberAction } from '@/app/orgs/actions'
 import { AddMemberDialog, AppRolesDialog, ChangeRoleDialog, RemoveMemberDialog } from './member-dialogs'
+import { OrgSettingsMenu } from './org-settings-menu'
 
 type Row = OrgMemberDto & { access: string; apps: number }
 type Open =
@@ -155,10 +156,14 @@ export function OrgMembers({
         subtitle={canManage ? t('subtitleManage') : t('subtitleRead')}
         actions={
           canManage ? (
-            <Button onClick={() => setOpen({ kind: 'add' })}>
-              <Plus />
-              {t('add')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setOpen({ kind: 'add' })}>
+                <Plus />
+                {t('add')}
+              </Button>
+              {/* Đổi tên / chuyển Owner / xoá tổ chức — chỉ Owner hoặc Super Admin (ADR-0040 của backend). */}
+              {isOwner && <OrgSettingsMenu orgId={orgId} orgName={org.name} members={members} />}
+            </div>
           ) : undefined
         }
       />

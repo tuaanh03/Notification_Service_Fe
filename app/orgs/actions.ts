@@ -2,6 +2,9 @@
 
 import {
   createOrganization,
+  deleteOrganization,
+  renameOrganization,
+  transferOwnership,
   grantAppRole,
   listMemberCandidates,
   removeMember,
@@ -53,4 +56,19 @@ export async function setAppRolesAction(
     applied += 1
   }
   return { ok: true, data: { applied } }
+}
+
+/** Đổi tên tổ chức (ADR-0040 của backend) — chỉ Owner / Super Admin. */
+export async function renameOrganizationAction(orgId: string, name: string): Promise<ActionResult<OrganizationDto>> {
+  return toResult(() => renameOrganization(orgId, name))
+}
+
+/** Chuyển Owner — người nhận đã là thành viên; mọi Owner cũ thành Org Admin. */
+export async function transferOwnershipAction(orgId: string, adminId: string): Promise<ActionResult<void>> {
+  return toResult(() => transferOwnership(orgId, adminId))
+}
+
+/** Xoá tổ chức — gõ lại đúng tên; còn app chưa thu hồi thì backend từ chối (`ORG_HAS_APPS`). */
+export async function deleteOrganizationAction(orgId: string, confirmName: string): Promise<ActionResult<void>> {
+  return toResult(() => deleteOrganization(orgId, confirmName))
 }

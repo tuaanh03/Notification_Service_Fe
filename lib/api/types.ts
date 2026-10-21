@@ -94,6 +94,14 @@ export type AppDto = {
   mandatoryBypassPacing?: boolean
   /** Trần tốc độ do Super Admin đặt — Admin App chỉ đặt dàn đều trong trần. null = không trần riêng. */
   maxSendPerMinute?: number | null
+  /** Trần thư mỗi giờ do Super Admin đặt (ADR-0032 GĐ 3). null = không trần. */
+  maxSendPerHour?: number | null
+  /** Tin bắt buộc được vượt trần mỗi giờ. */
+  mandatoryBypassHourly?: boolean
+  /** Mỗi người nhận tối đa N thư / ngày (ADR-0032 GĐ 3). null = không giới hạn. */
+  recipientDailyLimit?: number | null
+  /** Tin bắt buộc không tính vào giới hạn mỗi người. */
+  mandatoryBypassRecipientLimit?: boolean
   /** ISO-8601 UTC */
   createdAt: string
   updatedAt: string
@@ -246,7 +254,7 @@ export type UserPreferencesDto = {
 export type NotificationRecipientSummaryDto = {
   /** pending | sent | failed | skipped */
   status: string
-  /** Vì sao KHÔNG gửi: no_channel | invalid | suppressed | opted_out_optional | opted_out */
+  /** Vì sao KHÔNG gửi: no_channel | invalid | suppressed | opted_out_optional | opted_out | recipient_limit */
   exclusionReason: string | null
   /** Lỗi từ máy chủ thư. Bắt đầu bằng `outcome_unknown` = không chắc thư đã đi hay chưa. */
   error: string | null

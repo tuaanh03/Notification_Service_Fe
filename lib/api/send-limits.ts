@@ -19,3 +19,13 @@ export async function setPacing(appId: string, body: { perMinute: number | null;
 export async function setPacingCeiling(appId: string, maxPerMinute: number | null): Promise<AppDto> {
   return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/pacing-ceiling`, { method: 'PUT', body: { maxPerMinute } })
 }
+
+/** Trần thư mỗi giờ — chỉ Super Admin (`platform.manage`); vượt thì app nhận 429 `APP_HOURLY_LIMIT` (ADR-0032 GĐ 3). */
+export async function setHourlyCeiling(appId: string, body: { maxPerHour: number | null; mandatoryBypass: boolean }): Promise<AppDto> {
+  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/hourly-ceiling`, { method: 'PUT', body })
+}
+
+/** Mỗi người nhận tối đa N thư / ngày — người quản lý app; thư vượt bị bỏ qua lý do `recipient_limit` (ADR-0032 GĐ 3). */
+export async function setRecipientLimit(appId: string, body: { perDay: number | null; mandatoryBypass: boolean }): Promise<AppDto> {
+  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/recipient-limit`, { method: 'PUT', body })
+}

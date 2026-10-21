@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { updateSystemSettingsAction } from '@/app/admin/settings/actions'
 import { PageHeader } from '@/components/page-header'
+import { InfoHint } from '@/components/info-hint'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -125,10 +126,13 @@ export function useSettingsEditor(
     const shownDefault = s.default === null ? '—' : typeof s.default === 'boolean' ? t(s.default ? 'on' : 'off') : String(s.default)
     return (
       <div className="min-w-0">
-        <Label htmlFor={`setting-${s.key}`} className="text-sm">
-          {label ? t(label.label) : s.key}
-        </Label>
-        <p className="mt-1 text-xs text-[var(--text-secondary)]">{label ? t(label.help) : null}</p>
+        {/* Giải thích từng cài đặt nằm trong ⓘ cạnh nhãn (UX-12) — không còn đoạn chữ dưới nhãn. */}
+        <div className="flex items-center gap-1.5">
+          <Label htmlFor={`setting-${s.key}`} className="text-sm" title={s.key}>
+            {label ? t(label.label) : s.key}
+          </Label>
+          {label && <InfoHint label={t(label.label)} summary={t(label.help)} />}
+        </div>
         <p className={cn('mt-1 text-[11px] text-[var(--text-muted)]', showKeys && 'font-mono')}>
           {[
             showKeys ? s.key : null,
@@ -199,7 +203,7 @@ export function useSettingsEditor(
 /** Cài đặt hệ thống — con số vận hành Super Admin chỉnh không cần deploy. */
 export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }) {
   const t = useTranslations('systemSettings')
-  const { settings, error, row } = useSettingsEditor(initial, (key) => !isSecuritySetting(key))
+  const { settings, error, row } = useSettingsEditor(initial, (key) => !isSecuritySetting(key), { showKeys: false })
 
   return (
     <>

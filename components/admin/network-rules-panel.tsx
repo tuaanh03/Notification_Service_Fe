@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { AlertTriangle, Info, Network, PlugZap, Plus, X } from 'lucide-react'
+import { AlertTriangle, Network, PlugZap, Plus, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
@@ -13,6 +13,7 @@ import { useNetworkValidators } from '@/components/apps/use-network-validators'
 import { AuditTrail } from '@/components/audit-trail'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
+import { InfoHint } from '@/components/info-hint'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -133,10 +134,11 @@ export function NetworkRulesPanel({ app }: { app: { id: string; slug: string; ex
     <>
       {header}
 
-      <Alert className="mb-5">
-        <Info />
-        <AlertDescription>{t('rules')}</AlertDescription>
-      </Alert>
+      {/* Luật đầy đủ nằm trong ⓘ (UX-12); trên màn chỉ một dòng. */}
+      <p className="mb-5 flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+        {t('rulesShort')}
+        <InfoHint label={t('title')} summary={t('rules')} />
+      </p>
 
       {view !== null && app.external && ips.length === 0 && (
         <Alert className="mb-5 bg-[var(--solar)]/10">

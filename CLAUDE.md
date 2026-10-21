@@ -750,6 +750,33 @@ Mặc định ô "Nội dung thư" gõ CHỮ THƯỜNG; `lib/plain-text-email.ts
 `<p>`, xuống dòng `<br>`, chỉ `https://` thành link) và gửi kèm `text` gốc. "Viết bằng HTML (nâng cao)" mới mở ô HTML thô
 (mang theo nội dung đã đổi). Đừng đưa ô HTML về làm mặc định.
 
+### 2.18. Chữ trên màn — ngắn, giải thích dài vào ⓘ (UX-12)
+
+Luật cho MỌI màn (console app + Quản trị EWS):
+*   Chú thích dưới ô / dưới tiêu đề / phụ đề trang: **một dòng, ≤ 70 ký tự**, nói việc cần làm. Dài hơn -> đưa vào **ⓘ**
+    (`<InfoHint>`: rê chuột hoặc chạm đều mở) cạnh nhãn / tiêu đề.
+*   Giải thích cơ chế (cách EWS gọi webhook, luật IP, từng cài đặt hệ thống…) KHÔNG đặt thành khối chữ trên màn — gom vào ⓘ.
+*   Thông báo lỗi ≤ 110 ký tự (lỗi gì + làm gì), KHÔNG giấu vào ⓘ. Hộp xác nhận: 1–2 câu nói hậu quả.
+*   Câu dịch có `<…>` là thẻ, `{…}` là biến (next-intl) — ký tự thật thì `[…]` / `'{{ }}'`. Kiểm bằng `IntlMessageFormat` (cả
+    hai ngôn ngữ, 0 lỗi) trước khi build.
+*   Bài quét QA `qa-verbose.cjs` đi mọi màn, báo dòng chữ hiện sẵn > 90 ký tự ngoài ⓘ / hộp lỗi / bảng — phải ra 0.
+
+### 2.19. Thêm chủ đề — mã tự sinh (UX-11)
+
+Người dùng chỉ gõ **Tên hiển thị**; mã cho đội app tự sinh `topicKeyFrom` (`lib/topic-key.ts`: bỏ dấu, chữ thường, `_`,
+trùng trong app thì `_2`, `_3`…), hiện mờ "Mã cho đội app: …" + "Sửa" mới mở ô nhập. KHÔNG dùng UUID: đội app viết mã vào
+code / cấu hình / incoming webhook, phải đọc được; trùng đã bị chặn trong app (409 `TOPIC_KEY_TAKEN`).
+
+### 2.20. Giới hạn gửi GĐ 3 + quản lý tổ chức
+
+*   `/settings/limits` thêm hai mục (ADR-0032 GĐ 3 của backend): **Mỗi người nhận mỗi ngày** (người quản lý app, 1–1000,
+    tin bắt buộc mặc định không tính) và **Trần mỗi giờ** (chỉ Super Admin sửa, 1–100000, công tắc "tin bắt buộc được vượt
+    trần" mặc định tắt). Thư vượt mức mỗi người -> lý do `recipient_limit` (nhóm `exclusion`); vượt trần giờ -> `/v1` trả
+    `429 APP_HOURLY_LIMIT` (đã có trong `v1-errors.ts`).
+*   Màn Thành viên có nút ⋯ "Quản lý tổ chức" (`<OrgSettingsMenu>`, chỉ Owner / Super Admin — ADR-0040 của backend): Đổi tên ·
+    Chuyển Owner (chọn trong thành viên chưa là Owner; Owner cũ thành Org Admin) · Xoá (gõ lại tên, `tone="blocking"`, còn
+    app chưa thu hồi -> `ORG_HAS_APPS`; xoá xong `push('/orgs')` RỒI `refresh()`). Lỗi hiện trong hộp.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là

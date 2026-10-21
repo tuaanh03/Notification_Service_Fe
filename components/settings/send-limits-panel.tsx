@@ -31,6 +31,11 @@ const OFFICE_HOURS: SendWindowDto = { days: [1, 2, 3, 4, 5], start: '08:00', end
 const DEFAULT_PER_MINUTE = 10
 /** Khoảng backend nhận cho mọi con số thư / phút (`PACING_INVALID`). */
 const MAX_PER_MINUTE = 1000
+/** GĐ 3 (ADR-0032): khoảng backend nhận (`RECIPIENT_LIMIT_INVALID` / `HOURLY_LIMIT_INVALID`) + mức gợi ý lần đầu bật. */
+const MAX_PER_RECIPIENT_DAY = 1000
+const MAX_PER_HOUR = 100_000
+const DEFAULT_PER_RECIPIENT_DAY = 5
+const DEFAULT_PER_HOUR = 1000
 
 /**
  * Mốc giờ chọn được, mỗi 30 phút. Không dùng ô giờ của trình duyệt: nó hiện AM/PM theo máy người xem và
@@ -51,6 +56,12 @@ type Draft = {
   mandatoryBypassPacing: boolean
   ceilingOn: boolean
   ceiling: string
+  recipientOn: boolean
+  perDay: string
+  recipientBypass: boolean
+  hourlyOn: boolean
+  perHour: string
+  hourlyBypass: boolean
 }
 
 const draftOf = (limits: SendLimits): Draft => ({
@@ -62,12 +73,18 @@ const draftOf = (limits: SendLimits): Draft => ({
   mandatoryBypassPacing: limits.mandatoryBypassPacing,
   ceilingOn: limits.maxSendPerMinute !== null,
   ceiling: String(limits.maxSendPerMinute ?? MAX_PER_MINUTE),
+  recipientOn: limits.recipientDailyLimit !== null,
+  perDay: String(limits.recipientDailyLimit ?? DEFAULT_PER_RECIPIENT_DAY),
+  recipientBypass: limits.mandatoryBypassRecipientLimit,
+  hourlyOn: limits.maxSendPerHour !== null,
+  perHour: String(limits.maxSendPerHour ?? DEFAULT_PER_HOUR),
+  hourlyBypass: limits.mandatoryBypassHourly,
 })
 
-/** "12" -> 12; rỗng, số lẻ, ngoài 1..1000 -> null. */
-const countOf = (value: string): number | null => {
+/** "12" -> 12; rỗng, số lẻ, ngoài 1..max -> null. */
+const countOf = (value: string, max = MAX_PER_MINUTE): number | null => {
   const n = Number(value)
-  return value.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= MAX_PER_MINUTE ? n : null
+  return value.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= max ? n : null
 }
 
 const sameWindowPart = (a: Draft, b: Draft) =>
@@ -78,6 +95,10 @@ const sameWindowPart = (a: Draft, b: Draft) =>
 const samePacingPart = (a: Draft, b: Draft) =>
   a.pacing === b.pacing && a.mandatoryBypassPacing === b.mandatoryBypassPacing && (!a.pacing || a.perMinute === b.perMinute)
 const sameCeilingPart = (a: Draft, b: Draft) => a.ceilingOn === b.ceilingOn && (!a.ceilingOn || a.ceiling === b.ceiling)
+const sameRecipientPart = (a: Draft, b: Draft) =>
+  a.recipientOn === b.recipientOn && a.recipientBypass === b.recipientBypass && (!a.recipientOn || a.perDay === b.perDay)
+const sameHourlyPart = (a: Draft, b: Draft) =>
+  a.hourlyOn === b.hourlyOn && a.hourlyBypass === b.hourlyBypass && (!a.hourlyOn || a.perHour === b.perHour)
 
 /** Một mục: tiêu đề + ⓘ (+ nhãn) bên trái, công tắc bên phải; mục con luôn hiện bên dưới. */
 function Section({
@@ -164,10 +185,11 @@ function SwitchRow({
 }
 
 /**
- * `/settings/limits` — Giới hạn gửi của app đang xem (ADR-0032 của backend): Khung giờ gửi · Dàn đều · Trần tốc độ.
+ * `/settings/limits` — Giới hạn gửi của app đang xem (ADR-0032 của backend): Khung giờ gửi · Dàn đều · Trần tốc độ ·
+ * Mỗi người nhận mỗi ngày · Trần mỗi giờ (GĐ 3).
  * Mục con luôn hiện; công tắc mục cha tắt thì NÚT CHỈNH của mục con mờ + khoá (giá trị giữ nguyên, bật lại còn đó).
  * Giải thích nằm trong ⓘ của mục cha, không viết trên màn. Một lần lưu cho cả trang qua thanh dính đáy.
- * Trần chỉ Super Admin sửa; người khác thấy con số. Người không quản lý app: mọi nút khoá, không có thanh lưu.
+ * Trần tốc độ + trần mỗi giờ chỉ Super Admin sửa; người khác thấy con số. Người không quản lý app: mọi nút khoá, không có thanh lưu.
  */
 export function SendLimitsPanel() {
   const t = useTranslations('limits')
@@ -243,13 +265,21 @@ export function SendLimitsPanel() {
         ? t('errAboveCeiling', { max: ceilingValue })
         : null
   const ceilingError = superAdmin && ceilingOn && ceilingValue === null ? t('errNumber', { max: MAX_PER_MINUTE }) : null
-  const invalid = Boolean(daysError ?? timeError ?? perMinuteError ?? ceilingError)
+  const recipientOn = draft?.recipientOn ?? false
+  const hourlyOn = draft?.hourlyOn ?? false
+  const perDayValue = recipientOn && draft ? countOf(draft.perDay, MAX_PER_RECIPIENT_DAY) : null
+  const perHourValue = hourlyOn && draft ? countOf(draft.perHour, MAX_PER_HOUR) : null
+  const perDayError = recipientOn && perDayValue === null ? t('errNumber', { max: MAX_PER_RECIPIENT_DAY }) : null
+  const perHourError = superAdmin && hourlyOn && perHourValue === null ? t('errNumber', { max: MAX_PER_HOUR }) : null
+  const invalid = Boolean(daysError ?? timeError ?? perMinuteError ?? ceilingError ?? perDayError ?? perHourError)
 
   const changes: SendLimitsChanges = {}
   if (draft && saved) {
     if (!sameCeilingPart(draft, saved)) changes.ceiling = ceilingValue
     if (!sameWindowPart(draft, saved)) changes.window = { window: draft.enabled ? draft.window : null, mandatoryBypass: draft.mandatoryBypass }
     if (!samePacingPart(draft, saved)) changes.pacing = { perMinute: perMinuteValue, mandatoryBypass: draft.mandatoryBypassPacing }
+    if (!sameRecipientPart(draft, saved)) changes.recipient = { perDay: perDayValue, mandatoryBypass: draft.recipientBypass }
+    if (superAdmin && !sameHourlyPart(draft, saved)) changes.hourly = { maxPerHour: perHourValue, mandatoryBypass: draft.hourlyBypass }
   }
   const dirty = Object.keys(changes).length > 0
   const update = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d))
@@ -421,6 +451,85 @@ export function SendLimitsPanel() {
             <Row label={t('ceiling')}>
               <p className="text-sm lg:pt-1.5">
                 {saved?.ceilingOn ? t('count', { count: Number(saved.ceiling) }) : t('unlimited')}
+              </p>
+            </Row>
+          )}
+        </Section>
+
+        <Section
+          title={t('recipientTitle')}
+          hint={hint(t('recipientHint'), [
+            [t('perDay'), t('perDayDef')],
+            [t('recipientMandatory'), t('recipientMandatoryDef')],
+          ])}
+          toggle={parentSwitch('recipient', t('recipientTitle'), recipientOn, locked, (on) => update({ recipientOn: on }))}
+        >
+          <Row label={t('perDay')} htmlFor="per-day" error={perDayError}>
+            <div className="flex items-center gap-2">
+              <Input
+                id="per-day"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={MAX_PER_RECIPIENT_DAY}
+                aria-invalid={perDayError !== null}
+                className="w-24 font-mono"
+                value={draft?.perDay ?? ''}
+                disabled={locked || !recipientOn}
+                onChange={(e) => update({ perDay: e.target.value })}
+              />
+              <span className="text-sm text-[var(--text-secondary)]">{t('unitPerDay')}</span>
+            </div>
+          </Row>
+          <SwitchRow
+            id="recipient-mandatory"
+            label={t('recipientMandatory')}
+            checked={draft?.recipientBypass ?? true}
+            disabled={locked || !recipientOn}
+            onChange={(recipientBypass) => update({ recipientBypass })}
+          />
+        </Section>
+
+        <Section
+          title={t('hourlyTitle')}
+          badge={t('superAdmin')}
+          hint={hint(t('hourlyHint'), [
+            [t('perHour'), t('perHourDef')],
+            [t('hourlyMandatory'), t('hourlyMandatoryDef')],
+          ])}
+          toggle={superAdmin ? parentSwitch('hourly', t('hourlyTitle'), hourlyOn, locked, (on) => update({ hourlyOn: on })) : undefined}
+        >
+          {superAdmin ? (
+            <>
+              <Row label={t('perHour')} htmlFor="per-hour" error={perHourError}>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="per-hour"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={MAX_PER_HOUR}
+                    aria-invalid={perHourError !== null}
+                    className="w-28 font-mono"
+                    value={draft?.perHour ?? ''}
+                    disabled={locked || !hourlyOn}
+                    onChange={(e) => update({ perHour: e.target.value })}
+                  />
+                  <span className="text-sm text-[var(--text-secondary)]">{t('unitPerHour')}</span>
+                </div>
+              </Row>
+              <SwitchRow
+                id="hourly-mandatory"
+                label={t('hourlyMandatory')}
+                checked={draft?.hourlyBypass ?? false}
+                disabled={locked || !hourlyOn}
+                onChange={(hourlyBypass) => update({ hourlyBypass })}
+              />
+            </>
+          ) : (
+            <Row label={t('perHour')}>
+              <p className="text-sm lg:pt-1.5">
+                {saved?.hourlyOn ? t('countPerHour', { count: Number(saved.perHour) }) : t('unlimited')}
               </p>
             </Row>
           )}
