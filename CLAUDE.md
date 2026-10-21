@@ -905,10 +905,11 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 
 Palette THẬT trong `app/globals.css` (`:root`) và `lib/theme.ts` — bảng **sáng**:
 `--void #F8FAFC` (nền) · `--deep #FFFFFF` (bề mặt) · nebula indigo `#E0E7FF` / violet `#EDE9FE` /
-teal `#CCFBF1` · `--starlight #0284C7` (primary) · `--pulsar #9333EA` · `--solar #D97706` ·
-`--supernova #E11D48` · `--aurora #059669` · text `#0F172A / #475569 / #5F6E83` ·
+teal `#CCFBF1` · `--starlight #0369A1` (primary) · `--pulsar #9333EA` · `--solar #B45309` ·
+`--supernova #BE123C` · `--aurora #047857` · text `#0F172A / #475569 / #5F6E83` ·
 `--orbit #E2E8F0` (hairline).
 `--text-muted` là `#5F6E83` từ UX-7 (trước là `#94A3B8`, chỉ ~2,6:1): đạt ≥ 4,5:1 trên trắng / `--void` / `#F1F5F9` / `#E0F2FE` mà vẫn nhạt hơn `--text-secondary`. Đổi token này phải giữ ≥ 4,5:1 trên cả bốn nền đó. `--mail-muted` là màu của THƯ (khung xem trước), không theo token console.
+UX-8: `--starlight` / `--solar` / `--supernova` / `--aurora` và `statusColors` (lib/theme.ts) là sắc ĐẬM (700) — chữ ≥ 4,5:1 trên trắng / `--void`, chữ trắng trên nút `--starlight` cũng vậy; màu `<StatusPill>` (chữ = màu, nền = màu 7%) ≥ 4,5:1 trên nền nhãn. Sắc 400 cũ (`#34D399`, `#FBBF24`…) chỉ 1,5–2,5:1 — đừng đưa lại. Kiểm bằng `qa-contrast` (đo màu chữ vs nền thật trên mọi màn).
 
 Surface `.cosmic-surface`: `bg rgba(255,255,255,.85)`, `backdrop-blur(16px)`, border `--orbit`,
 radius 16, shadow mảnh; `--glow-panel` là bóng đổ nhạt (không phải quầng sáng neon);
