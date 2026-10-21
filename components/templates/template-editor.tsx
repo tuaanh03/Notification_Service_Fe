@@ -17,8 +17,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
 import { cn } from '@/lib/utils'
 import { useTemplateEditor } from '@/hooks/use-template-editor'
 import { AiComposeDialog } from './ai-compose-dialog'
@@ -61,13 +63,12 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const tc = useTranslations('common')
   const te = useTranslations('errors')
   const tt = useTranslations('templates')
+  const tcat = useTranslations('templateCategory')
   const { app } = useApp()
   const router = useAppRouter()
   // App Viewer chỉ xem: khoá khung soạn, ẩn mọi nút ghi (backend vẫn chặn bằng 403).
   const writable = useRole().canManage(app)
   const ed = useTemplateEditor(app.app_id, templateId, !writable)
-  /** Tên đang gõ ở ô Đổi tên; `null` = chưa gõ, ô hiện tên đã lưu. */
-  const [nameEdit, setName] = useState<string | null>(null)
   const [publishWarn, setPublishWarn] = useState(false)
   const [archiveConfirm, setArchiveConfirm] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
@@ -75,6 +76,11 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [dupOpen, setDupOpen] = useState(false)
   const [dupRound, setDupRound] = useState(0)
   const [dupName, setDupName] = useState('')
+  /** Hộp "Tên và nhóm" (bút chì cạnh tên): giá trị đang sửa, dựng lại mỗi lần mở. */
+  const [metaOpen, setMetaOpen] = useState(false)
+  const [metaRound, setMetaRound] = useState(0)
+  const [metaName, setMetaName] = useState('')
+  const [metaCategory, setMetaCategory] = useState<TemplateCategory>('other')
   /** Mỗi lần mở hộp thoại AI là dựng lại từ đầu — không mang mô tả / đề xuất của lần trước. */
   const [aiRound, setAiRound] = useState(0)
   /** Bộ soạn trực quan (ADR-0036): thiết bị xem + nút hoàn tác ở thanh trên, điều khiển bộ soạn qua `visualControls`. */
@@ -82,10 +88,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [visualControls, setVisualControls] = useState<VisualControls | null>(null)
   const [visualHistory, setVisualHistory] = useState<VisualHistory>({ canUndo: false, canRedo: false })
 
-  const savedName = ed.detail?.name ?? ''
-  const name = nameEdit ?? savedName
-  /** Chưa lưu = nội dung đang soạn khác bản đã lưu, hoặc đã gõ tên mới mà chưa bấm Đổi tên. */
-  const dirty = ed.dirty || (ed.detail !== null && name.trim() !== savedName)
+  /** Chưa lưu = nội dung đang soạn khác bản đã lưu (tên / nhóm lưu ngay trong hộp "Tên và nhóm"). */
+  const dirty = ed.dirty
   const leave = useLeaveGuard(dirty)
 
   // Đổi tab chỉ thay `?tab=` bằng history của trình duyệt — không chuyển trang, không mất nội dung đang soạn.
@@ -152,6 +156,23 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
       router.push(`/templates/${id}`)
     }
   }
+  /** Nhóm đã lưu (bộ cố định — giá trị lạ từ backend thì coi như chưa có). */
+  const savedCategory = isTemplateCategory(detail.category) ? detail.category : null
+  const openMeta = () => {
+    setMetaName(detail.name)
+    setMetaCategory(savedCategory ?? 'other')
+    setMetaRound((n) => n + 1)
+    ed.clearError()
+    setMetaOpen(true)
+  }
+  // Chỉ gửi phần đã đổi; lỗi (vd tên trùng) thì GIỮ hộp mở, hiện lỗi ngay trong hộp.
+  const doMeta = async () => {
+    const nextName = metaName.trim()
+    if (nextName !== detail.name && !(await ed.rename(nextName))) return
+    if (metaCategory !== savedCategory && !(await ed.changeCategory(metaCategory))) return
+    setMetaOpen(false)
+    toast.success(t('metaSaved'))
+  }
   const visual = ed.editor === 'visual'
   const editorLabel = visual ? t('editorVisual') : t('editorHtml')
   /** Thanh thiết bị + hoàn tác chỉ khi bộ soạn trực quan đang mở (tab Soạn thư, có nháp). */
@@ -167,7 +188,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
   const meta = shown
-    ? `v${shown.version} · ${editorLabel} · ${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
+    ? `v${shown.version} · ${editorLabel} · ${savedCategory ? `${tcat(savedCategory)} · ` : ''}${ed.locked ? t('readOnly') : t('editingDraft')}${dirty ? t('unsaved') : ''}`
     : undefined
   /** Soạn thư kiểu trực quan là bộ soạn tràn mép dưới thanh dính; các tab khác (và kiểu HTML) có lề như trang thường. */
   const fullBleed = visual && tab === 'compose'
@@ -181,6 +202,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           <EditorTopBar
             name={detail.name}
             meta={meta}
+            onEdit={writable && !ed.archived ? openMeta : undefined}
+            editLabel={t('metaTitle')}
             actions={
               <>
                 {visualTools && (
@@ -289,10 +312,6 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         <TabsContent value="compose" className={cn('min-w-0', !fullBleed && PAGE_PAD)}>
           <ComposeTab
             ed={ed}
-            writable={writable}
-            name={name}
-            onNameChange={setName}
-            savedName={savedName}
             onAi={() => {
               setAiRound((n) => n + 1)
               setAiOpen(true)
@@ -361,6 +380,45 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           <Input id="tpl-dup-name" value={dupName} onChange={(e) => setDupName(e.target.value)} maxLength={200} autoFocus />
           {ed.error && (
             <p className="text-xs text-[var(--supernova)]" data-testid="duplicate-error">
+              {te('withCode', { message: ed.error.message, code: ed.error.code })}
+            </p>
+          )}
+        </div>
+      </ConfirmDialog>
+      <ConfirmDialog
+        key={`meta:${metaRound}`}
+        open={metaOpen}
+        icon={Pencil}
+        title={t('metaTitle')}
+        description={t('metaBody')}
+        confirmLabel={t('metaSave')}
+        confirmDisabled={ed.pending || !metaName.trim() || (metaName.trim() === detail.name && metaCategory === savedCategory)}
+        onConfirm={() => void doMeta()}
+        onCancel={() => {
+          setMetaOpen(false)
+          ed.clearError()
+        }}
+      >
+        <div className="space-y-4" data-testid="meta-dialog">
+          <div className="space-y-1.5">
+            <Label htmlFor="tpl-name" className="text-xs font-semibold">{t('name')}</Label>
+            <Input id="tpl-name" value={metaName} onChange={(e) => setMetaName(e.target.value)} maxLength={200} autoFocus />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tpl-category" className="text-xs font-semibold">{t('category')}</Label>
+            <NativeSelect
+              id="tpl-category"
+              value={metaCategory}
+              onChange={(e) => isTemplateCategory(e.target.value) && setMetaCategory(e.target.value)}
+              className="w-full"
+            >
+              {TEMPLATE_CATEGORIES.map((c) => (
+                <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </div>
+          {ed.error && (
+            <p className="text-xs text-[var(--supernova)]" data-testid="meta-error">
               {te('withCode', { message: ed.error.message, code: ed.error.code })}
             </p>
           )}

@@ -35,7 +35,18 @@ function serialize(root: HTMLElement): string {
  * nguyên (`contenteditable=false`) như trong khung thư; giá trị lưu vẫn là chuỗi Liquid. Enter không xuống dòng,
  * dán vào thành chữ thường (có `{{ }}` thì tự thành chip). Nút "Chèn biến" mở cùng hộp với khung thư.
  */
-export function SubjectField({ ed, placeholder, label }: { ed: TemplateEditorState; placeholder: string; label: string }) {
+export function SubjectField({
+  ed,
+  placeholder,
+  label,
+  bare = false,
+}: {
+  ed: TemplateEditorState
+  placeholder: string
+  label: string
+  /** Nằm trong thẻ "Tiêu đề thư" trên tờ thư (UX-5C): ô gõ không viền riêng, nút "Chèn biến" kiểu nhấn nhẹ. */
+  bare?: boolean
+}) {
   const t = useTranslations('visualEditor')
   const ref = useRef<HTMLDivElement>(null)
   /** Giá trị vừa phát ra từ chính ô này — để không vẽ lại DOM (mất con trỏ) khi giá trị quay về. */
@@ -161,16 +172,24 @@ export function SubjectField({ ed, placeholder, label }: { ed: TemplateEditorSta
         }}
         onBlur={remember}
         className={cn(
-          'min-h-9 min-w-0 flex-1 rounded-lg border border-[var(--orbit)] bg-[var(--deep)] px-3 py-1 text-sm leading-7 whitespace-nowrap outline-none',
-          'overflow-x-auto focus-visible:border-[var(--starlight)] focus-visible:ring-2 focus-visible:ring-[var(--starlight)]/30',
+          'min-h-9 min-w-0 flex-1 rounded-lg px-3 py-1 text-sm leading-7 whitespace-nowrap outline-none overflow-x-auto',
+          bare
+            ? 'border-0 bg-transparent px-1 font-medium focus-visible:bg-[var(--void)]'
+            : 'border border-[var(--orbit)] bg-[var(--deep)] focus-visible:border-[var(--starlight)] focus-visible:ring-2 focus-visible:ring-[var(--starlight)]/30',
           'empty:before:text-[var(--text-muted)] empty:before:content-[attr(data-placeholder)]',
           ed.locked && 'cursor-not-allowed opacity-60',
         )}
         data-testid="subject-field"
       />
       {!ed.locked && (
-        <Button variant="outline" size="sm" onClick={() => setDialog(true)} data-testid="subject-insert-variable">
-          <Braces /> <span className="hidden lg:inline">{t('insertVariable')}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDialog(true)}
+          className={cn(bare && 'bg-[var(--starlight)]/5 text-[var(--starlight)] hover:bg-[var(--starlight)]/10')}
+          data-testid="subject-insert-variable"
+        >
+          <Braces /> <span className={bare ? 'hidden sm:inline' : 'hidden lg:inline'}>{t('insertVariable')}</span>
         </Button>
       )}
       <InsertVariableDialog

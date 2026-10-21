@@ -38,6 +38,18 @@ const ICONS: Record<BlockKind, LucideIcon> = {
 }
 
 /**
+ * Hàng tab của bảng (bản phác Main): 3 nút bằng nhau phủ hết bề ngang, tab đang chọn nền xanh nhạt — không dùng thanh
+ * xám của TabsList mặc định (chật, chữ 14px trong nút 25px). `border-0`: `* { border-color }` của globals.css biến
+ * `border-transparent` của TabsTrigger thành viền thật.
+ */
+const TAB_LIST = 'm-3 mb-0 grid h-auto w-auto grid-cols-3 gap-1 rounded-none bg-transparent p-0 group-data-horizontal/tabs:h-auto'
+const TAB_TRIGGER =
+  'h-8 rounded-lg border-0 text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] not-data-active:hover:bg-[var(--void)] data-active:hover:text-[var(--starlight)] data-active:bg-[var(--starlight)]/10 data-active:font-semibold data-active:text-[var(--starlight)] group-data-[variant=default]/tabs-list:data-active:shadow-none'
+
+/** Tab Khối có thêm "2 cột" — chia cột là việc hay làm, không bắt sang tab Bố cục (bản phác Main). */
+const BLOCKS_TAB: readonly BlockKind[] = [...CONTENT_BLOCKS, 'col2']
+
+/**
  * Bảng trái của bộ soạn trực quan (bản phác Main): tab Khối / Bố cục / Cài đặt thư. Khối là thẻ có biểu tượng lucide
  * + tên tiếng Việt; KÉO vào thư (`editor.Blocks.startDrag`) hoặc BẤM để thêm (mọi thao tác kéo có đường bấm tương ứng).
  */
@@ -69,7 +81,7 @@ export function LeftPanel({
         onDragEnd={() => editor.Blocks.endDrag(false)}
         onClick={() => onAdd(kind)}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onAdd(kind))}
-        className="flex cursor-grab flex-col items-center gap-1.5 rounded-xl border border-[var(--orbit)] bg-[var(--deep)] px-2 py-3 text-xs text-[var(--text-primary)] transition-colors select-none hover:border-[var(--starlight)] hover:text-[var(--starlight)] focus-visible:ring-2 focus-visible:ring-[var(--starlight)] focus-visible:outline-none active:cursor-grabbing"
+        className="flex min-h-[72px] cursor-grab flex-col items-center justify-center gap-1.5 rounded-[10px] border border-[var(--orbit)] bg-[var(--deep)] px-2 py-2.5 text-[13px] font-medium text-[var(--text-primary)] transition-colors select-none hover:border-[var(--starlight)] hover:text-[var(--starlight)] focus-visible:ring-2 focus-visible:ring-[var(--starlight)] focus-visible:outline-none active:cursor-grabbing"
         data-testid={`visual-block-${kind}`}
       >
         <Icon className="size-5 text-[var(--starlight)]" aria-hidden />
@@ -79,14 +91,14 @@ export function LeftPanel({
   }
   return (
     <Tabs defaultValue="blocks" className="flex min-h-0 flex-col" data-testid="visual-left">
-      <TabsList className="m-3 mb-0 grid h-auto grid-cols-3 group-data-horizontal/tabs:h-auto">
-        <TabsTrigger value="blocks" data-testid="visual-tab-blocks">{t('tabBlocks')}</TabsTrigger>
-        <TabsTrigger value="layout" data-testid="visual-tab-layout">{t('tabLayout')}</TabsTrigger>
-        <TabsTrigger value="settings" data-testid="visual-tab-settings">{t('tabSettings')}</TabsTrigger>
+      <TabsList className={TAB_LIST}>
+        <TabsTrigger value="blocks" className={TAB_TRIGGER} data-testid="visual-tab-blocks">{t('tabBlocks')}</TabsTrigger>
+        <TabsTrigger value="layout" className={TAB_TRIGGER} data-testid="visual-tab-layout">{t('tabLayout')}</TabsTrigger>
+        <TabsTrigger value="settings" className={TAB_TRIGGER} data-testid="visual-tab-settings">{t('tabSettings')}</TabsTrigger>
       </TabsList>
       <TabsContent value="blocks" className="space-y-3 overflow-y-auto p-3">
         <p className="text-xs text-[var(--text-secondary)]">{t('blocksHint')}</p>
-        <div className="grid grid-cols-2 gap-2">{CONTENT_BLOCKS.map(tile)}</div>
+        <div className="grid grid-cols-2 gap-2">{BLOCKS_TAB.map(tile)}</div>
       </TabsContent>
       <TabsContent value="layout" className="space-y-3 overflow-y-auto p-3">
         <p className="text-xs text-[var(--text-secondary)]">{t('layoutHint')}</p>

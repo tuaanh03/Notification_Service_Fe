@@ -43,6 +43,52 @@ function chipColors(): ChipOptions['colors'] {
   }
 }
 
+/**
+ * CSS riêng của KHUNG SOẠN (không vào MJML / HTML gửi đi). Lá thư thành tờ giấy giữa nền (bản phác Main): lề trên,
+ * bo góc, bóng; dưới tờ là dòng "chân thư do hệ thống thêm". Thẻ con của `mj-body` do grapesjs-mjml đặt `max-width:
+ * none; width: 100%` thẳng vào style — phải `!important`. Bề rộng / bóng / chữ đi qua biến trên `<body>` của khung
+ * (`paintCanvas`): khung là iframe, không đọc được token của console.
+ */
+const CANVAS_CSS = [
+  // Đang gõ: bỏ viền focus đen của trình duyệt — khối đang chọn đã có viền màu nhấn.
+  '[contenteditable="true"]:focus { outline: none; }',
+  // `<mj-head>` không phải nội dung thư, nhưng GrapesJS vẽ `<mj-text>` khai mặc định trong đó thành khối cao 20px
+  // phía trên thân thư (thư mở đầu có) — dải trắng giữa ô tiêu đề và tờ thư.
+  '[data-gjs-type="mj-head"] { display: none !important; }',
+  '[data-gjs-type="mj-body"] { box-sizing: border-box; padding: 20px 16px 8px; }',
+  '[data-gjs-type="mj-body"] > div { max-width: var(--ews-mail-width, 600px) !important; border-radius: 12px; overflow: hidden; box-shadow: var(--ews-mail-shadow, none); }',
+  '[data-gjs-type="mj-body"]::after { content: var(--ews-footer-note, ""); display: block; max-width: var(--ews-mail-width, 600px); margin: 12px auto 24px; font: 12px/1.5 system-ui, sans-serif; color: var(--ews-muted, gray); text-align: center; }',
+].join('\n')
+
+/** Đổ bề rộng thư + token (bóng, chữ mờ) + câu chân thư vào biến CSS của khung soạn. */
+function paintCanvas(editor: Editor, width: number, footerNote: string): void {
+  const body = editor.Canvas.getBody()
+  if (!body) return
+  const css = getComputedStyle(document.documentElement)
+  body.style.setProperty('--ews-mail-width', `${width}px`)
+  body.style.setProperty('--ews-mail-shadow', css.getPropertyValue('--glow-panel').trim() || 'none')
+  body.style.setProperty('--ews-muted', css.getPropertyValue('--text-muted').trim())
+  body.style.setProperty('--ews-footer-note', JSON.stringify(footerNote))
+}
+
+/**
+ * "Thân thư" (`mj-body`) và các lớp bọc ngoài nó (`mjml`, wrapper của GrapesJS) không rê / chọn / kéo được: viền xanh
+ * bao cả khung + nhãn "Thân thư" là thứ to nhất màn mà người soạn không cần chạm (nền thư chỉnh ở tab Cài đặt). Bấm
+ * vào nền = bỏ chọn. Khối vẫn thả vào được (`droppable` giữ nguyên). Đặt qua kiểu (mặc định) — không vào JSON dự án.
+ */
+const QUIET_TYPES = ['wrapper', 'mjml', 'mj-body']
+function quietBodyPlugin(editor: Editor): void {
+  for (const type of QUIET_TYPES) {
+    editor.DomComponents.addType(type, {
+      model: { defaults: { selectable: false, hoverable: false, highlightable: false, badgable: false, draggable: false, removable: false, copyable: false } },
+    })
+  }
+  // Dự án lưu trước đây có thể còn ghi đè `selectable` trên các lớp này — lọt lên thì bỏ chọn ngay.
+  editor.on('component:selected', (c: Component) => {
+    if (QUIET_TYPES.includes(c.get('type') ?? '')) editor.selectRemove(c)
+  })
+}
+
 /** Bàn phím ảo đang mở (điện thoại): vùng nhìn thấy thấp hơn cửa sổ đáng kể. */
 function useKeyboardOpen(): boolean {
   const [open, setOpen] = useState(false)
@@ -76,11 +122,14 @@ export default function VisualEditor({
   device,
   onControls,
   onHistory,
+  subject,
 }: {
   ed: TemplateEditorState
   device: VisualDevice
   onControls: (controls: VisualControls | null) => void
   onHistory: (history: VisualHistory) => void
+  /** Ô "Tiêu đề thư" — đặt ở cột giữa, ngay trên tờ thư. */
+  subject?: React.ReactNode
 }) {
   const t = useTranslations('visualEditor')
   const locale = useLocale()
@@ -178,8 +227,7 @@ export default function VisualEditor({
         // Thanh định dạng theo bản phác Main: Đậm / Nghiêng / Gạch chân / Link + "Chèn biến" (chip-plugin thêm vào cuối).
         // Bỏ gạch ngang và "bọc khối" (biểu tượng cọ) mặc định của GrapesJS — người soạn không biết nó làm gì.
         richTextEditor: { actions: ['bold', 'italic', 'underline', 'link'] },
-        // Trong khung thư: bỏ viền focus đen của trình duyệt quanh đoạn đang gõ — khối đang chọn đã có viền màu nhấn.
-        canvasCss: '[contenteditable="true"]:focus { outline: none; }',
+        canvasCss: CANVAS_CSS,
         i18n: {
           locale: locale === 'vi' ? 'vi' : 'en',
           localeFallback: 'en',
@@ -190,6 +238,7 @@ export default function VisualEditor({
           // Bộ khối mặc định của grapesjs-mjml tắt hết — khối của mình ở `blocks.ts` (chữ mẫu tiếng Việt).
           (e: Editor) => mjmlPlugin(e, { blocks: [], fonts: {} }),
           imageDefaultsPlugin,
+          quietBodyPlugin,
           chipPlugin(chipOptions),
         ],
         ...(hasProject
@@ -280,6 +329,11 @@ export default function VisualEditor({
     editor?.setDevice(device)
   }, [editor, device])
 
+  const footerNote = t('footerNote')
+  useEffect(() => {
+    if (editor) paintCanvas(editor, settings.width, footerNote)
+  }, [editor, settings.width, footerNote])
+
   // Bảng biến đổi (thêm mô tả, khai biến mới) -> vẽ lại nhãn chip.
   const labelKey = ed.variables.map((v) => `${v.name}:${v.description ?? ''}:${v.required}`).join('|')
   useEffect(() => {
@@ -321,7 +375,10 @@ export default function VisualEditor({
   }
 
   return (
-    <div className="visual-editor grid h-full min-h-0 grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)_17rem]" data-testid="visual-editor">
+    <div
+      className="visual-editor grid h-full min-h-0 grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)_17rem] xl:grid-cols-[17rem_minmax(0,1fr)_19rem]"
+      data-testid="visual-editor"
+    >
       <aside className="hidden min-h-0 overflow-y-auto border-r border-[var(--orbit)] bg-[var(--deep)] md:block">
         {editor && (
           <LeftPanel
@@ -336,6 +393,15 @@ export default function VisualEditor({
       <div className="relative flex min-h-0 flex-col bg-[var(--void)]">
         {issues.length > 0 && editor && <IssuesBar issues={issues} editor={editor} variables={ed.variables} />}
         {!editor && <p className="absolute inset-0 z-10 grid place-items-center text-sm text-[var(--text-muted)]">{t('loading')}</p>}
+        {subject && (
+          // Tiêu đề thư là thẻ ngay trên tờ thư, cùng bề rộng (bản phác Main); nền dải này = nền ngoài của thư để liền
+          // với khung soạn bên dưới (màu của thư — giá trị động).
+          <div className="flex-none px-4 pt-4" style={{ backgroundColor: settings.backgroundColor }}>
+            <div className="mx-auto" style={{ maxWidth: settings.width }}>
+              {subject}
+            </div>
+          </div>
+        )}
         <div ref={canvasRef} className="min-h-0 flex-1" />
         {editor && (
           // Điện thoại: thanh dưới 4 nút thay cho hai bảng (bản phác DienThoai).

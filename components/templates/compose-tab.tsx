@@ -1,18 +1,15 @@
 'use client'
 import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
 import { Panel } from '@/components/panel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Textarea } from '@/components/ui/textarea'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
-import { isTemplateCategory, TEMPLATE_CATEGORIES } from '@/lib/template-categories'
 import { cn } from '@/lib/utils'
 import { EditorPane, Highlight } from './editor-pane'
 import { FieldHint } from './field-hint'
@@ -29,45 +26,31 @@ export type VisualBinding = {
 }
 
 /**
- * Tab "Soạn thư" (mặc định): tiêu đề trên cùng → khung soạn + xem thử → "Nâng cao" thu gọn (tên, nhóm,
- * bản chữ thường). Không có thuật ngữ lập trình viên ở đây — mã template / lời gọi API ở tab Tích hợp.
+ * Tab "Soạn thư" (mặc định): tiêu đề trên cùng → khung soạn (+ xem thử, kiểu HTML) → kiểu HTML có "Nâng cao" thu gọn
+ * (bản chữ thường). Tên / nhóm đổi ở bút chì cạnh tên trên thanh trên. Không có thuật ngữ lập trình viên ở đây — mã template / lời gọi API ở tab Tích hợp.
  * Biến chưa khai / viết sai vẫn báo ở đầu tab, kèm nút sang tab Biến.
  */
 export function ComposeTab({
   ed,
-  writable,
-  name,
-  onNameChange,
-  savedName,
   onAi,
   onShowVariables,
   visual,
 }: {
   ed: TemplateEditorState
   visual: VisualBinding
-  writable: boolean
-  name: string
-  onNameChange: (name: string) => void
-  savedName: string
   onAi: () => void
   onShowVariables: () => void
 }) {
   const t = useTranslations('templateEditor')
-  const tcat = useTranslations('templateCategory')
-  const detail = ed.detail
-  if (!detail) return null
+  if (!ed.detail) return null
   const visualKind = ed.editor === 'visual'
-  /** Bản chữ thường do backend sinh (trực quan) — chỉ đọc. */
-  const autoText = visualKind
   const varProblems = ed.undeclared.length + ed.missingSource.length
 
-  // Trực quan: khung soạn tràn mép (bàn làm việc, UX-5A) — thông báo và "Nâng cao" tự chừa lề vì tab không có lề.
-  const pad = visualKind && 'mx-4 w-auto lg:mx-6'
 
   return (
-    <div className={cn(visualKind ? 'pb-6' : 'space-y-5')} data-testid="compose-tab">
+    <div className={cn(!visualKind && 'space-y-5')} data-testid="compose-tab">
       {varProblems > 0 && (
-        <Alert className={cn('bg-[var(--supernova)]/5', pad, visualKind && 'my-3')} data-testid="variables-notice">
+        <Alert className={cn('bg-[var(--supernova)]/5', visualKind && 'mx-4 my-3 w-auto lg:mx-6')} data-testid="variables-notice">
           <AlertTriangle className="text-[var(--supernova)]" />
           <AlertDescription className="flex flex-wrap items-center gap-2">
             <span>{t('variablesNotice', { count: varProblems })}</span>
@@ -118,73 +101,35 @@ export function ComposeTab({
       </>
       )}
 
-      <Collapsible className={cn('cosmic-surface rounded-2xl border border-[var(--orbit)] shadow-xs', pad, visualKind && 'mt-5')}>
-        <CollapsibleTrigger
-          className="group/adv flex w-full items-center gap-2 px-5 py-3.5 text-left text-sm font-semibold text-[var(--text-primary)]"
-          data-testid="advanced-toggle"
-        >
-          <ChevronRight className="size-4 text-[var(--text-muted)] transition-transform group-data-[panel-open]/adv:rotate-90" />
-          {t('advanced')}
-          <span className="font-normal text-xs text-[var(--text-muted)]">{t('advancedSummary')}</span>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="space-y-4 border-t border-[var(--orbit)] p-5">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="min-w-0 space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="tpl-name" className="text-xs font-semibold">{t('name')}</Label>
-                  <FieldHint text={t('nameHint')} label={t('hintFor', { field: t('name') })} />
-                </div>
-                <div className="flex gap-2">
-                  <Input id="tpl-name" value={name} onChange={(e) => onNameChange(e.target.value)} disabled={ed.archived || !writable} className="text-sm" />
-                  <Button
-                    variant="outline"
-                    disabled={!writable || ed.archived || ed.pending || !name.trim() || name.trim() === savedName}
-                    onClick={() => void ed.rename(name.trim()).then((ok) => ok && toast.success(t('renamed')))}
-                  >
-                    {t('rename')}
-                  </Button>
-                </div>
-              </div>
-              <div className="min-w-0 space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="tpl-category" className="text-xs font-semibold">{t('category')}</Label>
-                  <FieldHint text={t('categoryHint')} label={t('hintFor', { field: t('category') })} />
-                </div>
-                <NativeSelect
-                  id="tpl-category"
-                  value={detail.category}
-                  disabled={ed.archived || !writable || ed.pending}
-                  onChange={(e) => {
-                    const next = e.target.value
-                    if (isTemplateCategory(next)) void ed.changeCategory(next).then((ok) => ok && toast.success(t('categoryChanged')))
-                  }}
-                  className="w-full"
-                >
-                  {TEMPLATE_CATEGORIES.map((c) => (
-                    <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </div>
-            </div>
-            <div className="space-y-1.5">
+      {/* Kiểu HTML: bản chữ thường do người soạn tự viết. Kiểu trực quan không có khối này — bản chữ thường do backend
+          sinh, tên / nhóm đổi ở bút chì cạnh tên (thanh trên) — bàn làm việc cao đúng một màn, không cuộn (UX-5C). */}
+      {!visualKind && (
+        <Collapsible className="cosmic-surface rounded-2xl border border-[var(--orbit)] shadow-xs">
+          <CollapsibleTrigger
+            className="group/adv flex w-full items-center gap-2 px-5 py-3.5 text-left text-sm font-semibold text-[var(--text-primary)]"
+            data-testid="advanced-toggle"
+          >
+            <ChevronRight className="size-4 text-[var(--text-muted)] transition-transform group-data-[panel-open]/adv:rotate-90" />
+            {t('advanced')}
+            <span className="font-normal text-xs text-[var(--text-muted)]">{t('advancedSummary')}</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-1.5 border-t border-[var(--orbit)] p-5">
               <div className="flex items-center gap-1">
                 <Label htmlFor="tpl-text" className="text-xs font-semibold">{t('text')}</Label>
-                <FieldHint text={autoText ? t('textAutoVisual') : t('textHint')} label={t('hintFor', { field: t('text') })} />
+                <FieldHint text={t('textHint')} label={t('hintFor', { field: t('text') })} />
               </div>
-              {/* Trực quan: bản chữ thường do backend sinh — chỉ đọc, là bản của lần lưu gần nhất. */}
               <Textarea
                 id="tpl-text"
                 value={ed.text}
                 onChange={(e) => ed.setText(e.target.value)}
                 className="min-h-20 font-mono text-xs"
                 disabled={ed.locked}
-                readOnly={autoText}
               />
             </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </div>
   )
 }
@@ -193,32 +138,50 @@ export function ComposeTab({
  * Kiểu trực quan (ADR-0036): một khung trọn chiều cao — tiêu đề thư ngay trên đầu, giữa là thư thật (GrapesJS).
  * Không có khung xem trước riêng. Bản chỉ đọc (không có nháp / App Viewer) hiện HTML đã lưu, không mở bộ soạn.
  *
- * Bàn làm việc (UX-5A): khung TRÀN MÉP, cao đúng phần khung nhìn còn lại dưới thanh dính của màn soạn (thanh trên
- * 56px điện thoại / 64px máy tính + hàng tab 44px). Không dùng `<Panel>`: viền / bóng của `.cosmic-surface` nằm ngoài
+ * Bàn làm việc (UX-5A / UX-5C): khung TRÀN MÉP, cao đúng phần khung nhìn còn lại dưới thanh dính của màn soạn (thanh trên
+ * 56px điện thoại / 64px máy tính + hàng tab 44px + 1px viền dưới). Không dùng `<Panel>`: viền / bóng của `.cosmic-surface` nằm ngoài
  * layer, utility không gỡ được — khung tràn mép mà còn viền bo góc thì trông như hộp lơ lửng.
  */
 function VisualFrame({ ed, visual }: { ed: TemplateEditorState; visual: VisualBinding }) {
   const t = useTranslations('templateEditor')
-  const tv = useTranslations('visualEditor')
+  // Biến trong tiêu đề hiện thành chip có nhãn như trong thư (UX-3), không lộ `{{ }}`.
+  /** `card` = thẻ trên tờ thư (đang soạn); không thì dòng phía trên bản xem (chỉ đọc). */
+  const subject = (card: boolean) => (
+    <div
+      className={cn(
+        'flex min-w-0 items-center gap-3',
+        card ? 'rounded-xl border border-[var(--orbit)] bg-[var(--deep)] py-1.5 pr-1.5 pl-3 shadow-xs' : 'border-b border-[var(--orbit)] px-4 py-3',
+      )}
+      data-testid="subject-card"
+    >
+      <Label htmlFor="tpl-subject" className="shrink-0 text-xs font-semibold text-[var(--text-secondary)]">{t('subject')}</Label>
+      <SubjectField ed={ed} label={t('subject')} placeholder={t('subjectPlaceholder')} bare={card} />
+    </div>
+  )
   return (
     <section
-      className="flex h-[calc(100dvh-6.25rem)] min-h-[520px] min-w-0 flex-col overflow-hidden bg-[var(--deep)] md:h-[calc(100dvh-6.75rem)]"
+      className="flex h-[calc(100dvh-6.25rem-1px)] min-h-[520px] min-w-0 flex-col overflow-hidden bg-[var(--deep)] md:h-[calc(100dvh-6.75rem-1px)]"
       data-testid="visual-frame"
     >
-      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--orbit)] px-4 py-3">
-        <Label htmlFor="tpl-subject" className="shrink-0 text-xs font-semibold">{t('subject')}</Label>
-        {/* Biến trong tiêu đề hiện thành chip có nhãn như trong thư (UX-3), không lộ `{{ }}`. */}
-        <SubjectField ed={ed} label={t('subject')} placeholder={t('subjectPlaceholder')} />
-      </div>
-      <div className="min-h-0 flex-1">
-        {ed.locked ? (
-          <PreviewPane ed={ed} />
-        ) : (
-          // Dựng lại bộ soạn khi đổi sang bản khác (vd "Sửa" tạo nháp mới) — cùng bản thì giữ nguyên lúc lưu.
-          <VisualEditorLoader key={ed.draft?.id ?? 'none'} ed={ed} device={visual.device} onControls={visual.onControls} onHistory={visual.onHistory} />
-        )}
-      </div>
-      <p className="border-t border-[var(--orbit)] px-4 py-2 text-[11px] text-[var(--text-muted)]">{tv('footerNote')}</p>
+      {ed.locked ? (
+        <>
+          {subject(false)}
+          <div className="min-h-0 flex-1">
+            <PreviewPane ed={ed} />
+          </div>
+        </>
+      ) : (
+        // Dựng lại bộ soạn khi đổi sang bản khác (vd "Sửa" tạo nháp mới) — cùng bản thì giữ nguyên lúc lưu.
+        // Tiêu đề thư là thẻ ngay trên tờ thư; dòng "chân thư do hệ thống thêm" nằm dưới tờ thư, trong khung soạn.
+        <VisualEditorLoader
+          key={ed.draft?.id ?? 'none'}
+          ed={ed}
+          device={visual.device}
+          onControls={visual.onControls}
+          onHistory={visual.onHistory}
+          subject={subject(true)}
+        />
+      )}
     </section>
   )
 }

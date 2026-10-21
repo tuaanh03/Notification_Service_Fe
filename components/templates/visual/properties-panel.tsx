@@ -423,6 +423,9 @@ function ChipInfo({ component, variables }: { component: Component; variables: r
   )
 }
 
+/** Tên thuộc tính màu -> chữ dễ đọc trong nhãn "Mã màu (…)" — không lộ `color` / `background-color`. */
+const HEX_FIELD = { color: 'hexFieldText', 'background-color': 'hexFieldBackground', 'border-color': 'hexFieldBorder' } as const
+
 /** "Nâng cao — khoảng cách, mã màu": thu gọn sẵn, chỉ ở đây mới thấy px / hex. */
 function Advanced({ component, attrs, type }: { component: Component; attrs: Record<string, string | undefined>; type: string }) {
   const t = useTranslations('visualEditor')
@@ -444,7 +447,7 @@ function Advanced({ component, attrs, type }: { component: Component; attrs: Rec
             <TextField
               key={key}
               id={`prop-hex-${key}`}
-              label={t('hexOf', { field: key })}
+              label={t('hexOf', { field: t(HEX_FIELD[key as keyof typeof HEX_FIELD]) })}
               value={attrs[key] ?? ''}
               mono
               onCommit={(value) => /^#[0-9a-fA-F]{6}$/.test(value) && component.addAttributes({ [key]: value })}

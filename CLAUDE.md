@@ -531,15 +531,16 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     cột "Kiểu" / "Mặc định" (backend không có chỗ chứa, mục 6 "form có ô backend không lưu").
 *   **Bố cục màn soạn `/templates/[id]`** — tách việc soạn thư khỏi phần cho lập trình viên. Bốn tab (`?tab=`,
     đổi bằng `history.replaceState` — không chuyển trang, không mất nội dung chưa lưu): **Soạn thư** (mặc định:
-    tiêu đề trên cùng → khung soạn + xem thử → "Nâng cao" thu gọn: tên, nhóm, bản chữ thường) · **Biến**
+    tiêu đề trên cùng → khung soạn; kiểu HTML thêm xem thử + "Nâng cao" thu gọn chỉ chứa bản chữ thường) · **Biến**
     (`<SchemaPane>`) · **Tích hợp cho đội app** (mã template + `<ContractPanel>`) · **Phiên bản**. Tab Soạn thư
     không có chữ "payload", "templateId", "escape" — thuật ngữ chỉ ở tab Biến / Tích hợp. Biến chưa khai / thiếu
     nguồn vẫn báo ở đầu tab Soạn thư (một dòng + nút sang tab Biến; tab Biến có chấm đỏ) — đừng để cảnh báo chỉ
-    nằm ở tab khác. Thanh đầu chỉ có trạng thái + Lưu nháp + Xuất bản (hoặc "Sửa" khi không có nháp); Sao chép
+    nằm ở tab khác. Tên + nhóm đổi bằng bút chì cạnh tên (`onEdit` của `<EditorTopBar>`) -> hộp "Tên và nhóm" (`<ConfirmDialog>`, chỉ gửi phần đã
+    đổi, lỗi như tên trùng hiện trong hộp); dòng nhỏ dưới tên có tên nhóm. Thanh đầu chỉ có trạng thái + Lưu nháp + Xuất bản (hoặc "Sửa" khi không có nháp); Sao chép
     mã / Nhân bản / Lưu trữ ở menu ⋯ (`<TemplateActionsMenu>`, Lưu trữ cuối, sau vạch ngăn,
     màu nguy hiểm; mục ghi ẩn theo `canManage`). Chú thích dưới ô là dấu (?) `<FieldHint>` (tooltip); lỗi của ô
     (link sai…) vẫn hiện thành dòng đỏ, không giấu vào tooltip.
-*   **Hỏi khi rời trang chưa lưu.** Chưa lưu = `ed.dirty` hoặc ô tên đã gõ mà chưa Đổi tên. `useLeaveGuard(dirty)`
+*   **Hỏi khi rời trang chưa lưu.** Chưa lưu = `ed.dirty` (tên / nhóm lưu ngay trong hộp, không tính). `useLeaveGuard(dirty)`
     (`components/app-link.tsx`): `beforeunload` khi đóng tab / tải lại; link `<AppLink>` (`onNavigate`) và
     `useAppRouter().push/replace` (vd đổi app) bị giữ lại để màn hiện `<ConfirmDialog>` "Rời trang?". Nút Back
     của trình duyệt KHÔNG chặn được (App Router không có sự kiện huỷ). Link trần không qua `<AppLink>` thì lọt —
@@ -602,11 +603,17 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         Làm lại + trạng thái + Lưu nháp / Xuất bản / ⋯; cao 64px, điện thoại 56px chỉ còn mũi tên, Xuất bản, ⋯) + hàng tab
         GẠCH CHÂN (một hàng, điện thoại cuộn ngang; gạch là `after:` của `TabsTrigger` — `border` bị `* { border-color }`
         của globals.css đè thành ô viền). Lề trang (`PAGE_PAD`) do từng tab tự chừa; tab Soạn thư kiểu trực quan là khung
-        TRÀN MÉP cao `100dvh` trừ khối dính (6.25rem điện thoại / 6.75rem máy tính), không bọc `<Panel>` (viền / bóng của
-        `.cosmic-surface` ngoài layer, không gỡ được). Tab Soạn thư: tiêu đề thư trên đầu, giữa là thư thật (không còn
-        khung xem trước riêng). Không có nháp / App Viewer -> hiện HTML đã lưu bằng `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id
+        TRÀN MÉP cao `100dvh` trừ khối dính (6.25rem điện thoại / 6.75rem máy tính + 1px viền) — cả màn không cuộn, không có
+        khối "Nâng cao" bên dưới (UX-5C) —, không bọc `<Panel>` (viền / bóng của
+        `.cosmic-surface` ngoài layer, không gỡ được). Tab Soạn thư: thẻ "Tiêu đề thư" nằm ở cột giữa NGAY TRÊN tờ thư, rộng bằng thư (`subject` của
+        `VisualEditor`, nền dải = nền ngoài của thư), giữa là thư thật (không còn khung xem trước riêng). Tờ thư trên khung
+        là CSS RIÊNG của khung soạn (`CANVAS_CSS` + `paintCanvas` trong `visual-editor.tsx`: lề, bo góc, bóng `--glow-panel`,
+        bề rộng theo Cài đặt thư, dòng chân thư `::after`, ẩn `mj-head`) — không vào MJML / HTML. `wrapper` / `mjml` /
+        `mj-body` không rê / chọn được (`quietBodyPlugin`, đặt qua mặc định của kiểu — không vào JSON dự án). Không có nháp / App Viewer -> hiện HTML đã lưu bằng `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id
         bản nháp: lưu cùng bản không dựng lại.
-    *   **Bảng trái** (`left-panel.tsx`, bản phác Main): tab Khối / Bố cục / Cài đặt. Thẻ khối KÉO vào thư
+    *   **Bảng trái** (`left-panel.tsx`, bản phác Main): tab Khối / Bố cục / Cài đặt — 3 nút bằng nhau, tab đang chọn nền
+        xanh nhạt (không dùng thanh xám của TabsList mặc định); thẻ khối cao 72px bo 10px; tab Khối có thêm "2 cột". Rộng
+        15rem (17rem từ `xl`), bảng phải 17rem (19rem). Thẻ khối KÉO vào thư
         (`editor.Blocks.startDrag` / `endDrag`) hoặc BẤM để thêm (`appendBlock`: ngay sau khối đang chọn trong cùng cột,
         không chọn gì thì hàng mới cuối thư). "Cài đặt thư" (`email-settings.ts`: rộng Hẹp/Vừa/Rộng = 480/540/600, nền
         ngoài / nền thư, màu chữ, màu nút, font) áp THẲNG vào thuộc tính từng khối (khung soạn của grapesjs-mjml không
