@@ -631,7 +631,6 @@
     "empty": "(empty)",
     "text": "Plain-text version (optional)",
     "versions": "Versions",
-    "sendWith": "Send with this template",
     "byPublished": "Based on published version v{version}.",
     "notPublished": "Not published — apps calling now get TEMPLATE_NOT_PUBLISHED. The sample below follows the draft.",
     "newRequiredTitle": "New required variables",
@@ -812,6 +811,8 @@
     "colRequired": "Required",
     "yes": "Yes",
     "no": "No",
+    "required": "Required",
+    "optional": "Optional",
     "sampleCall": "Sample call",
     "commonErrors": "Common errors",
     "envNote": "Template IDs differ between test and production — the app team keeps <mono>templateId</mono> in per-environment configuration. Extra keys in <mono>payload</mono> are ignored."

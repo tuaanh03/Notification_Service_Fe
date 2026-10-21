@@ -631,7 +631,6 @@
     "empty": "(trống)",
     "text": "Bản chữ thường (tuỳ chọn)",
     "versions": "Phiên bản",
-    "sendWith": "Gửi bằng template này",
     "byPublished": "Theo bản đang xuất bản v{version}.",
     "notPublished": "Chưa xuất bản — app gọi lúc này sẽ nhận TEMPLATE_NOT_PUBLISHED. Mẫu dưới theo bản nháp.",
     "newRequiredTitle": "Có biến bắt buộc mới",
@@ -812,6 +811,8 @@
     "colRequired": "Bắt buộc",
     "yes": "Có",
     "no": "Không",
+    "required": "Bắt buộc",
+    "optional": "Không bắt buộc",
     "sampleCall": "Lời gọi mẫu",
     "commonErrors": "Lỗi thường gặp",
     "envNote": "Mã template khác nhau giữa máy thử và máy thật — đội app để <mono>templateId</mono> trong cấu hình theo môi trường. Khoá thừa trong <mono>payload</mono> bị bỏ qua."
