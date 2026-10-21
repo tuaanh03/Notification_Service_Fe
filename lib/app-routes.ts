@@ -107,7 +107,7 @@ export function isBootstrapRoute(pathname: string): boolean {
  * cùng mã ở app khác là thứ khác. `static` = route tĩnh cùng cấp, KHÔNG phải trang chi tiết.
  */
 export const APP_DETAIL_ROUTES: ReadonlyArray<{ base: string; static: readonly string[] }> = [
-  { base: '/users', static: ['/users/import'] },
+  { base: '/users', static: [] },
   { base: '/templates', static: ['/templates/new'] },
   { base: '/notifications', static: ['/notifications/errors'] },
 ]

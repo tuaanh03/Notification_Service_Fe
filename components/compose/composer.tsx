@@ -30,6 +30,7 @@ import type { ActionResult } from '@/lib/api/result'
 import type { ConsoleSendContent, TemplateVariableDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import { plainTextToHtml } from '@/lib/plain-text-email'
 import { variableLabel } from '@/lib/variable-labels'
 
 /** Khớp `MAX_CONSOLE_RECIPIENTS` của backend — vượt thì backend trả 422. */
@@ -110,6 +111,9 @@ export function Composer() {
   const [values, setValues] = useState<Record<string, string>>({})
   const [subject, setSubject] = useState('')
   const [html, setHtml] = useState('')
+  /** C3: mặc định gõ chữ thường (`body`); HTML thô chỉ khi người gửi tự chọn "Viết bằng HTML (nâng cao)". */
+  const [body, setBody] = useState('')
+  const [rawHtml, setRawHtml] = useState(false)
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, FieldError>>({})
@@ -135,6 +139,8 @@ export function Composer() {
     setTemplateId('')
     setSubject('')
     setHtml('')
+    setBody('')
+    setRawHtml(false)
     setPreview(null)
     setError(null)
     setFieldErrors({})
@@ -184,9 +190,15 @@ export function Composer() {
       ? templateId
         ? { templateId, payload: toPayload(values) }
         : null
-      : subject.trim() && html.trim()
-        ? { subject: subject.trim(), html }
-        : null
+      : !subject.trim()
+        ? null
+        : rawHtml
+          ? html.trim()
+            ? { subject: subject.trim(), html }
+            : null
+          : body.trim()
+            ? { subject: subject.trim(), html: plainTextToHtml(body), text: body.trim() }
+            : null
 
   const canNext = [
     topic !== '' && (mode === 'topic' || people.length > 0),
@@ -227,7 +239,7 @@ export function Composer() {
     // Vào bước Xem trước: template thì backend đổ biến (đúng hàm lúc gửi), viết thẳng thì hiện y nguyên.
     setPreview(null)
     if (contentMode === 'direct') {
-      setPreview({ subject: subject.trim(), html })
+      setPreview({ subject: subject.trim(), html: content && 'html' in content ? content.html : html })
       setStep(2)
       return
     }
@@ -469,16 +481,40 @@ export function Composer() {
                     <Field label={t('subject')} htmlFor="compose-subject">
                       <Input id="compose-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={500} />
                     </Field>
-                    <Field label={t('html')} htmlFor="compose-html">
-                      <Textarea
-                        id="compose-html"
-                        value={html}
-                        onChange={(e) => setHtml(e.target.value)}
-                        rows={12}
-                        className="font-mono text-xs"
-                        placeholder="<p>…</p>"
-                      />
-                    </Field>
+                    {rawHtml ? (
+                      <Field label={t('html')} htmlFor="compose-html" hint={t('htmlHint')}>
+                        <Textarea
+                          id="compose-html"
+                          value={html}
+                          onChange={(e) => setHtml(e.target.value)}
+                          rows={12}
+                          className="font-mono text-xs"
+                          placeholder="<p>…</p>"
+                        />
+                      </Field>
+                    ) : (
+                      <Field label={t('body')} htmlFor="compose-body" hint={t('bodyHint')}>
+                        <Textarea
+                          id="compose-body"
+                          value={body}
+                          onChange={(e) => setBody(e.target.value)}
+                          rows={10}
+                          placeholder={t('bodyPlaceholder')}
+                        />
+                      </Field>
+                    )}
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto min-h-6 px-0 text-xs max-md:min-h-11"
+                      onClick={() => {
+                        // Sang HTML: mang theo những gì đã gõ (đã đổi sang HTML an toàn) để không phải gõ lại.
+                        if (!rawHtml && html.trim() === '' && body.trim() !== '') setHtml(plainTextToHtml(body))
+                        setRawHtml(!rawHtml)
+                      }}
+                    >
+                      {rawHtml ? t('backToPlain') : t('useHtml')}
+                    </Button>
                   </div>
                 )}
               </div>

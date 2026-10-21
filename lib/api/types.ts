@@ -563,7 +563,8 @@ export type RenderedTemplateDto = {
 
 /** Nội dung một lần gửi từ console — viết thẳng HOẶC template + payload. */
 export type ConsoleSendContent =
-  | { subject: string; html: string }
+  /** `text` = bản chữ thường khi người gửi gõ ở ô "Nội dung thư" (backend nhận kèm, không thì tự sinh). */
+  | { subject: string; html: string; text?: string }
   | { templateId: string; payload: Record<string, unknown> }
 
 /** Một khoá đăng nhập đang giữ — màn "Theo dõi & Bảo mật" (ADR-0039 của backend). */
@@ -577,4 +578,15 @@ export type LoginLockDto = {
   displayName: string | null
   lockedAt: string
   until: string | null
+}
+
+/** Một dòng nhật ký chung (`GET /admin/audit/events`) — kèm email / tên người làm khi đó là tài khoản EWS. */
+export type AuditEventDto = AuditEntryDto & { actorEmail: string | null; actorName: string | null; targetEmail: string | null }
+
+export type AuditEventPageDto = {
+  items: AuditEventDto[]
+  /** Tổng số khớp bộ lọc. */
+  total: number
+  /** `null` = hết trang. */
+  nextCursor: string | null
 }

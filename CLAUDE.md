@@ -29,22 +29,18 @@ webservice/ews-astrolink/
 │   ├── compose/              # /compose     Composer (UC-008)
 │   ├── notifications/        # /notifications + actions.ts — Lịch sử gửi ĐÃ đấu API (mục 2.8)
 │   │                         # /notifications/errors = bảng mã lỗi /v1 THẬT (tĩnh, lib/api/v1-errors.ts);
-│   │                         # /notifications/[id] vẫn mock (mục 2.4)
-│   ├── scheduled/            # /scheduled
 │   ├── topics/               # /topics + actions.ts (Server Action gọi /admin/apps/:appId/topics)
 │   │                         # (CHƯA có /topics/[key])
 │   ├── users/                # /users + actions.ts — màn Người nhận ĐÃ đấu API (mục 2.7)
 │   │                         # /users/[id]?app= = trang chi tiết một người, ĐÃ đấu (mục 2.7);
-│   │                         # /users/import vẫn mock (mục 2.4)
-│   ├── subscriptions/        # /subscriptions — còn mock, ĐÃ GỠ KHỎI MENU (mục 2.8)
 │   ├── templates/            # /templates + actions.ts — ĐÃ đấu API (mục 2.12); /templates/new tạo,
 │   │                         # /templates/[id] màn soạn (id = templateId, UUID)
 │   ├── apps/new/             # /apps/new + actions.ts — wizard đăng ký app ĐÃ đấu API (UC-001, mục 2.5)
 │   │                         # actions.ts chỉ giữ registerAppAction; DUYỆT ở app/admin/apps/actions.ts
-│   ├── settings/{credentials,webhooks,profile,quota,sync}/
+│   ├── settings/{credentials,webhooks,tracking,limits}/
 │   │                         # credentials/, webhooks/ có actions.ts (đã đấu API); còn lại vẫn mock
 │   ├── orgs/                 # /orgs, /orgs/[orgId], /orgs/[orgId]/members — trang Tổ chức + màn Thành viên (mục 2.9)
-│   └── admin/{apps,audit,directory,settings,approvals,approvals/[id],send-approvals,send-approvals/[id]}/
+│   └── admin/{apps,audit,directory,settings,security}/
 │                             # KHU QUẢN TRỊ EWS — chỉ Super Admin, khung riêng <AdminShell> (mục 2.9);
 │                             # layout.tsx chặn người khác bằng 404; page.tsx chuyển /admin -> /admin/apps
 │                             # apps/ có actions.ts (approveAndIssueKeyAction — chỉ còn cho app CŨ chờ duyệt, mục 2.5)
@@ -53,7 +49,6 @@ webservice/ews-astrolink/
 │                             # security/ = Theo dõi & Bảo mật (ADR-0039 của backend, mục 2.15) — ĐÃ đấu API
 │                             # directory/ = Danh bạ (ADR-0027 của backend) — ĐÃ đấu API: nút Đồng bộ M365 (CHỈ ở đây,
 │                             # không ở màn Thành viên) + tích ai hiện trong hộp "Thêm thành viên" của các org
-│                             # approvals/ còn mock và ĐÃ GỠ KHỎI MENU (mục 2.5)
 ├── components/               # shared component (bảng ở mục 3)
 │   ├── compose/*             # 4 block Composer (UC-008)
 │   ├── topics/*              # topics-page, create-topic-dialog (đã đấu API);
@@ -247,6 +242,15 @@ ssh $HOST "cd $APP/webservice/ews-astrolink && docker compose up -d --build"
 ssh $HOST "curl -I http://127.0.0.1:4001"
 ```
 
+### 2.0. Màn mẫu ĐÃ XOÁ (đợt "Củng cố 1", 10/2026)
+
+Mọi màn chỉ dựng bằng `lib/mock-data.ts` đã xoá hẳn (route + component chỉ chúng dùng + nhóm câu dịch): `/scheduled`,
+`/settings/{profile,quota,sync}`, `/subscriptions`, `/users/import`, `/notifications/[id]`, `/admin/approvals(/[id])`,
+`/admin/send-approvals(/[id])` — gõ URL ra 404. Đoạn nào bên dưới còn nhắc tới chúng (hoặc tới `users-table`, `user-detail`,
+`notification-detail`, `MailFrame`, `QuotaArc`, `LifecycleTimeline`, `ResolutionPipeline`, `ReEnableDialog`…) là lịch sử,
+không phải code đang có. Giữ lại có chủ đích: `topic-segment-editor-dialog.tsx` (chờ backend segment, mục 2.3) và
+`lib/mock-data.ts` (code thật còn import KIỂU từ đó). Màn mới chưa có backend thì KHÔNG dựng bản mẫu nữa.
+
 ### 2.4. Màn chưa đấu backend phải TỰ NHẬN là bản xem trước
 
 Console là công cụ vận hành. Một màn quản trị hiện số giả mà không nói gì thì **tệ hơn là không có
@@ -278,8 +282,8 @@ mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật
 kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
-Tính tới 10/2026: `/admin/apps` · `/apps/new` · `/topics` · `/templates` · `/settings/credentials` · `/settings/webhooks` · `/admin/settings` (kèm route con),
-`/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]` (trừ `/users/import`).
+Tính tới 10/2026 (sau khi xoá màn mẫu, mục 2.0): mọi route còn lại đều đã đấu — `/admin/apps` · `/admin/audit` · `/admin/security` · `/apps/new` · `/topics` · `/templates` · `/settings/*` · `/admin/settings` (kèm route con),
+`/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]`.
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
 chuông từng hiện `pendingApprovalCount()` của mock; nay đã bỏ hẳn vì không còn hàng chờ duyệt (ADR-0023).
@@ -732,6 +736,20 @@ loại xuống dưới email để nút Mở khoá còn trong khung; ô lọc ch
 `LOGIN_CLIENT_IP_SECRET` — biến này phải CÙNG giá trị ở web và api, trống thì backend chỉ đếm theo email. Người bị khoá
 chỉ thấy `INVALID_CREDENTIALS` (câu có nhắc "nhập sai nhiều lần sẽ bị tạm khoá"); M365 bị khoá hẳn -> `ADMIN_LOCKED`.
 
+### 2.16. Nhật ký hoạt động (`/admin/audit`) — chỉ Super Admin
+
+`GET /admin/audit/events` của backend (lọc loại sự kiện / thời gian, con trỏ trang, tổng số, email người làm và đối tượng là
+tài khoản). Nhóm sự kiện ở `lib/audit-groups.ts` — mặc định "Hoạt động quản trị" (sự kiện gửi thư chiếm phần lớn bảng, để
+nhóm riêng). `?group=&range=` trên đường dẫn: màn khác dẫn sang đã lọc sẵn (khối "24 giờ qua" của Theo dõi & Bảo mật ->
+`?group=security&range=24h`). Tên sự kiện dịch ở nhóm `auditActions` (mã thô chỉ ở tooltip); sự kiện backend mới thì thêm
+câu dịch + xếp nhóm, chưa xếp thì vẫn hiện ở "Tất cả". "Chi tiết" mở `before → after` từng trường.
+
+### 2.17. Ô "Viết thẳng" của Gửi thông báo — chữ thường trước, HTML là nâng cao
+
+Mặc định ô "Nội dung thư" gõ CHỮ THƯỜNG; `lib/plain-text-email.ts` đổi sang HTML an toàn (escape mọi ký tự, dòng trống tách
+`<p>`, xuống dòng `<br>`, chỉ `https://` thành link) và gửi kèm `text` gốc. "Viết bằng HTML (nâng cao)" mới mở ô HTML thô
+(mang theo nội dung đã đổi). Đừng đưa ô HTML về làm mặc định.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là
@@ -763,9 +781,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<EmptyState icon title description action>` | `components/empty-state.tsx` | ✓ | orbit SVG, không emoji |
 | `<CodeBlock language value copyable>` | `components/code-block.tsx` | ✓ | toast "Đã sao chép" |
 | `<ConfirmDialog title facts confirmLabel onConfirm>` | `components/confirm-dialog.tsx` | ✓ | bọc shadcn `<Dialog>`; `facts` = 3 dòng mono; `confirmLabel` nói rõ hậu quả (`Gửi cho 43 người`); prop `tone="blocking"` / `confirmHref` / `children` / `confirmDisabled` cho modal chặn hoặc có form bên trong |
-| `<QuotaArc used max>` | `components/quota-arc.tsx` | ✓ | vòng quota duy nhất — `/settings/quota` (size-28, có `children` ở giữa); top bar không còn ô Quota / Tìm kiếm; đổi màu solar ≥ 80 %, supernova khi chạm trần |
 | `<LocaleFlag locale>` | `components/locale-flag.tsx` | ✓ | cờ SVG của ngôn ngữ (vi = Việt Nam, en = Anh) cạnh tên ngôn ngữ ở menu tài khoản và nút VI / EN trang đăng nhập — không dùng emoji cờ (Windows hiện thành chữ). Tên ngôn ngữ dịch theo ngôn ngữ đang dùng (`locale.vi` / `locale.en`) |
-| `<ReEnableDialog subscription onConfirm>` / `<FixAddressDialog>` | `components/users/re-enable-dialog.tsx`, `fix-address-dialog.tsx` | ✓ | UC-007 BR-9: `unsubscribed` → Bật lại (bắt buộc bằng chứng), `invalid` → Sửa địa chỉ — dùng chung `user-detail` (bản v0, không còn route nào dùng) và Preference center (08) |
 | `<OrbitStepper steps step>` | `components/apps/orbit-stepper.tsx` | ✓ | stepper orbit N bước — wizard app (4) và import CSV (3) |
 | `<SecretText value visible>` | `components/secret-text.tsx` | ✓ | khoá bí mật phủ lớp dạ quang, hiện thì tan dần; dùng trong `<CredentialDialog>`, `<WebhookSecretDialog>`, `<CodeBlock secret>` (mục 4) |
 | `<CredentialDialog app apiKey open onClose>` | `components/apps/credential-dialog.tsx` | ✓ | modal show-once (UC-001 §D) — dùng chung `/settings/credentials` (khoá THẬT), wizard step 4 và `/admin/approvals/[id]` (hai màn sau còn mock → truyền `DEMO_API_KEY`) |
@@ -784,10 +800,7 @@ màn hình sau gọi được. Cột "Có" = đã tồn tại trong repo (09/202
 | `<WebhooksPage>` / `<WebhooksPanel embedded?>` / `<WebhookFormDialog>` / `<WebhookSecretDialog>` | `components/settings/webhooks-page.tsx`, `webhooks-panel.tsx`, `webhook-dialogs.tsx` | ✓ | `/settings/webhooks` — tab Gửi đi (outgoing: URL, gửi thử, nhật ký); hộp thêm / đổi sự kiện; secret `whsec_` hiện một lần (mục 2.13) |
 | `<IncomingHooksPanel>` / `<IncomingHookGuide>` | `components/settings/incoming-hooks-panel.tsx`, `incoming-hook-guide.tsx` | ✓ | tab Nhận vào: danh sách mở tại chỗ, thêm / sửa chỉ topic + template, Sao chép URL bất cứ lúc nào; Body mẫu + Nhật ký đóng sẵn (mục 2.13) |
 | `<SystemSettingsPanel initial>` | `components/admin/system-settings-panel.tsx` | ✓ | `/admin/settings` — Cài đặt hệ thống, mỗi dòng lưu riêng + Về mặc định (mục 2.14) |
-| `<ReasonBadge>` / `<SourceBadge>` | `components/reason-badge.tsx`, `source-badge.tsx` | ✓ | "vì sao nhận" / "nguồn" |
-| `<ResolutionPipeline topicKey readOnly?>` | `components/resolution-pipeline.tsx` | ✓ | pipeline 5 bước giải người nhận — dùng chung Topics và Composer |
-| `<LifecycleTimeline notification compact?>` | `components/lifecycle-timeline.tsx` | ✓ | vòng đời 11 trạng thái (SVG orbital), node đã đi qua + stub nhánh không đi + "event horizon" `queued → sending`; đường đi từ `lifecycleOf()` trong mock; reduced-motion để CSS lo (không `useReducedMotion` → tránh #418) |
-| `<MailFrame subject body|bodyHtml device? header? footerNote?>` | `components/mail-frame.tsx` | ✓ | khung email nền sáng duy nhất (token `--mail-*`), footer opt-out có khoá (tooltip qua `footerNote`) — Composer block 3, chi tiết lần gửi và Template editor dùng chung; `bodyHtml` chỉ nhận HTML đã qua `renderHtmlPreview()` (sanitize + escape) |
+| `<SourceBadge>` | `components/source-badge.tsx` | ✓ | "nguồn" của một dòng audit (`auditSources`) |
 | `<ContractFields>` / `<ContractRequest>` / `<ContractErrors>` | `components/templates/contract-panel.tsx` | ✓ | Khối của tab Tích hợp (UX-6): "App phải gửi kèm" (bảng tên dễ đọc / mã / bắt buộc; điện thoại là danh sách; dòng "theo bản xuất bản vN" hoặc cảnh báo chưa xuất bản) · lời gọi `POST /v1/notifications` mẫu (`templateId` + `payload` + `idempotencyKey`, nút "Sao chép" có chữ ở đầu khối) · lỗi template lấy từ `v1-errors.ts` (thu gọn sẵn, ý nghĩa trước, mã sau, không tô đỏ) |
 | Composer blocks | `components/compose/{recipient,content,preview,send}-block.tsx`, `composer.tsx` | ✓ | 4 khối gated |
 | `RoleContext` | `components/role-context.tsx` | ✓ | vai THẬT từ `GET /admin/me` (`layout.tsx` nạp ở server); `useRole()` trả `isSuperAdmin`, `canManage(app)`, `creatableOrgs` — gate nút ghi; `<AppGate>` dùng `isSuperAdmin` để mở khu Quản trị EWS. Luật ở `lib/access.ts`, sao cùng `decide()` của backend. Không giả lập vai ở client |

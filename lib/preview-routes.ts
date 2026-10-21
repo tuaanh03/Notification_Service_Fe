@@ -7,16 +7,13 @@
  *
  * Đây là NƠI DUY NHẤT giữ danh sách này. Đấu xong một màn thì thêm một dòng, không sửa chỗ khác.
  */
-export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/compose', '/topics', '/templates', '/settings/credentials', '/settings/webhooks', '/settings/tracking', '/settings/limits', '/admin/settings', '/admin/directory', '/admin/security'] as const
+export const WIRED_ROUTES = ['/admin/apps', '/apps/new', '/compose', '/topics', '/templates', '/settings/credentials', '/settings/webhooks', '/settings/tracking', '/settings/limits', '/admin/settings', '/admin/directory', '/admin/security', '/admin/audit'] as const
 
 /**
  * Đã đấu nhưng CHỈ chính nó — route con vẫn là bản xem trước.
  *
- * `/users` đọc dữ liệu thật, `/users/import` thì chưa: backend không có đường nào cho nhập CSV.
- * Trang chi tiết `/users/[id]` đã đấu — nằm ở `WIRED_DETAIL_ROUTES` bên dưới.
- *
- * `/notifications` cũng vậy: `/notifications/[id]` (chi tiết đã nằm trong panel của chính màn
- * danh sách) vẫn là bản mẫu.
+ * Trang chi tiết `/users/[id]` đã đấu — nằm ở `WIRED_DETAIL_ROUTES` bên dưới. `/notifications` không có trang chi tiết
+ * (chi tiết là panel trong chính màn danh sách); các màn mẫu cũ đã xoá hẳn (đợt "Củng cố 1", 10/2026).
  *
  * `/` (Tổng quan) chỉ khớp đúng chính nó — để trong `WIRED_ROUTES` thì mọi route đều là "route con" của `/`.
  *
@@ -28,10 +25,10 @@ export const WIRED_EXACT_ROUTES = ['/', '/users', '/notifications', '/notificati
 /**
  * Đã đấu trang chi tiết `[id]` NGAY DƯỚI route này — đúng một đoạn đường dẫn, không sâu hơn.
  *
- * `preview` là route tĩnh cùng cấp vẫn là hàng mẫu: Next ưu tiên route tĩnh, nên `/users/import`
- * không phải trang chi tiết của người có mã `import`. Thiếu dòng đó là gỡ nhãn khỏi màn mẫu.
+ * `preview` là route tĩnh cùng cấp vẫn là hàng mẫu (Next ưu tiên route tĩnh — route đó không phải trang chi tiết của
+ * người có mã trùng tên). Hiện không còn route mẫu nào.
  */
-export const WIRED_DETAIL_ROUTES = [{ base: '/users', preview: ['/users/import'] }] as const
+export const WIRED_DETAIL_ROUTES = [{ base: '/users', preview: [] }] as const
 
 /** Khớp cả route con (`/topics/order_updates`), không khớp route chỉ trùng tiền tố chữ. */
 export function isPreviewRoute(pathname: string): boolean {

@@ -71,6 +71,8 @@ export function DataTable<T extends Record<string, unknown>>({
     .filter((r) => JSON.stringify(r).toLowerCase().includes(q.toLowerCase()))
   return (
     <Panel className="overflow-hidden">
+      {/* Không ô lọc, không nút, không chip lọc -> không dựng thanh (khỏi một dải trống trên đầu bảng). */}
+      {(!hideSearch || toolbarActions || filterKey) && (
       <div className="flex flex-wrap items-center gap-3 border-b border-[var(--orbit)] px-4 py-2.5">
         {!hideSearch && (
         <div className="flex flex-1 items-center gap-2 max-w-sm rounded-lg border border-[var(--orbit)] bg-muted/20 px-2.5 py-1">
@@ -112,6 +114,7 @@ export function DataTable<T extends Record<string, unknown>>({
           </div>
         )}
       </div>
+      )}
       {filtered.length ? (
         <Table className="text-[13px]">
           <TableHeader className="sticky top-0 bg-[var(--deep)] text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
@@ -137,7 +140,8 @@ export function DataTable<T extends Record<string, unknown>>({
                 key={i}
                 onClick={() => onRowClick?.(r)}
                 className={cn(
-                  'h-11 border-[var(--orbit)] hover:bg-[var(--orbit)]',
+                  // Nền khi rê chuột nhạt (nửa `--orbit`): chữ `--text-muted` trên nền `--orbit` đặc chỉ 4,2:1.
+                  'h-11 border-[var(--orbit)] hover:bg-[var(--orbit)]/50',
                   onRowClick && 'cursor-pointer',
                   rowClassName?.(r),
                 )}

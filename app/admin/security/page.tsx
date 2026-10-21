@@ -8,6 +8,8 @@ import { describeError } from '@/lib/api/error-message'
 import { listLoginLocks } from '@/lib/api/login-security'
 import { ApiError } from '@/lib/api/problem'
 import { getSystemSettings } from '@/lib/api/system-settings'
+import { searchAudit } from '@/lib/api/audit'
+import type { SecurityActivity } from '@/components/admin/login-security-panel'
 
 /**
  * Theo dõi & Bảo mật (ADR-0039 của backend) — quy tắc chặn đăng nhập sai (cài đặt hệ thống nhóm `auth.*`) và các
@@ -17,8 +19,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   try {
-    const [settings, locks] = await Promise.all([getSystemSettings(), listLoginLocks()])
-    return <LoginSecurityPanel initialSettings={settings} initialLocks={locks} />
+    const [settings, locks, activity] = await Promise.all([getSystemSettings(), listLoginLocks(), securityActivity()])
+    return <LoginSecurityPanel initialSettings={settings} initialLocks={locks} activity={activity} />
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
     const t = await getTranslations('security')
@@ -30,5 +32,25 @@ export default async function Page() {
         </Panel>
       </>
     )
+  }
+}
+
+/**
+ * Khối "24 giờ qua": số lần khoá tạm / khoá hẳn / mở khoá + 5 dòng gần nhất, đọc từ nhật ký chung. Nhật ký hỏng thì
+ * trả `null` — màn vẫn mở được bảng khoá và quy tắc (khối này chỉ để theo dõi, không chặn việc mở khoá).
+ */
+async function securityActivity(): Promise<SecurityActivity | null> {
+  const from = new Date(Date.now() - 864e5).toISOString()
+  const count = async (action: string) => (await searchAudit({ actions: [action], from, limit: 1 })).total
+  try {
+    const [locked, permanent, unlocked, recent] = await Promise.all([
+      count('LoginLocked'),
+      count('AdminLocked'),
+      count('LoginUnlocked'),
+      searchAudit({ actions: ['LoginLocked', 'AdminLocked', 'LoginUnlocked'], from, limit: 5 }),
+    ])
+    return { locked, permanent, unlocked, recent: recent.items }
+  } catch {
+    return null
   }
 }

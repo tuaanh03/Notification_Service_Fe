@@ -2,7 +2,7 @@ import 'server-only'
 import { type AuditEntry } from '@/lib/mock-data'
 import { fmtDateTime } from '@/lib/time'
 import { adminFetch } from './client'
-import type { AuditEntryDto } from './types'
+import type { AuditEntryDto, AuditEventPageDto } from './types'
 
 export type { AuditEntryDto }
 
@@ -22,6 +22,27 @@ export async function listAudit(
       targetType,
       targetId,
       ...(limit === undefined ? {} : { limit: String(limit) }),
+    },
+  })
+}
+
+/** Bộ lọc nhật ký chung. Bỏ trống = không lọc. */
+export interface AuditSearchInput {
+  actions?: readonly string[]
+  /** ISO — đầu khoảng thời gian. */
+  from?: string
+  cursor?: string
+  limit?: number
+}
+
+/** GET /admin/audit/events — nhật ký chung, chỉ Super Admin (mới nhất trước, phân trang bằng con trỏ). */
+export async function searchAudit(input: AuditSearchInput): Promise<AuditEventPageDto> {
+  return adminFetch<AuditEventPageDto>('/audit/events', {
+    query: {
+      action: input.actions && input.actions.length > 0 ? input.actions.join(',') : undefined,
+      from: input.from,
+      cursor: input.cursor,
+      limit: input.limit === undefined ? undefined : String(input.limit),
     },
   })
 }

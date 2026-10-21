@@ -1,10 +1,11 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { AlertTriangle, ChevronRight, LockOpen, RefreshCw, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, ArrowRight, ChevronRight, LockOpen, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { loadLoginLocksAction, unlockLoginAction } from '@/app/admin/security/actions'
 import { isSecuritySetting, useSettingsEditor } from '@/components/admin/system-settings-panel'
+import { AppLink } from '@/components/app-link'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -13,7 +14,8 @@ import { Panel } from '@/components/panel'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import type { LoginLockDto, SystemSettingDto } from '@/lib/api/types'
+import type { AuditEventDto, LoginLockDto, SystemSettingDto } from '@/lib/api/types'
+import { tOr } from '@/i18n/dynamic'
 import { fmtDateTime } from '@/lib/time'
 
 /** Thứ tự cố định của các quy tắc — đọc từ trên xuống như một câu: bật -> mấy lần -> trong bao lâu -> khoá bao lâu. */
@@ -34,10 +36,22 @@ const KIND_LABEL = { account: 'kindAccount', email: 'kindEmail', ip: 'kindIp' } 
  * Theo dõi & Bảo mật (ADR-0039 của backend): bảng khoá đang giữ (trên — mở khoá có hỏi lại) + quy tắc chặn đăng nhập sai
  * (dưới, thu gọn kèm dòng tóm tắt; cài đặt hệ thống nhóm `auth.*`, lưu từng dòng như trang Cài đặt hệ thống, không in mã khoá).
  */
-export function LoginSecurityPanel({ initialSettings, initialLocks }: { initialSettings: SystemSettingDto[]; initialLocks: LoginLockDto[] }) {
+/** Khối "24 giờ qua" (đọc ở server từ nhật ký chung); `null` = nhật ký không đọc được, khối ẩn. */
+export type SecurityActivity = { locked: number; permanent: number; unlocked: number; recent: AuditEventDto[] }
+
+export function LoginSecurityPanel({
+  initialSettings,
+  initialLocks,
+  activity,
+}: {
+  initialSettings: SystemSettingDto[]
+  initialLocks: LoginLockDto[]
+  activity: SecurityActivity | null
+}) {
   const t = useTranslations('security')
   const ts = useTranslations('systemSettings')
   const te = useTranslations('errors')
+  const ta = useTranslations('auditActions')
   const { settings, error, row } = useSettingsEditor(initialSettings, isSecuritySetting, { showKeys: false })
   const [locks, setLocks] = useState(initialLocks)
   const [locksError, setLocksError] = useState<string | null>(null)
@@ -147,6 +161,53 @@ export function LoginSecurityPanel({ initialSettings, initialLocks }: { initialS
     <>
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
 
+      {activity && (
+        <Panel className="mb-8 p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold">{t('last24h')}</h2>
+            <AppLink
+              href="/admin/audit?group=security&range=24h"
+              className="inline-flex min-h-6 items-center gap-1 text-xs text-[var(--starlight)] hover:underline max-md:min-h-11"
+            >
+              {t('openLog')} <ArrowRight className="size-3" />
+            </AppLink>
+          </div>
+          <dl className="mt-3 grid grid-cols-3 gap-3">
+            {(
+              [
+                ['statLocked', activity.locked, 'var(--solar)'],
+                ['statPermanent', activity.permanent, 'var(--supernova)'],
+                ['statUnlocked', activity.unlocked, 'var(--aurora)'],
+              ] as const
+            ).map(([label, value, color]) => (
+              <div key={label} className="rounded-lg border border-[var(--orbit)] px-3 py-2">
+                <dt className="text-[11px] text-[var(--text-secondary)]">{t(label)}</dt>
+                <dd className="mt-0.5 font-mono text-xl tabular-nums" style={{ color: value > 0 ? color : undefined }}>
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {activity.recent.length > 0 ? (
+            <ul className="mt-4 space-y-1.5 text-xs">
+              {activity.recent.map((e) => {
+                const subject = typeof e.after?.subject === 'string' ? e.after.subject : typeof e.after?.email === 'string' ? e.after.email : null
+                return (
+                  <li key={e.id} className="flex flex-wrap gap-x-2 gap-y-0.5">
+                    <span className="font-mono tabular-nums text-[var(--text-muted)]">{fmtDateTime(e.at)}</span>
+                    <span>{tOr(ta, e.action)}</span>
+                    {subject && <span className="break-all font-mono">{subject}</span>}
+                    {e.action === 'LoginUnlocked' && e.actorEmail && <span className="text-[var(--text-secondary)]">· {t('by', { who: e.actorEmail })}</span>}
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="mt-4 text-xs text-[var(--text-secondary)]">{t('quiet')}</p>
+          )}
+        </Panel>
+      )}
+
       {/* Việc hay làm nhất ở mục này là xem ai đang bị khoá và mở khoá — đặt lên đầu; quy tắc chỉnh một lần, thu gọn dưới. */}
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
@@ -207,7 +268,6 @@ export function LoginSecurityPanel({ initialSettings, initialLocks }: { initialS
           cmd: (chunks) => <code className="font-mono text-[11px] text-[var(--text-secondary)]">{chunks}</code>,
         })}
       </p>
-      <p className="mt-1 text-xs text-[var(--text-muted)]">{t('auditHint')}</p>
 
       <ConfirmDialog
         open={confirming !== null}

@@ -81,18 +81,13 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
     { href: '/', name: 'overview', group: 'ews' },
     { href: '/compose', name: 'compose', group: 'notifications' },
     { href: '/notifications', name: 'history', group: 'notifications' },
-    { href: '/scheduled', name: 'scheduled', group: 'notifications' },
     { href: '/topics', name: 'topics', group: null },
     { href: '/users', name: 'recipients', group: null },
-    { href: '/subscriptions', name: 'subscriptions', group: null },
     { href: '/templates', name: 'templates', group: null },
-    { href: '/settings/profile', name: 'profile', group: 'appSettings' },
     { href: '/settings/credentials', name: 'credentials', group: 'appSettings' },
-    { href: '/settings/quota', name: 'quota', group: 'appSettings' },
     { href: '/settings/webhooks', name: 'webhooks', group: 'appSettings' },
     { href: '/settings/tracking', name: 'tracking', group: 'appSettings' },
     { href: '/settings/limits', name: 'limits', group: 'appSettings' },
-    { href: '/settings/sync', name: 'sync', group: 'appSettings' },
   ] as const
 
   const crumb = breadcrumbMap
@@ -145,7 +140,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
 
                 {/* Thông báo (Collapsible) */}
                 <Collapsible
-                  defaultOpen={path.startsWith('/compose') || path.startsWith('/notifications') || path.startsWith('/scheduled')}
+                  defaultOpen={path.startsWith('/compose') || path.startsWith('/notifications')}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
@@ -153,7 +148,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                       render={
                         <SidebarMenuButton
                           tooltip={tn('notifications')}
-                          isActive={path.startsWith('/compose') || path.startsWith('/notifications') || path.startsWith('/scheduled')}
+                          isActive={path.startsWith('/compose') || path.startsWith('/notifications')}
                         >
                           <Send className="size-4" />
                           <span>{tn('notifications')}</span>
@@ -175,13 +170,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                             <span>{tn('history')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        {!isPreviewRoute('/scheduled') && (
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/scheduled" />} isActive={path === '/scheduled'}>
-                              <span>{tn('scheduled')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        )}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
@@ -200,8 +188,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                 </SidebarMenuItem>
 
                 {/* Người nhận — một mục, không nhóm: kênh mới hiện thành cột / khối trong chính màn này, không
-                    thành mục con. `/subscriptions` (còn mock) đã gỡ: hai cửa, một cửa giả, là cách chắc chắn để
-                    người mới bấm nhầm (mục 2.5). Không gọi "Danh bạ" — đó là tài khoản EWS ở Quản trị EWS. */}
+                    thành mục con. Không gọi "Danh bạ" — đó là tài khoản EWS ở Quản trị EWS. */}
                 <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
                     render={<AppLink href="/users" />}
@@ -252,25 +239,11 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                     />
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {!isPreviewRoute('/settings/profile') && (
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/settings/profile" />} isActive={path === '/settings/profile'}>
-                              <span>{tn('profile')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        )}
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/credentials" />} isActive={path === '/settings/credentials'}>
                             <span>{tn('credentials')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        {!isPreviewRoute('/settings/quota') && (
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/settings/quota" />} isActive={path === '/settings/quota'}>
-                              <span>{tn('quota')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        )}
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton render={<AppLink href="/settings/webhooks" />} isActive={path === '/settings/webhooks'}>
                             <span>{tn('webhooks')}</span>
@@ -286,13 +259,6 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                             <span>{tn('limits')}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
-                        {!isPreviewRoute('/settings/sync') && (
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<AppLink href="/settings/sync" />} isActive={path === '/settings/sync'}>
-                              <span>{tn('sync')}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        )}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
