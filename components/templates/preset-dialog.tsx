@@ -16,6 +16,7 @@ import { presetErrorOf, presetsOf, type useTemplatePresets } from '@/hooks/use-t
 import { LOCALES, type Locale } from '@/i18n/locales'
 import type { TemplatePresetDto } from '@/lib/api/types'
 import { renderPreview } from '@/lib/template-syntax'
+import { variableLabel } from '@/lib/variable-labels'
 import { VISUAL_DESIGN_FORMAT, VISUAL_DESIGN_VERSION } from '@/lib/visual-design'
 import { DevicePreview } from './preview-pane'
 import { compileMjml, type CompiledMjml } from './visual/compile-mjml'
@@ -200,7 +201,7 @@ export function PresetDialog({
                 <p className="text-xs font-semibold">{t('variables')}</p>
                 <div className="flex flex-wrap gap-1">
                   {shown.variables.map((v) => (
-                    <Badge key={v.name} variant="outline" className="font-mono text-[10px]">{v.name}</Badge>
+                    <Badge key={v.name} variant="outline" className="max-w-full truncate text-[10px]" title={v.name}>{variableLabel(v)}</Badge>
                   ))}
                 </div>
               </div>

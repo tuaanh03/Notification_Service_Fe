@@ -146,7 +146,6 @@ function PresetThumbnail({ preset }: { preset: TemplatePresetDto }) {
         title={t('thumbnail', { name: preset.name })}
         sandbox=""
         tabIndex={-1}
-        loading="lazy"
         className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[640px] origin-top -translate-x-1/2 scale-[0.45] border-0"
       />
     </div>
