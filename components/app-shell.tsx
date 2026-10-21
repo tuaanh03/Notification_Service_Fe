@@ -319,7 +319,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
                 {crumb?.group && (
                   <>
                     <BreadcrumbItem>
-                      <BreadcrumbLink render={<AppLink href={crumb.href} />} className="text-muted-foreground hover:text-foreground">
+                      <BreadcrumbLink render={<AppLink href={crumb.href} />} className="inline-flex min-h-6 items-center text-muted-foreground hover:text-foreground">
                         {tn(crumb.group)}
                       </BreadcrumbLink>
                     </BreadcrumbItem>

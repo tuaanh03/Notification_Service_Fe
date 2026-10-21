@@ -142,7 +142,7 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
                 {org ? (
                   <>
                     <BreadcrumbItem>
-                      <BreadcrumbLink render={<AppLink href={ORGS_HOME} />} className="text-muted-foreground hover:text-foreground">
+                      <BreadcrumbLink render={<AppLink href={ORGS_HOME} />} className="inline-flex min-h-6 items-center text-muted-foreground hover:text-foreground">
                         {t('title')}
                       </BreadcrumbLink>
                     </BreadcrumbItem>
@@ -150,7 +150,7 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
                     {onMembers ? (
                       <>
                         <BreadcrumbItem>
-                          <BreadcrumbLink render={<AppLink href={orgPath(org.id)} />} className="text-muted-foreground hover:text-foreground">
+                          <BreadcrumbLink render={<AppLink href={orgPath(org.id)} />} className="inline-flex min-h-6 items-center text-muted-foreground hover:text-foreground">
                             {org.name}
                           </BreadcrumbLink>
                         </BreadcrumbItem>

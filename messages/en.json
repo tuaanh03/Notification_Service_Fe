@@ -461,7 +461,14 @@
     "errMissingVariable": "A template variable is missing or invalid.",
     "errTooLarge": "The topic has more than 100 followers.",
     "errAppNotActive": "This app is suspended and cannot send.",
-    "errContent": "The email content is invalid."
+    "errContent": "The email content is invalid.",
+    "topicHintPeople": "People who turned this topic off won’t get the email.",
+    "example": "e.g. {value}",
+    "fieldRequired": "This field is required.",
+    "fieldInvalid": "Text or numbers only.",
+    "fieldLink": "Must be a link starting with https:// or mailto:",
+    "fixFields": "Some fields need fixing — see the red notes below them.",
+    "noEmail": "no email yet"
   },
   "send": {
     "undoTitle": "Waiting {seconds} seconds before the first batch leaves the queue.",

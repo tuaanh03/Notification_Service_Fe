@@ -461,7 +461,14 @@
     "errMissingVariable": "Thiếu hoặc sai giá trị biến của template.",
     "errTooLarge": "Chủ đề có quá 100 người theo dõi.",
     "errAppNotActive": "App đang tạm ngưng, không gửi được.",
-    "errContent": "Nội dung thư không hợp lệ."
+    "errContent": "Nội dung thư không hợp lệ.",
+    "topicHintPeople": "Người đã tắt nhận chủ đề này sẽ không nhận thư.",
+    "example": "ví dụ: {value}",
+    "fieldRequired": "Cần điền ô này.",
+    "fieldInvalid": "Chỉ nhận chữ hoặc số.",
+    "fieldLink": "Phải là link bắt đầu bằng https:// hoặc mailto:",
+    "fixFields": "Có ô cần sửa — xem dòng đỏ dưới ô.",
+    "noEmail": "chưa có email"
   },
   "send": {
     "undoTitle": "Đang chờ {seconds} giây trước khi lô đầu rời hàng đợi.",

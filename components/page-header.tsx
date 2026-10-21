@@ -22,7 +22,7 @@ export function PageHeader({
             {breadcrumb.map((crumb, i) => (
               <span key={`${crumb.label}-${i}`} className="flex items-center gap-1">
                 {crumb.href ? (
-                  <AppLink href={crumb.href} className="hover:text-[var(--text-secondary)]">
+                  <AppLink href={crumb.href} className="inline-flex min-h-6 items-center hover:text-[var(--text-secondary)]">
                     {crumb.label}
                   </AppLink>
                 ) : (

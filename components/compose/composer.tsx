@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState, useTransition } from 'react'
 import { CheckCircle2, Clock, FileText, Hash, PenLine, PlugZap, Send, ShieldOff, UserRound, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
@@ -30,6 +30,7 @@ import type { ActionResult } from '@/lib/api/result'
 import type { ConsoleSendContent, TemplateVariableDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
+import { variableLabel } from '@/lib/variable-labels'
 
 /** Khớp `MAX_CONSOLE_RECIPIENTS` của backend — vượt thì backend trả 422. */
 const MAX_PEOPLE = 20
@@ -73,6 +74,18 @@ function toPayload(values: Record<string, string>): Record<string, unknown> {
 
 const newRequestId = () => crypto.randomUUID()
 
+/** Biến dùng làm link: giá trị mẫu là link (backend chỉ nhận https:// / mailto: cho biến nằm trong href). */
+const LINK_RE = /^(https:\/\/|mailto:)/i
+const isLinkVariable = (v: TemplateVariableDto) => LINK_RE.test(v.sample ?? '')
+
+type FieldError = 'fieldRequired' | 'fieldInvalid' | 'fieldLink'
+/** Mã lỗi 422 -> câu dưới ô. `path` của backend = tên biến (`payload.x`); lỗi link chỉ có `path = payload`. */
+const FIELD_ERRORS: Record<string, FieldError> = {
+  MISSING_VARIABLE: 'fieldRequired',
+  INVALID_PAYLOAD_VALUE: 'fieldInvalid',
+  LINK_SCHEME_NOT_ALLOWED: 'fieldLink',
+}
+
 /**
  * Màn Soạn thông báo — 4 bước: Gửi tới · Nội dung · Xem trước · Gửi. Gửi đi đúng đường `/v1` của backend
  * (cùng kiểm chủ đề, template, consent; origin `dashboard`). Chỉ người quản lý app (`canManage`).
@@ -99,6 +112,7 @@ export function Composer() {
   const [html, setHtml] = useState('')
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, FieldError>>({})
   const [requestId, setRequestId] = useState(newRequestId)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [pending, startTransition] = useTransition()
@@ -123,6 +137,7 @@ export function Composer() {
     setHtml('')
     setPreview(null)
     setError(null)
+    setFieldErrors({})
     setOutcome(null)
     setRequestId(newRequestId())
   }, [])
@@ -145,17 +160,18 @@ export function Composer() {
     void load()
   }, [load, reset])
 
-  // Chọn template -> nạp biến của bản đang xuất bản, điền sẵn giá trị mẫu.
+  // Chọn template -> nạp biến của bản đang xuất bản. Ô để TRỐNG, giá trị mẫu chỉ là gợi ý mờ: điền sẵn thì bấm Tiếp
+  // là thư thật đi với số liệu mẫu (UX-10).
   useEffect(() => {
     setVariables([])
     setValues({})
+    setFieldErrors({})
     if (!templateId) return
     let live = true
     loadPayloadVariablesAction(appId, templateId).then((result) => {
       if (!live) return
       if (result.ok) {
         setVariables(result.data)
-        setValues(Object.fromEntries(result.data.map((v) => [v.name, v.sample ?? ''])))
       } else setError(failText(result))
     })
     return () => {
@@ -178,8 +194,32 @@ export function Composer() {
     preview !== null,
   ][step]
 
+  /** Lỗi 422 của backend -> dưới đúng ô. Trả true nếu đã gắn được ít nhất một ô. */
+  const markFields = (result: Extract<ActionResult<unknown>, { ok: false }>) => {
+    const marks: Record<string, FieldError> = {}
+    for (const issue of result.issues ?? []) {
+      const kind = FIELD_ERRORS[issue.code]
+      if (!kind) continue
+      if (kind === 'fieldLink') {
+        for (const v of variables) if (isLinkVariable(v) && !LINK_RE.test((values[v.name] ?? '').trim())) marks[v.name] = kind
+      } else if (issue.path && variables.some((v) => v.name === issue.path)) marks[issue.path] = kind
+    }
+    setFieldErrors(marks)
+    return Object.keys(marks).length > 0
+  }
+
   const go = (next: number) => {
     setError(null)
+    setFieldErrors({})
+    if (next === 2 && contentMode === 'template') {
+      // Link sai là lỗi hay gặp nhất — báo ngay dưới ô, không đợi backend.
+      const bad = variables.filter((v) => isLinkVariable(v) && (values[v.name] ?? '').trim() !== '' && !LINK_RE.test(values[v.name].trim()))
+      if (bad.length) {
+        setFieldErrors(Object.fromEntries(bad.map((v) => [v.name, 'fieldLink' as const])))
+        setError(t('fixFields'))
+        return
+      }
+    }
     if (next !== 2) {
       setStep(next)
       return
@@ -197,7 +237,7 @@ export function Composer() {
         ...(mode === 'people' && people[0] ? { externalId: people[0] } : {}),
       })
       if (!result.ok) {
-        setError(failText(result))
+        setError(markFields(result) ? t('fixFields') : failText(result))
         return
       }
       setPreview({ subject: result.data.subject, html: result.data.html })
@@ -336,7 +376,7 @@ export function Composer() {
                   />
                 </div>
 
-                <Field label={t('topic')} htmlFor="compose-topic">
+                <Field label={t('topic')} htmlFor="compose-topic" hint={mode === 'people' ? t('topicHintPeople') : undefined}>
                   {options && options.topics.length === 0 ? (
                     <p className="text-sm text-[var(--text-muted)]">{t('noTopics')}</p>
                   ) : (
@@ -344,7 +384,7 @@ export function Composer() {
                       <NativeSelectOption value="">{t('chooseTopic')}</NativeSelectOption>
                       {options?.topics.map((x) => (
                         <NativeSelectOption key={x.key} value={x.key}>
-                          {x.name} · {x.key}
+                          {x.name}
                           {x.mandatory ? ` · ${t('mandatory')}` : ''}
                         </NativeSelectOption>
                       ))}
@@ -398,21 +438,31 @@ export function Composer() {
                         </NativeSelect>
                       )}
                     </Field>
-                    {variables.map((v) => (
-                      <Field
-                        key={v.name}
-                        label={`${v.name.replace(/^payload\./, '')}${v.required ? ' *' : ''}`}
-                        htmlFor={`compose-var-${v.name}`}
-                        mono
-                      >
-                        <Input
-                          id={`compose-var-${v.name}`}
-                          value={values[v.name] ?? ''}
-                          onChange={(e) => setValues((cur) => ({ ...cur, [v.name]: e.target.value }))}
-                          placeholder={v.description ?? ''}
-                        />
-                      </Field>
-                    ))}
+                    {variables.map((v) => {
+                      const id = `compose-var-${v.name}`
+                      const fieldError = fieldErrors[v.name]
+                      return (
+                        <Field
+                          key={v.name}
+                          label={`${variableLabel(v)}${v.required ? ' *' : ''}`}
+                          htmlFor={id}
+                          code={v.name}
+                          error={fieldError ? t(fieldError) : undefined}
+                        >
+                          <Input
+                            id={id}
+                            value={values[v.name] ?? ''}
+                            onChange={(e) => {
+                              setValues((cur) => ({ ...cur, [v.name]: e.target.value }))
+                              if (fieldError) setFieldErrors(({ [v.name]: _, ...rest }) => rest)
+                            }}
+                            placeholder={v.sample ? t('example', { value: v.sample }) : ''}
+                            aria-invalid={fieldError ? true : undefined}
+                            aria-describedby={fieldError ? `${id}-error` : undefined}
+                          />
+                        </Field>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -473,15 +523,15 @@ export function Composer() {
           )}
 
           <div className="mt-10 flex items-center justify-between border-t border-[var(--orbit)] pt-6">
-            <Button variant="ghost" onClick={() => go(step - 1)} disabled={pending} className={cn(step === 0 && 'invisible')}>
+            <Button variant="ghost" onClick={() => go(step - 1)} disabled={pending} className={cn('max-md:h-11', step === 0 && 'invisible')}>
               {t('back')}
             </Button>
             {step < 3 ? (
-              <Button onClick={() => go(step + 1)} disabled={!canNext || pending}>
+              <Button onClick={() => go(step + 1)} disabled={!canNext || pending} className="max-md:h-11">
                 {t('next')}
               </Button>
             ) : (
-              <Button onClick={send} disabled={pending}>
+              <Button onClick={send} disabled={pending} className="max-md:h-11">
                 <Send />
                 {pending ? t('sending') : mode === 'people' ? t('sendPeople', { count: people.length }) : t('sendTopic')}
               </Button>
@@ -493,13 +543,37 @@ export function Composer() {
   )
 }
 
-function Field({ label, htmlFor, mono, children }: { label: string; htmlFor: string; mono?: boolean; children: React.ReactNode }) {
+/** Một ô của form: nhãn (+ mã biến mờ bên dưới cho người tích hợp) · ô · gợi ý · lỗi ngay dưới ô (UX-10). */
+function Field({
+  label,
+  htmlFor,
+  code,
+  hint,
+  error,
+  children,
+}: {
+  label: string
+  htmlFor: string
+  code?: string
+  hint?: string
+  error?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={htmlFor} className={cn('text-sm', mono && 'font-mono')}>
-        {label}
-      </Label>
+      <div className="space-y-0.5">
+        <Label htmlFor={htmlFor} className="text-sm">
+          {label}
+        </Label>
+        {code && <p className="font-mono text-[11px] text-[var(--text-muted)]">{code}</p>}
+      </div>
       {children}
+      {hint && <p className="text-xs text-[var(--text-secondary)]">{hint}</p>}
+      {error && (
+        <p id={`${htmlFor}-error`} className="text-xs text-[var(--supernova)]">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
@@ -536,11 +610,17 @@ function ChoiceCard({
   )
 }
 
-/** Gõ để tìm mã (khớp một phần, như màn Người nhận) -> bấm để thêm. Chỉ chọn được mã đã có. */
+/**
+ * Gõ để tìm mã (khớp một phần, như màn Người nhận) -> chọn để thêm. Chỉ chọn được mã đã có. Mỗi gợi ý có email (hoặc
+ * "chưa có email") để biết đúng người; ↑ / ↓ / Enter chọn bằng bàn phím, Esc đóng (combobox + listbox, UX-10).
+ */
 function RecipientPicker({ appId, value, onChange }: { appId: string; value: string[]; onChange: (ids: string[]) => void }) {
   const t = useTranslations('compose')
+  const listId = useId()
   const [q, setQ] = useState('')
-  const [found, setFound] = useState<string[]>([])
+  const [found, setFound] = useState<{ id: string; email: string | null }[]>([])
+  const [active, setActive] = useState(0)
+  const [closed, setClosed] = useState(false)
   const full = value.length >= MAX_PEOPLE
 
   useEffect(() => {
@@ -552,7 +632,9 @@ function RecipientPicker({ appId, value, onChange }: { appId: string; value: str
     let live = true
     const timer = setTimeout(() => {
       loadRecipientsAction(appId, { q: term, limit: 8 }).then((result) => {
-        if (live) setFound(result.ok ? result.data.rows.map((r) => r.externalId) : [])
+        if (!live) return
+        setFound(result.ok ? result.data.rows.map((r) => ({ id: r.externalId, email: r.email?.address ?? null })) : [])
+        setActive(0)
       })
     }, 250)
     return () => {
@@ -561,38 +643,68 @@ function RecipientPicker({ appId, value, onChange }: { appId: string; value: str
     }
   }, [appId, q])
 
-  const choices = useMemo(() => found.filter((id) => !value.includes(id)), [found, value])
+  const choices = useMemo(() => found.filter((r) => !value.includes(r.id)), [found, value])
+  const open = q.trim() !== '' && !full && !closed
+  const pick = (id: string) => {
+    onChange([...value, id])
+    setQ('')
+  }
 
   return (
     <div className="space-y-3">
       <div className="relative">
         <Input
           id="compose-recipient"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && choices[active] ? `${listId}-${active}` : undefined}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value)
+            setClosed(false)
+          }}
+          onKeyDown={(e) => {
+            if (!open || choices.length === 0) return
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setActive((i) => (i + 1) % choices.length)
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setActive((i) => (i - 1 + choices.length) % choices.length)
+            } else if (e.key === 'Enter') {
+              e.preventDefault()
+              pick(choices[Math.min(active, choices.length - 1)].id)
+            } else if (e.key === 'Escape') setClosed(true)
+          }}
           placeholder={full ? t('maxReached', { max: MAX_PEOPLE }) : t('searchRecipients')}
           disabled={full}
           className="font-mono"
           autoComplete="off"
         />
-        {q.trim() && !full && (
+        {open && (
           <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-[var(--orbit)] bg-popover shadow-md">
             {choices.length === 0 ? (
-              <p className="px-3 py-2.5 text-xs text-[var(--text-muted)]">{t('noMatch')}</p>
+              <p className="px-3 py-2.5 text-xs text-[var(--text-secondary)]">{t('noMatch')}</p>
             ) : (
-              choices.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className="block w-full px-3 py-2.5 text-left font-mono text-sm hover:bg-muted"
-                  onClick={() => {
-                    onChange([...value, id])
-                    setQ('')
-                  }}
-                >
-                  {id}
-                </button>
-              ))
+              <ul id={listId} role="listbox" aria-label={t('recipients')}>
+                {choices.map((r, i) => (
+                  <li
+                    key={r.id}
+                    id={`${listId}-${i}`}
+                    role="option"
+                    aria-selected={i === active}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pick(r.id)}
+                    onMouseEnter={() => setActive(i)}
+                    className={cn('flex min-h-11 cursor-pointer flex-col justify-center px-3 py-1.5', i === active && 'bg-muted')}
+                  >
+                    <span className="font-mono text-sm">{r.id}</span>
+                    <span className="text-xs text-[var(--text-secondary)]">{r.email ?? t('noEmail')}</span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}
@@ -600,9 +712,14 @@ function RecipientPicker({ appId, value, onChange }: { appId: string; value: str
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((id) => (
-            <span key={id} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--orbit)] px-3 py-1 font-mono text-xs">
+            <span key={id} className="inline-flex items-center gap-1 rounded-full border border-[var(--orbit)] py-0.5 pl-3 pr-0.5 font-mono text-xs">
               {id}
-              <button type="button" aria-label={t('remove', { id })} onClick={() => onChange(value.filter((x) => x !== id))}>
+              <button
+                type="button"
+                aria-label={t('remove', { id })}
+                onClick={() => onChange(value.filter((x) => x !== id))}
+                className="inline-flex size-6 items-center justify-center rounded-full outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-[var(--starlight)]"
+              >
                 <X className="size-3.5 text-[var(--text-muted)] hover:text-foreground" />
               </button>
             </span>
