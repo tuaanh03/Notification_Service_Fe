@@ -535,7 +535,7 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
 *   **Bố cục màn soạn `/templates/[id]`** — tách việc soạn thư khỏi phần cho lập trình viên. Bốn tab (`?tab=`,
     đổi bằng `history.replaceState` — không chuyển trang, không mất nội dung chưa lưu): **Soạn thư** (mặc định:
     tiêu đề trên cùng → khung soạn; kiểu HTML thêm xem thử + "Nâng cao" thu gọn chỉ chứa bản chữ thường) · **Biến**
-    (`<SchemaPane>`) · **Tích hợp cho đội app** (UX-6, bản phác TichHop: từ `lg` hai cột — trái mã template + `<ContractFields>`, phải `<ContractRequest>` + `<ContractErrors>` thu gọn; điện thoại một cột, bảng biến thành danh sách, lời gọi xuống dòng; chữ giải thích `--text-secondary` vì `--text-muted` chỉ ~2,6:1) · **Phiên bản**. Tab Soạn thư
+    (`<SchemaPane>`) · **Tích hợp cho đội app** (UX-6, bản phác TichHop: từ `lg` hai cột — trái mã template + `<ContractFields>`, phải `<ContractRequest>` + `<ContractErrors>` thu gọn; điện thoại một cột, bảng biến thành danh sách, lời gọi xuống dòng; chữ giải thích `--text-secondary`) · **Phiên bản**. Tab Soạn thư
     không có chữ "payload", "templateId", "escape" — thuật ngữ chỉ ở tab Biến / Tích hợp. Biến chưa khai / thiếu
     nguồn vẫn báo ở đầu tab Soạn thư (một dòng + nút sang tab Biến; tab Biến có chấm đỏ) — đừng để cảnh báo chỉ
     nằm ở tab khác. Tên + nhóm đổi bằng bút chì cạnh tên (`onEdit` của `<EditorTopBar>`) -> hộp "Tên và nhóm" (`<ConfirmDialog>`, chỉ gửi phần đã
@@ -906,8 +906,9 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 Palette THẬT trong `app/globals.css` (`:root`) và `lib/theme.ts` — bảng **sáng**:
 `--void #F8FAFC` (nền) · `--deep #FFFFFF` (bề mặt) · nebula indigo `#E0E7FF` / violet `#EDE9FE` /
 teal `#CCFBF1` · `--starlight #0284C7` (primary) · `--pulsar #9333EA` · `--solar #D97706` ·
-`--supernova #E11D48` · `--aurora #059669` · text `#0F172A / #475569 / #94A3B8` ·
+`--supernova #E11D48` · `--aurora #059669` · text `#0F172A / #475569 / #5F6E83` ·
 `--orbit #E2E8F0` (hairline).
+`--text-muted` là `#5F6E83` từ UX-7 (trước là `#94A3B8`, chỉ ~2,6:1): đạt ≥ 4,5:1 trên trắng / `--void` / `#F1F5F9` / `#E0F2FE` mà vẫn nhạt hơn `--text-secondary`. Đổi token này phải giữ ≥ 4,5:1 trên cả bốn nền đó. `--mail-muted` là màu của THƯ (khung xem trước), không theo token console.
 
 Surface `.cosmic-surface`: `bg rgba(255,255,255,.85)`, `backdrop-blur(16px)`, border `--orbit`,
 radius 16, shadow mảnh; `--glow-panel` là bóng đổ nhạt (không phải quầng sáng neon);

@@ -8,7 +8,7 @@ export const cosmicTokens = {
   aurora: '#059669',
   primaryText: '#0F172A',
   secondaryText: '#475569',
-  mutedText: '#94A3B8',
+  mutedText: '#5F6E83',
   orbit: '#E2E8F0',
 } as const
 
