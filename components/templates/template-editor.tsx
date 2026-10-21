@@ -308,7 +308,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           )}
         </div>
 
-        <TabsContent value="compose" className={cn('min-w-0', !fullBleed && PAGE_PAD)}>
+        {/* `keepMounted`: sang tab khác chỉ ẨN tab Soạn thư. Gỡ đi là huỷ bộ soạn trực quan — mọi chỉnh sửa chưa lưu
+            trong thư mất, và "Lưu nháp" bấm ở tab khác gửi bản đã lưu lần trước (nội dung thư chỉ nằm trong GrapesJS). */}
+        <TabsContent value="compose" keepMounted className={cn('min-w-0', !fullBleed && PAGE_PAD)}>
           <ComposeTab
             ed={ed}
             onAi={() => {

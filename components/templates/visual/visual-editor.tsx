@@ -329,6 +329,22 @@ export default function VisualEditor({
     editor?.setDevice(device)
   }, [editor, device])
 
+  // Tab Soạn thư được GIỮ trên trang khi sang tab khác (`keepMounted`, chỉ ẩn bằng `hidden`) — bộ soạn không bị huỷ.
+  // Biết đang hiện hay ẩn qua kích thước: ẩn thì không dựng thanh dưới (nó ở <body>, không bị ẩn theo); hiện lại thì
+  // GrapesJS đo lại khung (vị trí khung chọn / thanh công cụ tính lúc ẩn là 0).
+  const rootRef = useRef<HTMLDivElement>(null)
+  const [shown, setShown] = useState(true)
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => setShown((entry?.contentRect.width ?? 0) > 0))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  useEffect(() => {
+    if (shown) editor?.refresh()
+  }, [editor, shown])
+
   const footerNote = t('footerNote')
   useEffect(() => {
     if (editor) paintCanvas(editor, settings.width, footerNote)
@@ -376,6 +392,7 @@ export default function VisualEditor({
 
   return (
     <div
+      ref={rootRef}
       className="visual-editor grid h-full min-h-0 grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)_17rem] xl:grid-cols-[17rem_minmax(0,1fr)_19rem]"
       data-testid="visual-editor"
     >
@@ -410,8 +427,8 @@ export default function VisualEditor({
           <>
           <div aria-hidden className="h-[calc(3.5rem+env(safe-area-inset-bottom))] flex-none md:hidden" />
           {/* Qua portal vào <body>: tổ tiên trong console (Panel có backdrop-filter, motion có transform) làm `fixed`
-              bám theo nó thay vì khung nhìn (CLAUDE.md: overlay -> createPortal(document.body)). */}
-          {createPortal(
+              bám theo nó thay vì khung nhìn (CLAUDE.md: overlay -> createPortal(document.body)). Tab đang ẩn thì không dựng. */}
+          {shown && createPortal(
             <nav
               className={cn(
                 'fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[var(--orbit)] bg-[var(--deep)] pb-[env(safe-area-inset-bottom)] shadow-[var(--glow-panel)] md:hidden',

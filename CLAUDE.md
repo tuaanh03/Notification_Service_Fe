@@ -613,7 +613,7 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
         là CSS RIÊNG của khung soạn (`CANVAS_CSS` + `paintCanvas` trong `visual-editor.tsx`: lề, bo góc, bóng `--glow-panel`,
         bề rộng theo Cài đặt thư, dòng chân thư `::after`, ẩn `mj-head`) — không vào MJML / HTML. `wrapper` / `mjml` /
         `mj-body` không rê / chọn được (`quietBodyPlugin`, đặt qua mặc định của kiểu — không vào JSON dự án). Không có nháp / App Viewer -> hiện HTML đã lưu bằng `PreviewPane`, không mở bộ soạn. Bộ soạn key theo id
-        bản nháp: lưu cùng bản không dựng lại.
+        bản nháp: lưu cùng bản không dựng lại. Tab Soạn thư `keepMounted` — sang tab khác chỉ ẩn, bộ soạn sống tiếp (mục 6).
     *   **Bảng trái** (`left-panel.tsx`, bản phác Main): tab Khối / Bố cục / Cài đặt — 3 nút bằng nhau, tab đang chọn nền
         xanh nhạt (không dùng thanh xám của TabsList mặc định); thẻ khối cao 72px bo 10px; tab Khối có thêm "2 cột". Rộng
         15rem (17rem từ `xl`), bảng phải 17rem (19rem). Thẻ khối KÉO vào thư
@@ -877,6 +877,7 @@ Không chắc một thay đổi có đụng rule không → mở `../../use_case
 | Docker build fail ở `next/font` | build không có internet để tải Google Fonts | build trên máy có mạng; không đổi sang font local nếu chưa được duyệt |
 | Trang trắng, asset 404 sau khi đổi prefix | `BASE_PATH` lúc build khác đường dẫn đang phục vụ | `BASE_PATH` là quyết định BUILD-TIME, build lại khi đổi (mục 2.1) |
 | Link nhảy ra ngoài prefix | dùng `<a href="/…">` thô | dùng `next/link` |
+| Chỉnh sửa trong thư (kiểu trực quan) MẤT khi sang tab khác rồi quay lại, hoặc "Lưu nháp" bấm ở tab khác lưu bản cũ | `<Tabs>` base-ui GỠ panel không mở -> bộ soạn GrapesJS bị huỷ (nội dung thư chỉ nằm trong nó); `content()` không còn bộ soạn để hỏi, gửi bản đã lưu | `keepMounted` cho tab Soạn thư (`template-editor.tsx`); bộ soạn tự biết đang ẩn / hiện qua `ResizeObserver` (`refresh()` khi hiện lại, không dựng thanh dưới qua portal khi ẩn). Đừng gỡ `keepMounted` |
 | Mở dropdown là trắng trang, console `Base UI error #31` | `DropdownMenuLabel` (= `Menu.GroupLabel`) đặt NGOÀI `<DropdownMenuGroup>` | để label bên trong group; message thật nằm ở `node_modules/@base-ui/react/esm/menu/group/MenuGroupContext.js` |
 | Trang quản trị hiện dữ liệu rỗng dù backend chết | nuốt lỗi API | `<EmptyState>` / `<NoAppsScreen>` nêu mã lỗi (mục 2.2) |
 | Ô nhập trong dialog giữ giá trị của lần mở trước | `<ConfirmDialog>` chỉ bật/tắt `open`, component không remount; reset trong `onCancel` không chạy khi đóng do thành công | `key` theo mục tiêu (`app.id:action`) để React dựng lại — với dialog ghi audit thì đây là bug **ghi sai dữ liệu**, không phải lỗi hiển thị |
