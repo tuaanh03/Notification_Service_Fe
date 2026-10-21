@@ -723,9 +723,11 @@ Nhóm `auth.*` KHÔNG hiện ở trang này (`isSecuritySetting`) — nó ở m�
 
 ### 2.15. Theo dõi & Bảo mật (`/admin/security`) — chặn đăng nhập sai, chỉ Super Admin
 
-ADR-0039 của backend. Trên: 6 quy tắc `auth.*` (cùng kho cài đặt hệ thống, cùng `useSettingsEditor` của
-`system-settings-panel.tsx` — mỗi dòng lưu riêng). Dưới: bảng khoá đang giữ (`GET /admin/login-locks`) — khoá tạm theo
-email / IP (tự mở), khoá hẳn (chỉ mở ở đây); "Mở khoá" luôn qua `<ConfirmDialog>` (`POST …/unlock`). Đăng nhập mật khẩu:
+ADR-0039 của backend. TRÊN: bảng khoá đang giữ (`GET /admin/login-locks`) — việc hay làm nhất — khoá tạm theo email / IP
+(tự mở), khoá hẳn (chỉ mở ở đây); "Mở khoá" luôn qua `<ConfirmDialog>` (`POST …/unlock`); điện thoại ẩn cột Loại, nhãn
+loại xuống dưới email để nút Mở khoá còn trong khung; ô lọc chỉ hiện khi ≥ 8 dòng. DƯỚI: 6 quy tắc `auth.*` trong
+`Collapsible` đóng sẵn, đầu khối là MỘT dòng tóm tắt luật đang áp (cùng kho cài đặt hệ thống, `useSettingsEditor(…,
+{ showKeys: false })` — không in mã `auth.*`, mỗi dòng lưu riêng). Đăng nhập mật khẩu:
 `signIn` gửi IP thật của trình duyệt (`X-Real-IP` của NPM, thiếu thì phần tử CUỐI của `X-Forwarded-For`) kèm
 `LOGIN_CLIENT_IP_SECRET` — biến này phải CÙNG giá trị ở web và api, trống thì backend chỉ đếm theo email. Người bị khoá
 chỉ thấy `INVALID_CREDENTIALS` (câu có nhắc "nhập sai nhiều lần sẽ bị tạm khoá"); M365 bị khoá hẳn -> `ADMIN_LOCKED`.

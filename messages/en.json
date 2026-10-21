@@ -1450,7 +1450,12 @@
     "unlockFailed": "Unlock failed",
     "notFound": "This lock just expired or someone already lifted it. The list has been reloaded.",
     "cliHint": "If the Super Admin is the one locked out: run <cmd>admin-cli unlock-login --email …</cmd> in the api container.",
-    "auditHint": "Lock / unlock history is in the Audit log (LoginLocked, AdminLocked, LoginUnlocked)."
+    "auditHint": "Lock / unlock history is in the Audit log (LoginLocked, AdminLocked, LoginUnlocked).",
+    "rulesSummaryOn": "On · {max} failures within {window} minutes lock for {lock} minutes · {ip} failures from one IP lock that IP · permanent lock: {permanent}",
+    "rulesSummaryOff": "Off — failures are not counted, nothing is locked",
+    "permanentNever": "never",
+    "permanentAfter": "after {count} temporary locks in a row",
+    "rulesEdit": "Edit"
   },
   "quota": {
     "title": "Channels & Quota",

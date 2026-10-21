@@ -1450,7 +1450,12 @@
     "unlockFailed": "Mở khoá không thành công",
     "notFound": "Khoá này vừa tự hết hạn hoặc đã có người mở. Đã tải lại danh sách.",
     "cliHint": "Chính Super Admin bị khoá: chạy <cmd>admin-cli unlock-login --email …</cmd> trong container api.",
-    "auditHint": "Lịch sử khoá / mở khoá nằm ở Audit log (LoginLocked, AdminLocked, LoginUnlocked)."
+    "auditHint": "Lịch sử khoá / mở khoá nằm ở Audit log (LoginLocked, AdminLocked, LoginUnlocked).",
+    "rulesSummaryOn": "Đang bật · sai {max} lần trong {window} phút thì khoá {lock} phút · một IP sai {ip} lần thì khoá IP · khoá hẳn: {permanent}",
+    "rulesSummaryOff": "Đang tắt — không đếm lần sai, không khoá tạm",
+    "permanentNever": "không bao giờ",
+    "permanentAfter": "sau {count} lần khoá tạm liên tiếp",
+    "rulesEdit": "Chỉnh"
   },
   "quota": {
     "title": "Kênh & Quota",

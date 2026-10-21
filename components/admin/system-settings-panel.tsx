@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import type { SystemSettingDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
+import { cn } from '@/lib/utils'
 
 /** next-intl coi `.` là tầng lồng — khoá câu dịch không chứa tên cài đặt nguyên văn. */
 const LABEL: Partial<
@@ -79,7 +80,12 @@ const groupOf = (key: string): 'apps' | 'templates' | 'incoming' =>
  * `null`. Ô số chỉ nhận trong khoảng backend cho phép — backend vẫn kiểm lại. `include` chọn khoá của trang đang xem
  * (backend luôn trả đủ mọi khoá).
  */
-export function useSettingsEditor(initial: SystemSettingDto[], include: (key: string) => boolean) {
+export function useSettingsEditor(
+  initial: SystemSettingDto[],
+  include: (key: string) => boolean,
+  /** `showKeys: false` = không in mã khoá (`auth.max_failed_attempts`) — chỉ còn khoảng cho phép + mặc định. */
+  { showKeys = true }: { showKeys?: boolean } = {},
+) {
   const t = useTranslations('systemSettings')
   const te = useTranslations('errors')
   const [all, setSettings] = useState(initial)
@@ -123,10 +129,14 @@ export function useSettingsEditor(initial: SystemSettingDto[], include: (key: st
           {label ? t(label.label) : s.key}
         </Label>
         <p className="mt-1 text-xs text-[var(--text-secondary)]">{label ? t(label.help) : null}</p>
-        <p className="mt-1 font-mono text-[11px] text-[var(--text-muted)]">
-          {s.key}
-          {s.kind === 'int' && ` · ${t('range', { min: s.min ?? 0, max: s.max ?? 0 })}`}
-          {` · ${t('default', { value: shownDefault })}`}
+        <p className={cn('mt-1 text-[11px] text-[var(--text-muted)]', showKeys && 'font-mono')}>
+          {[
+            showKeys ? s.key : null,
+            s.kind === 'int' ? t('range', { min: s.min ?? 0, max: s.max ?? 0 }) : null,
+            t('default', { value: shownDefault }),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
         <p className="mt-1 text-[11px] text-[var(--text-muted)]">
           {s.customized && s.updatedAt ? t('customized', { at: fmtDateTime(s.updatedAt) }) : t('usingDefault')}
