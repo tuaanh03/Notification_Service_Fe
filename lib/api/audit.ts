@@ -66,7 +66,8 @@ function summarize(payload: Record<string, unknown> | null): string | undefined 
 /** `AuditEntryDto` -> `AuditEntry` mà `<AuditTrail>` đang đọc. */
 export function toAuditEntry(dto: AuditEntryDto): AuditEntry {
   return {
-    actor: dto.actor,
+    // Có email thì hiện email; còn lại giữ ID — `<AuditTrail>` đổi UUID thành nhãn theo `actorType`.
+    actor: dto.actorEmail ?? dto.actor,
     actorType: dto.actorType,
     // Giữ TÊN EVENT — `<AuditTrail>` dịch theo ngôn ngữ đang chọn (`messages/*.json` nhóm `auditActions`).
     action: dto.action,

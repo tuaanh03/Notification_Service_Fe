@@ -14,7 +14,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'cosmic-surface rounded-2xl',
+        'cosmic-surface rounded-xl',
         glow && 'shadow-[var(--glow-panel)]',
         ring && 'orbit-ring relative',
         className,

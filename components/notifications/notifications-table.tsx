@@ -10,6 +10,7 @@ import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { Panel } from '@/components/panel'
 import { StatusPill, useStatusLabel } from '@/components/status-pill'
+import { StatusTabs, type StatusTab } from '@/components/status-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -145,6 +146,7 @@ export function NotificationsTable({
 
   const [rows, setRows] = useState<NotificationSummaryDto[] | null>(null)
   const [total, setTotal] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Partial<Record<string, number>>>({})
   const [offset, setOffset] = useState(0)
   const [status, setStatus] = useState('')
   const [topic, setTopic] = useState('')
@@ -162,6 +164,7 @@ export function NotificationsTable({
     if (result.ok) {
       setRows(result.data.rows)
       setTotal(result.data.total)
+      setStatusCounts(result.data.statusCounts ?? {})
       setLoadError(null)
     } else {
       setRows(null)
@@ -208,6 +211,15 @@ export function NotificationsTable({
     setOffset(0)
   }
   const to = Math.min(offset + PAGE_SIZE, total)
+  // "Đã gửi" và "Lỗi" luôn có tab (0 cũng là câu trả lời); trạng thái khác chỉ hiện khi có thư hoặc đang chọn.
+  const statusTabs: StatusTab[] = [
+    { value: '', label: tc('all'), count: Object.values(statusCounts).reduce<number>((n, c) => n + (c ?? 0), 0) },
+    ...MVP_STATUSES.filter((s) => s === 'sent' || s === 'failed' || s === status || (statusCounts[s] ?? 0) > 0).map((s) => ({
+      value: s,
+      label: statusLabel(s),
+      count: statusCounts[s] ?? 0,
+    })),
+  ]
 
   if (loadError) {
     return (
@@ -253,26 +265,6 @@ export function NotificationsTable({
           </div>
         )}
         <div className="space-y-1">
-          <Label htmlFor="ntf-status" className="text-xs">
-            {t('colStatus')}
-          </Label>
-          <NativeSelect
-            id="ntf-status"
-            value={status}
-            onChange={(e) => {
-              setOffset(0)
-              setStatus(e.target.value)
-            }}
-          >
-            <NativeSelectOption value="">{tc('all')}</NativeSelectOption>
-            {MVP_STATUSES.map((s) => (
-              <NativeSelectOption key={s} value={s}>
-                {statusLabel(s)}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </div>
-        <div className="space-y-1">
           <Label htmlFor="ntf-topic" className="text-xs">
             {t('colTopic')}
           </Label>
@@ -299,6 +291,16 @@ export function NotificationsTable({
         )}
         <span className="ml-auto pb-2 text-xs tabular-nums text-[var(--text-muted)]">{t('count', { count: total })}</span>
       </div>
+
+      <StatusTabs
+        label={t('colStatus')}
+        value={status}
+        onChange={(next) => {
+          setOffset(0)
+          setStatus(next)
+        }}
+        tabs={statusTabs}
+      />
 
       <DataTable<Row>
         hideSearch

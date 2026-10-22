@@ -302,6 +302,8 @@ export type NotificationPageDto = {
   total: number
   limit: number
   offset: number
+  /** Số thư theo trạng thái — cùng bộ lọc chủ đề / người nhận, bỏ lọc trạng thái (tab đếm). API cũ không có. */
+  statusCounts?: Partial<Record<string, number>>
 }
 
 /**
@@ -327,6 +329,9 @@ export type AuditEntryDto = {
   after: Record<string, unknown> | null
   source: string
   at: string
+  /** Người làm là tài khoản EWS -> email / tên (API đã tra sẵn); app, hệ thống, CLI -> `null`. */
+  actorEmail?: string | null
+  actorName?: string | null
 }
 
 /**

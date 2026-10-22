@@ -13,6 +13,7 @@ import { StatPill } from '@/components/stat-pill'
 import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { AuditTrail } from '@/components/audit-trail'
 import { EmptyState } from '@/components/empty-state'
+import { SetupGuide } from '@/components/setup-guide'
 import { useExclusionLabel, useOutcomeOf } from '@/components/notifications/notification-outcome'
 import { useApp } from '@/components/app-context'
 import type { AppOverviewDto } from '@/lib/api/types'
@@ -180,6 +181,13 @@ function Overview({ view }: { view: OverviewView }) {
 
   return (
     <>
+      <SetupGuide
+        steps={[
+          { key: 'topic', done: o.topics.active > 0, href: '/topics' },
+          { key: 'recipient', done: o.recipients.total > 0, href: '/users' },
+          { key: 'send', done: recent.length > 0, href: '/compose' },
+        ]}
+      />
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatPill
           label={t('statSends')}

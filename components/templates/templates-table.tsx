@@ -9,10 +9,10 @@ import { useAppRouter } from '@/components/app-link'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { StatusPill, useStatusLabel } from '@/components/status-pill'
+import { StatusTabs } from '@/components/status-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateSummaryDto } from '@/lib/api/types'
 import { isTemplateCategory, TEMPLATE_CATEGORIES, type TemplateCategory } from '@/lib/template-categories'
 import { fmtDateTime } from '@/lib/time'
@@ -70,7 +70,8 @@ export function TemplatesTable() {
   const router = useAppRouter()
   const [rows, setRows] = useState<TemplateSummaryDto[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [status, setStatus] = useState<string[]>(['active'])
+  /** `''` = tất cả. Mặc định chỉ template đang dùng. */
+  const [status, setStatus] = useState('active')
   const [category, setCategory] = useState<TemplateCategory | ''>('')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -114,7 +115,8 @@ export function TemplatesTable() {
     )
   }
 
-  const filtered = (rows ?? []).filter((t) => status.length === 0 || status.includes(t.status))
+  const filtered = (rows ?? []).filter((t) => status === '' || t.status === status)
+  const countOf = (s: string) => (rows ?? []).filter((t) => t.status === s).length
   const filtering = category !== '' || search !== ''
   return (
     <div className="space-y-4">
@@ -141,12 +143,17 @@ export function TemplatesTable() {
             <NativeSelectOption key={c} value={c}>{tcat(c)}</NativeSelectOption>
           ))}
         </NativeSelect>
-        <ToggleGroup multiple variant="outline" size="sm" value={status} onValueChange={(v) => setStatus(v as string[])} aria-label={tt('colStatus')}>
-          <ToggleGroupItem value="active">{statusLabel('active')}</ToggleGroupItem>
-          <ToggleGroupItem value="archived">{statusLabel('archived')}</ToggleGroupItem>
-        </ToggleGroup>
-        {rows && <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{filtered.length}/{rows.length}</span>}
       </div>
+      <StatusTabs
+        label={tt('colStatus')}
+        value={status}
+        onChange={setStatus}
+        tabs={[
+          { value: 'active', label: statusLabel('active'), count: countOf('active') },
+          { value: 'archived', label: statusLabel('archived'), count: countOf('archived') },
+          { value: '', label: tc('all'), count: rows?.length ?? 0 },
+        ]}
+      />
       <DataTable<Row>
         columns={columns}
         rows={filtered as Row[]}
