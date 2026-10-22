@@ -79,7 +79,7 @@ async function Document({ children }: { children: React.ReactNode }) {
       <body className={`${inter.variable} ${space.variable} ${mono.variable} antialiased`}>
         <NextIntlClientProvider>
           {children}
-          <Toaster theme="light" position="bottom-right" richColors />
+          <Toaster theme="light" position="bottom-right" />
         </NextIntlClientProvider>
       </body>
     </html>

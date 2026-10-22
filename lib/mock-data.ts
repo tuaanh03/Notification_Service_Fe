@@ -55,6 +55,8 @@ export type Notification = {
 }
 export type AuditEntry = {
   actor: string
+  /** `admin` | `app` | `user` | `system` — khi `actor` chỉ là ID, hiện nhãn theo loại thay cho ID. */
+  actorType?: string
   action: string
   from?: string
   to?: string

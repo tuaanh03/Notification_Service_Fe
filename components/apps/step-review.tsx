@@ -54,7 +54,7 @@ export function StepReview({
           </dl>
         </Panel>
         <Panel className="p-4">
-          <h3 className="mb-4 text-xs font-semibold text-[var(--pulsar)]">{t('topicsCount', { count: topics.length })}</h3>
+          <h3 className="mb-4 text-xs font-semibold text-[var(--text-secondary)]">{t('topicsCount', { count: topics.length })}</h3>
           {topics.map((topic, index) => (
             <div key={`${topic.key}-${index}`} className="mb-3 border-b border-[var(--orbit)] pb-3 last:border-0">
               <p className="font-mono text-xs">{topic.key}</p>

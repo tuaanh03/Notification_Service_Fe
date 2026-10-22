@@ -6,12 +6,17 @@ import { tOr } from '@/i18n/dynamic'
 import { SourceBadge } from './source-badge'
 import { useStatusLabel } from './status-pill'
 import type { AuditEntry } from '@/lib/mock-data'
+
+/** ID thô (UUID) không nói gì với người đọc — hiện loại người làm, ID để trong tooltip. */
+const RAW_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function AuditTrail({ entries }: { entries: AuditEntry[] }) {
   // `action` là tên event backend (`AppApproved`…) -> câu theo ngôn ngữ; event chưa có câu dịch
   // (hoặc chữ mock) thì hiện nguyên.
   const t = useTranslations('auditActions')
   // `from` / `to` thường là trạng thái (`pending_approval` -> `active`) — dịch được thì dịch, còn lại (hint khoá, IP) giữ nguyên.
   const statusLabel = useStatusLabel()
+  const ta = useTranslations('auditActors')
   return (
     <div className="space-y-4">
       {entries.map((e, i) => (
@@ -21,11 +26,17 @@ export function AuditTrail({ entries }: { entries: AuditEntry[] }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-mono text-[var(--text-primary)]">{e.actor}</span>
+              {RAW_ID.test(e.actor) ? (
+                <span title={e.actor} className="font-medium text-[var(--text-primary)]">
+                  {tOr(ta, e.actorType ?? 'system')}
+                </span>
+              ) : (
+                <span className="font-medium break-all text-[var(--text-primary)]">{e.actor}</span>
+              )}
               <span className="text-[var(--text-secondary)]">{tOr(t, e.action)}</span>
               {/* Thêm / cấp chỉ có `to`, gỡ / thu hồi chỉ có `from` — vẫn phải hiện giá trị đó. */}
               {(e.from || e.to) && (
-                <span className="font-mono text-[var(--text-muted)]">
+                <span className="text-[var(--text-muted)]">
                   {e.from && statusLabel(e.from)}
                   {e.from && e.to && <ArrowRight className="mx-1 inline size-3" />}
                   {e.to && statusLabel(e.to)}

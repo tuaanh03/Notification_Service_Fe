@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
+import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import { humanizeKey } from '@/lib/variable-labels'
 
 const HEADERS = ['colLabel', 'colRequired', 'colSample', null] as const
@@ -36,7 +37,7 @@ export function SchemaPane({ ed, locked }: { ed: TemplateEditorState; locked: bo
       )}
       <div className="overflow-x-auto">
         <Table className="text-[12px]">
-          <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+          <TableHeader className={TABLE_HEADER_CLASS}>
             <TableRow className="hover:bg-transparent">
               {HEADERS.map((h, i) => (
                 <TableHead key={i} className="px-2">{h && t(h)}</TableHead>

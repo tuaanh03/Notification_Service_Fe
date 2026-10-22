@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Panel } from '@/components/panel'
 import { StatPill } from '@/components/stat-pill'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { AuditTrail } from '@/components/audit-trail'
 import { EmptyState } from '@/components/empty-state'
 import { useExclusionLabel, useOutcomeOf } from '@/components/notifications/notification-outcome'
@@ -170,6 +170,7 @@ function Overview({ view }: { view: OverviewView }) {
   const num = useNum()
   const exclusion = useExclusionLabel()
   const outcomeOf = useOutcomeOf()
+  const statusLabel = useStatusLabel()
   const { overview: o, recent, activity } = view
   const distribution = MVP_STATUSES.map((status) => ({ name: status, value: o.byStatus[status] ?? 0 }))
   const windowTotal = distribution.reduce((n, d) => n + d.value, 0)
@@ -185,20 +186,31 @@ function Overview({ view }: { view: OverviewView }) {
           value={num(o.sends.total)}
           delta={deltaOf(o.sends)}
           trend={o.hourly.map((h) => h.sent + h.failed + h.blocked + h.pending)}
+          hint={t('hintSends')}
         />
-        <StatPill label={t('statFailed')} value={num(o.byStatus.failed ?? 0)} trend={o.hourly.map((h) => h.failed)} />
-        <StatPill label={t('statWaiting')} value={num(o.queue.waiting)} />
+        <StatPill
+          label={t('statFailed')}
+          value={num(o.byStatus.failed ?? 0)}
+          trend={o.hourly.map((h) => h.failed)}
+          hint={t('hintFailed')}
+        />
+        <StatPill label={t('statWaiting')} value={num(o.queue.waiting)} hint={t('hintWaiting')} />
         <StatPill
           label={t('statRecipients')}
           value={`${num(o.recipients.emailActive)}/${num(o.recipients.total)}`}
+          hint={t('hintRecipients')}
         />
         {/* Ô thứ 5: hai cột thì trải cả hàng, khỏi nằm lẻ nửa hàng. */}
         <div className="flex sm:col-span-2 xl:col-span-1">
-          <StatPill label={t('statOpenRate')} value={openRate(o.opens)} />
+          <StatPill
+            label={t('statOpenRate')}
+            value={openRate(o.opens)}
+            hint={o.opens && o.opens.tracked > 0 ? t('hintOpenRate') : t('hintOpenRateNone')}
+          />
         </div>
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
-        <Panel className="p-5" glow>
+        <Panel className="p-5">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold">{t('hourlyTitle')}</h2>
@@ -262,7 +274,7 @@ function Overview({ view }: { view: OverviewView }) {
         </Panel>
         <Panel className="p-5">
           <div className="mb-3 flex items-center gap-2">
-            <Activity className="size-4 text-[var(--pulsar)]" />
+            <Activity className="size-4 text-[var(--starlight)]" />
             <h2 className="text-sm font-semibold">{t('statusTitle')}</h2>
           </div>
           {windowTotal === 0 ? (
@@ -284,8 +296,8 @@ function Overview({ view }: { view: OverviewView }) {
                 {distribution.map((d) => (
                   <div key={d.name} className="flex items-center gap-2 text-[11px]">
                     <i className="size-1.5 rounded-full" style={{ backgroundColor: statusColors[d.name] }} />
-                    <span className="font-mono text-[var(--text-secondary)]">{d.name}</span>
-                    <b className="font-mono tabular-nums">{num(d.value)}</b>
+                    <span className="text-[var(--text-secondary)]">{statusLabel(d.name)}</span>
+                    <b className="tabular-nums">{num(d.value)}</b>
                   </div>
                 ))}
               </div>
@@ -298,7 +310,7 @@ function Overview({ view }: { view: OverviewView }) {
                 {blockedReasons.map(([reason, n]) => (
                   <div key={reason} className="flex justify-between gap-3 text-[11px]">
                     <span className="text-[var(--text-secondary)]">{exclusion(reason)}</span>
-                    <b className="font-mono tabular-nums">{num(n)}</b>
+                    <b className="tabular-nums">{num(n)}</b>
                   </div>
                 ))}
               </div>
@@ -365,7 +377,7 @@ function Overview({ view }: { view: OverviewView }) {
             {recent.map((n) => (
               <div key={n.id} className="flex items-center justify-between gap-4 px-5 py-3 text-xs">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="hidden shrink-0 font-mono text-[var(--text-muted)] sm:inline">{fmtDateTime(n.createdAt)}</span>
+                  <span className="hidden shrink-0 tabular-nums text-[var(--text-muted)] sm:inline">{fmtDateTime(n.createdAt)}</span>
                   <span className="truncate font-mono text-[var(--text-secondary)]">{n.topic || '—'}</span>
                   <span className="truncate font-mono text-[var(--text-muted)]">{n.externalId ?? '—'}</span>
                 </div>

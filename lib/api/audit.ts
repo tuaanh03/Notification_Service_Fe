@@ -67,6 +67,7 @@ function summarize(payload: Record<string, unknown> | null): string | undefined 
 export function toAuditEntry(dto: AuditEntryDto): AuditEntry {
   return {
     actor: dto.actor,
+    actorType: dto.actorType,
     // Giữ TÊN EVENT — `<AuditTrail>` dịch theo ngôn ngữ đang chọn (`messages/*.json` nhóm `auditActions`).
     action: dto.action,
     ...(summarize(dto.before) === undefined ? {} : { from: summarize(dto.before) }),

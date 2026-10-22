@@ -55,7 +55,7 @@ function Step({ label, at }: { label: string; at: string | null }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-dashed py-1.5 last:border-b-0">
       <span className="text-xs text-[var(--text-secondary)]">{label}</span>
-      <span className="font-mono text-xs tabular-nums">{at ? fmtDateTime(at) : '—'}</span>
+      <span className="text-xs tabular-nums">{at ? fmtDateTime(at) : '—'}</span>
     </div>
   )
 }

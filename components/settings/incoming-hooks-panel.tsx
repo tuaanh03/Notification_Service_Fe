@@ -34,6 +34,7 @@ import {
   type TopicDto,
 } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
+import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
 type View = { list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[] }
@@ -435,7 +436,7 @@ function CallLog({ appId, hookId }: { appId: string; hookId: string }) {
   return (
     <div className="overflow-x-auto">
       <Table className="text-xs">
-        <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+        <TableHeader className={TABLE_HEADER_CLASS}>
           <TableRow className="hover:bg-transparent">
             <TableHead className="px-2">{t('colTime')}</TableHead>
             <TableHead className="px-2">{t('colOutcome')}</TableHead>

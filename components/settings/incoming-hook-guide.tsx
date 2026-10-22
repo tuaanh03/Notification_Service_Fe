@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import { loadTemplateVariablesAction, previewIncomingHookAction } from '@/app/settings/webhooks/actions'
 import { CodeBlock } from '@/components/code-block'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -83,7 +84,7 @@ export function IncomingHookGuide({ appId, topicId, templateId }: { appId: strin
       ) : (
         <div className="overflow-x-auto">
           <Table className="text-xs">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+            <TableHeader className={TABLE_HEADER_CLASS}>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="px-2">{t('colField')}</TableHead>
                 <TableHead className="px-2" />
@@ -115,7 +116,7 @@ export function IncomingHookGuide({ appId, topicId, templateId }: { appId: strin
       </Collapsible>
       {mail && (
         <div className="rounded-lg border border-[var(--orbit)] p-3">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{t('mailTitle')}</p>
+          <p className="text-xs font-semibold text-[var(--text-secondary)]">{t('mailTitle')}</p>
           <p className="mt-1 font-medium">{mail.subject}</p>
           <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] text-[var(--text-secondary)]">{mail.text}</pre>
         </div>

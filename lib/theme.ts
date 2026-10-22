@@ -61,3 +61,9 @@ export const notificationStatuses = [
 ] as const
 export type Status = keyof typeof statusColors
 export type NotificationStatus = (typeof notificationStatuses)[number]
+
+/**
+ * Tiêu đề cột dùng chung cho mọi bảng: chữ thường, đậm vừa, nền xám nhạt. Không VIẾT HOA giãn chữ —
+ * tiếng Việt có dấu viết hoa cỡ nhỏ rất khó đọc ("KẾT CỤC", "ĐANG XUẤT BẢN").
+ */
+export const TABLE_HEADER_CLASS = 'bg-muted text-xs font-semibold text-[var(--text-secondary)]'

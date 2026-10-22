@@ -8,7 +8,6 @@ import type { AdminDto } from '@/lib/api/auth'
 import { consoleOrgs } from '@/lib/access'
 import { ADMIN_HOME, ORGS_APPS, ORGS_HOME, orgMembersPath, orgPath } from '@/lib/app-routes'
 import { AppLink } from './app-link'
-import { CosmicBackground } from './cosmic-background'
 import { useRole } from './role-context'
 import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
 import {
@@ -79,9 +78,8 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
 
   return (
     <div className="min-h-screen relative flex">
-      <CosmicBackground />
       <SidebarProvider defaultOpen>
-        <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar/95 backdrop-blur-xl">
+        <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar">
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
             <SidebarBrand href={ORGS_HOME} subtitle="Notification Hub" />
           </SidebarHeader>
@@ -104,7 +102,7 @@ export function OrgsShell({ children, admin }: { children: React.ReactNode; admi
 
               {org && (
                 <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
-                  <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
+                  <SidebarGroupLabel className="text-xs font-medium text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
                     {org.name}
                   </SidebarGroupLabel>
                   <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">

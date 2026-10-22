@@ -151,6 +151,12 @@
     "underConstruction": "Đang xây dựng",
     "underConstructionBody": "Tính năng này đang được hoàn thiện."
   },
+  "auditActors": {
+    "admin": "Quản trị viên",
+    "app": "App",
+    "user": "Người nhận",
+    "system": "Hệ thống"
+  },
   "auditActions": {
     "AppCreated": "tạo app",
     "AppSubmittedForReview": "gửi app đi duyệt",
@@ -193,6 +199,8 @@
     "AppSendWindowChanged": "đổi khung giờ gửi",
     "AppPacingChanged": "đổi dàn đều",
     "AppPacingCeilingChanged": "đổi trần tốc độ",
+    "AppHourlyCeilingChanged": "đổi giới hạn gửi mỗi giờ",
+    "AppRecipientLimitChanged": "đổi giới hạn thư cho mỗi người nhận",
     "NotificationScheduled": "hẹn gửi theo giới hạn gửi",
     "AccountCreated": "tạo account",
     "AdminCreated": "tạo tài khoản EWS",
@@ -205,6 +213,8 @@
     "AdminPasswordChanged": "đổi mật khẩu",
     "AdminMicrosoftLinked": "gắn tài khoản Microsoft",
     "OrganizationCreated": "tạo tổ chức",
+    "OrganizationRenamed": "đổi tên tổ chức",
+    "OrganizationDeleted": "xoá tổ chức",
     "OrgMemberSet": "thêm / đổi vai thành viên",
     "OrgMemberRemoved": "gỡ thành viên",
     "TenantDirectorySynced": "đồng bộ danh bạ M365",
@@ -268,6 +278,12 @@
     "statWaiting": "Đang chờ gửi",
     "statRecipients": "Email dùng được",
     "statOpenRate": "Tỉ lệ mở 24h",
+    "hintSends": "Mọi lần app gọi gửi trong 24 giờ qua",
+    "hintFailed": "Lần gửi kết thúc lỗi — xem lý do ở Lịch sử gửi",
+    "hintWaiting": "Thư đang trong hàng đợi, chưa gửi đi",
+    "hintRecipients": "Người nhận có email nhận được / tổng người nhận",
+    "hintOpenRate": "Trên số thư đã gửi có theo dõi lượt mở",
+    "hintOpenRateNone": "Chưa có thư nào được theo dõi lượt mở trong 24 giờ",
     "hourlyTitle": "Lần gửi theo giờ",
     "hourlySubtitle": "24 giờ gần nhất · theo giờ app gọi · kết cục hiện tại",
     "statusTitle": "Trạng thái lần gửi",

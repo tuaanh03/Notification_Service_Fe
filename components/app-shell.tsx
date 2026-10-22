@@ -18,7 +18,6 @@ import { useAppSelection } from './app-context'
 import { AppLink } from './app-link'
 import { ADMIN_HOME, isWorkspaceRoute } from '@/lib/app-routes'
 import { useRole } from './role-context'
-import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
 import { isPreviewRoute } from '@/lib/preview-routes'
 import { AppSwitcher } from './app-switcher'
@@ -105,12 +104,11 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
 
   return (
     <div className="min-h-screen relative flex">
-      <CosmicBackground />
       <SidebarProvider
         open={workspace ? workspaceMenuOpen : menuOpen}
         onOpenChange={workspace ? setWorkspaceMenuOpen : setMenuOpen}
       >
-        <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar/95 backdrop-blur-xl">
+        <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar">
           {/* Header: System Brand Logo & App Service Switcher */}
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] space-y-2 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:space-y-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
             <SidebarBrand href="/" subtitle="Notification Hub" />
@@ -122,7 +120,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
           <SidebarContent className="px-2 py-2 space-y-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-2 group-data-[collapsible=icon]:space-y-1">
             {/* Nhóm Điều hành */}
             <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
                 {tn('groupOperate')}
               </SidebarGroupLabel>
               <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">
@@ -216,7 +214,7 @@ export function AppShell({ children, admin }: { children: React.ReactNode; admin
 
             {/* Nhóm Cài đặt */}
             <SidebarGroup className="group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:py-0.5">
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-data-[collapsible=icon]:hidden">
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
                 {tn('groupSystem')}
               </SidebarGroupLabel>
               <SidebarMenu className="group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-1">

@@ -54,6 +54,7 @@ import {
   type WebhookListDto,
 } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
+import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
 /** Hộp nào đang mở. `endpoint` = URL đang thao tác. */
@@ -299,7 +300,7 @@ export function WebhooksPanel({ embedded = false }: { embedded?: boolean }) {
 
         <div className="overflow-x-auto">
           <Table className="text-[13px]">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+            <TableHeader className={TABLE_HEADER_CLASS}>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="px-3">{t('colUrl')}</TableHead>
                 <TableHead className="px-3">{t('colEvents')}</TableHead>
@@ -551,7 +552,7 @@ function DeliveriesPanel({
       ) : (
         <div className="overflow-x-auto">
           <Table className="text-[13px]">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+            <TableHeader className={TABLE_HEADER_CLASS}>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="px-3">{t('colTime')}</TableHead>
                 <TableHead className="px-3">{t('colEvent')}</TableHead>

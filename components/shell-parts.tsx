@@ -192,7 +192,7 @@ export function AccountMenu({
 
             {/* Ngôn ngữ giao diện — ghi cookie rồi dựng lại trang (`components/locale-switcher.tsx`). */}
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1">
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground px-2 py-1">
                 {tl('label')}
               </DropdownMenuLabel>
               {LOCALES.map((l) => (

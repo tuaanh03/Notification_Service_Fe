@@ -5,15 +5,20 @@ import { cosmicTokens } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { Panel } from './panel'
 
-/** Số lớn mono + label nhỏ + sparkline tuỳ chọn (01 §2). Màu chart từ lib/theme, không hex. */
+/**
+ * Số lớn + label nhỏ + sparkline tuỳ chọn (01 §2). Màu chart từ lib/theme, không hex.
+ * `hint`: một câu dưới con số nói nó đếm gì — và khi số là "—", nói vì sao trống.
+ */
 export function StatPill({
   label,
   value,
+  hint,
   delta,
   trend,
 }: {
   label: string
   value: string | number
+  hint?: string
   /** ví dụ "12.4%" hoặc "-0.3%" — dấu âm → màu supernova */
   delta?: string
   /** 5–12 điểm gần nhất */
@@ -25,11 +30,11 @@ export function StatPill({
       <p className="text-xs text-[var(--text-secondary)]">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-3">
         <div>
-          <strong className="font-mono text-2xl tabular-nums text-[var(--text-primary)]">{value}</strong>
+          <strong className="text-2xl font-semibold tabular-nums text-[var(--text-primary)]">{value}</strong>
           {delta && (
             <span
               className={cn(
-                'ml-2 inline-flex items-center gap-1 font-mono text-xs tabular-nums',
+                'ml-2 inline-flex items-center gap-1 text-xs tabular-nums',
                 down ? 'text-[var(--supernova)]' : 'text-[var(--aurora)]',
               )}
             >
@@ -55,6 +60,7 @@ export function StatPill({
           </div>
         )}
       </div>
+      {hint && <p className="mt-1.5 text-xs text-[var(--text-muted)]">{hint}</p>}
     </Panel>
   )
 }

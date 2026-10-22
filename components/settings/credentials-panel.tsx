@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
+import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
 
@@ -160,7 +161,7 @@ export function CredentialsPanel() {
         </div>
         <div className="overflow-x-auto">
           <Table className="text-[13px]">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+            <TableHeader className={TABLE_HEADER_CLASS}>
               <TableRow className="hover:bg-transparent">
                 {HEADERS.map((h, i) => (
                   <TableHead key={i} className="px-3">

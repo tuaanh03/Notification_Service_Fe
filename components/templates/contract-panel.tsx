@@ -7,6 +7,7 @@ import { Panel } from '@/components/panel'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import { V1_ERROR_CODES, v1ErrorText } from '@/lib/api/v1-errors'
 import type { TemplateVariableDto } from '@/lib/api/types'
 import { samplePayload } from '@/lib/template-syntax'
@@ -54,7 +55,7 @@ export function ContractFields({ variables, note }: { variables: readonly Templa
       ) : (
         <>
           <Table className="hidden text-[13px] sm:table" data-testid="contract-fields">
-            <TableHeader className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+            <TableHeader className={TABLE_HEADER_CLASS}>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="px-2">{t('colLabel')}</TableHead>
                 <TableHead className="px-2">{t('colKey')}</TableHead>

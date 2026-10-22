@@ -37,22 +37,20 @@ function useColumns(): Column<Row>[] {
   {
     key: 'publishedVersion',
     label: tt('colPublished'),
-    mono: true,
     render: (t) =>
       t.publishedVersion === null ? (
         <span className="text-[var(--text-muted)]">{tt('notPublished')}</span>
       ) : (
-        <span className="font-mono">v{t.publishedVersion}</span>
+        <span className="tabular-nums">v{t.publishedVersion}</span>
       ),
   },
   {
     key: 'draftVersion',
     label: tt('colDraft'),
-    mono: true,
-    render: (t) => (t.draftVersion === null ? <span className="text-[var(--text-muted)]">—</span> : <span className="font-mono">v{t.draftVersion}</span>),
+    render: (t) => (t.draftVersion === null ? <span className="text-[var(--text-muted)]">—</span> : <span className="tabular-nums">v{t.draftVersion}</span>),
   },
   { key: 'variableCount', label: tt('colVariables'), numeric: true },
-  { key: 'updatedAt', label: tt('colUpdated'), mono: true, render: (t) => fmtDateTime(t.updatedAt) },
+  { key: 'updatedAt', label: tt('colUpdated'), render: (t) => <span className="tabular-nums">{fmtDateTime(t.updatedAt)}</span> },
 ]
 }
 

@@ -6,7 +6,6 @@ import { Database, History, LayoutDashboard, Layers, ShieldCheck, SlidersHorizon
 import type { AdminDto } from '@/lib/api/auth'
 import { ADMIN_HOME } from '@/lib/app-routes'
 import { AppLink } from './app-link'
-import { CosmicBackground } from './cosmic-background'
 import { PreviewBanner } from './preview-banner'
 import { isPreviewRoute } from '@/lib/preview-routes'
 import { AccountMenu, CollapsedSidebarTrigger, SidebarBrand } from './shell-parts'
@@ -66,9 +65,8 @@ export function AdminShell({ children, admin }: { children: React.ReactNode; adm
 
   return (
     <div className="min-h-screen relative flex">
-      <CosmicBackground />
       <SidebarProvider defaultOpen>
-        <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar/95 backdrop-blur-xl">
+        <Sidebar collapsible="icon" className="border-r border-[var(--orbit)] bg-sidebar">
           <SidebarHeader className="p-3 border-b border-[var(--orbit)] group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
             <SidebarBrand href={ADMIN_HOME} subtitle={t('adminArea')} />
           </SidebarHeader>

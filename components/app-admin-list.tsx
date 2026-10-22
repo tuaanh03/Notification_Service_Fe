@@ -84,7 +84,7 @@ function useColumns(): Column<AppDto>[] {
     numeric: true,
     render: (app) => <>{format.number(app.maxRecipientsPerEvent)}</>,
   },
-  { key: 'updatedAt', label: t('colUpdated'), mono: true, render: (app) => <>{fmtDateTime(app.updatedAt)}</> },
+  { key: 'updatedAt', label: t('colUpdated'), render: (app) => <span className="tabular-nums">{fmtDateTime(app.updatedAt)}</span> },
 ]
 }
 

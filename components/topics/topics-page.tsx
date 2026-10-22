@@ -166,7 +166,7 @@ export function TopicsPage() {
           <span className="text-[var(--text-muted)]">—</span>
         ),
     },
-    { key: 'updatedAt', label: t('colUpdated'), mono: true, render: (r) => fmtDateTime(r.updatedAt) },
+    { key: 'updatedAt', label: t('colUpdated'), render: (r) => <span className="tabular-nums">{fmtDateTime(r.updatedAt)}</span> },
     {
       key: 'id',
       label: t('colActions'),

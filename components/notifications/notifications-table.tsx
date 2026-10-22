@@ -59,13 +59,12 @@ function useColumns(withRecipient: boolean): Column<Row>[] {
     {
       key: 'createdAt',
       label: t('colCreatedAt'),
-      mono: true,
       render: (n) => (
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1.5 tabular-nums">
           {fmtDateTime(n.createdAt)}
           {n.origin === 'dashboard' && (
             <Tooltip>
-              <TooltipTrigger render={<span aria-label={t('fromWeb')} className="inline-flex text-[var(--pulsar)]" />}>
+              <TooltipTrigger render={<span aria-label={t('fromWeb')} className="inline-flex text-[var(--text-muted)]" />}>
                 <UserRound className="size-3.5" />
               </TooltipTrigger>
               <TooltipContent>{t('fromWeb')}</TooltipContent>
@@ -264,7 +263,6 @@ export function NotificationsTable({
               setOffset(0)
               setStatus(e.target.value)
             }}
-            className="font-mono"
           >
             <NativeSelectOption value="">{tc('all')}</NativeSelectOption>
             {MVP_STATUSES.map((s) => (
@@ -285,7 +283,6 @@ export function NotificationsTable({
               setOffset(0)
               setTopic(e.target.value)
             }}
-            className="font-mono"
           >
             <NativeSelectOption value="">{tc('all')}</NativeSelectOption>
             {topicKeys.map((key) => (
@@ -300,7 +297,7 @@ export function NotificationsTable({
             {tc('clearFilters')}
           </Button>
         )}
-        <span className="ml-auto pb-2 font-mono text-xs tabular-nums text-[var(--text-muted)]">{t('count', { count: total })}</span>
+        <span className="ml-auto pb-2 text-xs tabular-nums text-[var(--text-muted)]">{t('count', { count: total })}</span>
       </div>
 
       <DataTable<Row>
@@ -330,7 +327,7 @@ export function NotificationsTable({
 
       {total > PAGE_SIZE && (
         <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
-          <span className="font-mono tabular-nums">
+          <span className="tabular-nums">
             {offset + 1}–{to} / {total}
           </span>
           <span className="flex gap-2">

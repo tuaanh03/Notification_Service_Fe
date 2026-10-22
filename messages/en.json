@@ -151,6 +151,12 @@
     "underConstruction": "Under construction",
     "underConstructionBody": "This feature is being finished."
   },
+  "auditActors": {
+    "admin": "Admin",
+    "app": "App",
+    "user": "Recipient",
+    "system": "System"
+  },
   "auditActions": {
     "AppCreated": "created app",
     "AppSubmittedForReview": "submitted app for review",
@@ -193,6 +199,8 @@
     "AppSendWindowChanged": "changed send window",
     "AppPacingChanged": "changed pacing",
     "AppPacingCeilingChanged": "changed rate ceiling",
+    "AppHourlyCeilingChanged": "changed hourly send limit",
+    "AppRecipientLimitChanged": "changed per-recipient limit",
     "NotificationScheduled": "scheduled by send limits",
     "AccountCreated": "created account",
     "AdminCreated": "created EWS account",
@@ -205,6 +213,8 @@
     "AdminPasswordChanged": "changed password",
     "AdminMicrosoftLinked": "linked Microsoft account",
     "OrganizationCreated": "created organization",
+    "OrganizationRenamed": "renamed organization",
+    "OrganizationDeleted": "deleted organization",
     "OrgMemberSet": "added / changed member role",
     "OrgMemberRemoved": "removed member",
     "TenantDirectorySynced": "synced M365 directory",
@@ -268,6 +278,12 @@
     "statWaiting": "Waiting to send",
     "statRecipients": "Usable emails",
     "statOpenRate": "Open rate 24h",
+    "hintSends": "Every send the app requested in the last 24 hours",
+    "hintFailed": "Sends that ended in an error — see why in Send history",
+    "hintWaiting": "Mail in the queue, not sent yet",
+    "hintRecipients": "Recipients with a deliverable email / all recipients",
+    "hintOpenRate": "Of sent mail with open tracking",
+    "hintOpenRateNone": "No mail with open tracking in the last 24 hours",
     "hourlyTitle": "Sends by hour",
     "hourlySubtitle": "Last 24 hours · by time the app called · current outcome",
     "statusTitle": "Send status",

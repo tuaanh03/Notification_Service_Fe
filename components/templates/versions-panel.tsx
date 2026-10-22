@@ -35,7 +35,7 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
                 'absolute -left-[27px] top-1 size-3.5 rounded-full border-2',
                 v.status === 'published' && 'border-[var(--starlight)] bg-[var(--starlight)] shadow-[var(--glow-starlight)]',
                 v.status === 'superseded' && 'border-[var(--text-muted)] bg-[var(--deep)] opacity-60',
-                v.status === 'draft' && 'border-dashed border-[var(--pulsar)] bg-transparent',
+                v.status === 'draft' && 'border-dashed border-[var(--text-secondary)] bg-transparent',
               )}
             />
             <div className={cn('flex flex-wrap items-center gap-2 text-xs', v.status === 'superseded' && 'opacity-60')}>
