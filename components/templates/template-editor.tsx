@@ -29,13 +29,14 @@ import { EditorErrorAlert } from './editor-error-alert'
 import { EditorTopBar } from './editor-top-bar'
 import { IntegrationTab } from './integration-tab'
 import { SchemaPane } from './schema-pane'
+import { StatsTab } from './stats-tab'
 import { UNDERLINE_TAB_LIST, UNDERLINE_TAB_TRIGGER } from './tab-styles'
 import { TemplateActionsMenu } from './template-actions-menu'
 import { VersionsPanel } from './versions-panel'
 import type { VisualControls, VisualDevice, VisualHistory } from './visual/visual-editor'
 
 /** Tab của màn soạn, giữ trên đường dẫn (`?tab=`) để tải lại / gửi link vẫn mở đúng tab. "compose" = không có tham số. */
-const EDITOR_TABS = ['compose', 'variables', 'integration', 'versions'] as const
+const EDITOR_TABS = ['compose', 'variables', 'integration', 'versions', 'stats'] as const
 type EditorTab = (typeof EDITOR_TABS)[number]
 const TAB_PARAM = 'tab'
 const tabOf = (raw: string | null): EditorTab => EDITOR_TABS.find((x) => x === raw) ?? 'compose'
@@ -47,8 +48,8 @@ const TAB_LIST = cn(UNDERLINE_TAB_LIST, 'px-4 md:px-5')
 const TAB_TRIGGER = UNDERLINE_TAB_TRIGGER
 
 /**
- * Màn soạn một template (ADR-0020). Bốn tab: Soạn thư (mặc định, cho người không biết code) · Biến ·
- * Tích hợp cho đội app (mã template + lời gọi mẫu) · Phiên bản. Thanh đầu chỉ có Lưu nháp + Xuất bản; thao
+ * Màn soạn một template (ADR-0020). Năm tab: Soạn thư (mặc định, cho người không biết code) · Biến ·
+ * Tích hợp cho đội app (mã template + lời gọi mẫu) · Phiên bản · Hiệu quả (số liệu gửi / mở — UX-24). Thanh đầu chỉ có Lưu nháp + Xuất bản; thao
  * tác phụ ở menu ⋯. Còn thay đổi chưa lưu thì hỏi trước khi rời trang (`useLeaveGuard`).
  *
  * Không có "Gửi thử": backend chưa có đường gửi thử. Xuất bản = lưu nháp rồi xuất bản (một action).
@@ -279,6 +280,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               <span className="hidden md:inline">{t('tabIntegration')}</span>
             </TabsTrigger>
             <TabsTrigger value="versions" className={TAB_TRIGGER} data-testid="tab-versions">{t('versions')}</TabsTrigger>
+            <TabsTrigger value="stats" className={TAB_TRIGGER} data-testid="tab-stats">{t('tabStats')}</TabsTrigger>
           </TabsList>
         </div>
 
@@ -333,6 +335,10 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           <Panel className="min-w-0 p-5">
             <VersionsPanel ed={ed} />
           </Panel>
+        </TabsContent>
+        {/* Không `keepMounted`: số liệu chỉ tải khi mở tab, mỗi lần mở là số mới. */}
+        <TabsContent value="stats" className={cn('min-w-0', PAGE_PAD)}>
+          <StatsTab templateId={templateId} />
         </TabsContent>
       </Tabs>
 

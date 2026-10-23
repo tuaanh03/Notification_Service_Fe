@@ -603,3 +603,46 @@ export type AuditEventPageDto = {
   /** `null` = hết trang. */
   nextCursor: string | null
 }
+
+/** Số liệu MỘT template (UX-24, API ≥ ux24) — tab "Hiệu quả". */
+export type TemplateStatsDto = {
+  window: { from: string; to: string; days: number }
+  version: number | null
+  /** Mới nhất trước. */
+  versions: { id: string; version: number; publishedAt: string | null }[]
+  /** Người nhận theo trạng thái. `failed` gồm cả thư trả về; `pending` = đang gửi. */
+  summary: {
+    total: number
+    sent: number
+    failed: number
+    skipped: number
+    pending: number
+    skippedByReason: Partial<Record<string, number>>
+  }
+  /** Ước lượng: `tracked` = thư đã chuyển đi có chèn ảnh theo dõi; `total` = mọi lượt tải ảnh. */
+  opens: { tracked: number; opened: number; total: number }
+  buckets: { sent: number; opened: number; unopened: number; failed: number; skipped: number }
+  /** Đủ số ngày (giờ Việt Nam), `date` = YYYY-MM-DD. */
+  series: { date: string; sent: number; failed: number; skipped: number; opened: number }[]
+}
+
+export type TemplateRecipientDto = {
+  notificationId: string
+  address: string
+  externalId: string | null
+  topicKey: string | null
+  version: number | null
+  status: string
+  exclusionReason: string | null
+  error: string | null
+  createdAt: string
+  sentAt: string | null
+  openTracked: boolean
+  firstOpenedAt: string | null
+  openCount: number
+}
+
+export type TemplateRecipientPageDto = { rows: TemplateRecipientDto[]; total: number; limit: number; offset: number }
+
+/** Màn danh sách template: template chưa gửi trong khoảng thì vắng mặt. */
+export type TemplateSendStatsListDto = { days: number; rows: { templateId: string; sent: number; tracked: number; opened: number }[] }

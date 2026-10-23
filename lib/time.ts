@@ -41,3 +41,12 @@ export function fmtHour(iso: string): string {
   const p = partsOf(hourFormat, iso)
   return p ? `${p.hour}:${p.minute}` : iso
 }
+
+/** `2026-09-26T18:10:00Z` → `2026-09-27` (ngày ở Việt Nam) — khớp cột ngày của số liệu template. */
+export function vnDateOf(iso: string): string | null {
+  const p = partsOf(dateTimeFormat, iso)
+  return p ? `${p.year}-${p.month}-${p.day}` : null
+}
+
+/** `2026-09-27` → `27/09` — trục ngày của biểu đồ. */
+export const fmtDayMonth = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`

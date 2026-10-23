@@ -537,7 +537,7 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     **"Tên dễ đọc" = `description` của biến** (UX-5B, không có trường riêng ở backend): cột chính của tab Biến (mã
     `payload.x` là dòng mờ bên dưới, quá 24 ký tự thì báo nhẹ), nhãn của chip, cột đầu bảng "App phải gửi kèm" ở tab
     Tích hợp. Tab Biến kiểu trực quan không nhắc cú pháp `| default:` (đặt lúc chèn biến); kiểu HTML vẫn nhắc.
-*   **Bố cục màn soạn `/templates/[id]`** — tách việc soạn thư khỏi phần cho lập trình viên. Bốn tab (`?tab=`,
+*   **Bố cục màn soạn `/templates/[id]`** — tách việc soạn thư khỏi phần cho lập trình viên. Năm tab (`?tab=`,
     đổi bằng `history.replaceState` — không chuyển trang, không mất nội dung chưa lưu): **Soạn thư** (mặc định:
     tiêu đề trên cùng → khung soạn; kiểu HTML thêm xem thử + "Nâng cao" thu gọn chỉ chứa bản chữ thường) · **Biến**
     (`<SchemaPane>`) · **Tích hợp cho đội app** (UX-6, bản phác TichHop: từ `lg` hai cột — trái mã template + `<ContractFields>`, phải `<ContractRequest>` + `<ContractErrors>` thu gọn; điện thoại một cột, bảng biến thành danh sách, lời gọi xuống dòng; chữ giải thích `--text-secondary`) · **Phiên bản**. Tab Soạn thư
@@ -548,6 +548,14 @@ nó gửi `POST /v1/notifications` với `templateId` + `payload`, backend đổ
     mã / Nhân bản / Lưu trữ ở menu ⋯ (`<TemplateActionsMenu>`, Lưu trữ cuối, sau vạch ngăn,
     màu nguy hiểm; mục ghi ẩn theo `canManage`). Chú thích dưới ô là dấu (?) `<FieldHint>` (tooltip); lỗi của ô
     (link sai…) vẫn hiện thành dòng đỏ, không giấu vào tooltip.
+*   **Tab "Hiệu quả" (`?tab=stats`, UX-24)** — số liệu theo template, CHỈ thứ EWS đo thật (`<StatsTab>` +
+    `<TemplateRecipients>`, `app/templates/stats-actions.ts` -> `GET …/templates/:id/stats[/recipients]`). Lọc 7 / 30 / 90
+    ngày (giờ Việt Nam) + phiên bản. Hai thẻ: **Đã chuyển đi** (= Microsoft 365 đã nhận, KHÔNG gọi "delivered") với Lỗi /
+    Bỏ qua (lý do theo nhóm `exclusion`) · **Tỉ lệ mở** (ước lượng, mẫu số = thư có ảnh theo dõi; chưa có thì "—" + lý do +
+    nút bật, không 0%). Biểu đồ 4 đường, chú thích bật / tắt, vạch đứt ngày xuất bản. Người nhận theo tab (Đã mở / Chưa mở
+    chỉ khi có thư được theo dõi), bấm mã -> Lịch sử gửi. **KHÔNG có ô thư trả về, lượt bấm link, "reported spam"** — đã kiểm
+    tenant, thiếu quyền `Mail.Read` / endpoint công khai ổn định (ADR-0031 backend, bổ sung 2026-10-23); đừng dựng ô "—"
+    chờ chúng. Danh sách template có 2 cột "Đã gửi 30 ngày" / "Tỉ lệ mở", bấm số mở thẳng tab này.
 *   **Hỏi khi rời trang chưa lưu.** Chưa lưu = `ed.dirty` (tên / nhóm lưu ngay trong hộp, không tính). `useLeaveGuard(dirty)`
     (`components/app-link.tsx`): `beforeunload` khi đóng tab / tải lại; link `<AppLink>` (`onNavigate`) và
     `useAppRouter().push/replace` (vd đổi app) bị giữ lại để màn hiện `<ConfirmDialog>` "Rời trang?". Nút Back
