@@ -36,7 +36,7 @@ export function DataTable<T extends Record<string, unknown>>({
   rowClassName,
   filterKey,
   chipLabel,
-  chipMono = true,
+  chipMono = !chipLabel,
   toolbarActions,
   searchPlaceholder,
   hideSearch,
@@ -51,7 +51,7 @@ export function DataTable<T extends Record<string, unknown>>({
   filterKey?: keyof T
   /** Chữ trên nút lọc theo giá trị thô (dịch trạng thái / vai). Bỏ trống = hiện nguyên giá trị. */
   chipLabel?: (value: string) => string
-  /** Nút lọc in mono (giá trị thô như `queued`). `false` khi `chipLabel` đã dịch thành chữ thường. */
+  /** Nút lọc in mono (giá trị thô như `queued`). Mặc định: mono khi KHÔNG có `chipLabel`, chữ thường khi đã dịch. */
   chipMono?: boolean
   toolbarActions?: React.ReactNode
   searchPlaceholder?: string

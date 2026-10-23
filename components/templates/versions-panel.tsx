@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { CopyPlus, GitCompare } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { StatusPill } from '@/components/status-pill'
+import { StatusPill, useStatusLabel } from '@/components/status-pill'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { TemplateEditorState } from '@/hooks/use-template-editor'
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
  */
 export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
   const t = useTranslations('versions')
+  const statusLabel = useStatusLabel()
   const [diff, setDiff] = useState<TemplateVersionDto | null>(null)
   const [copyFrom, setCopyFrom] = useState<TemplateVersionDto | null>(null)
   const versions = ed.detail?.versions ?? []
@@ -97,7 +98,7 @@ export function VersionsPanel({ ed }: { ed: TemplateEditorState }) {
           copyFrom
             ? [
                 [t('factFrom'), `v${copyFrom.version}`],
-                [t('factStatus'), copyFrom.status],
+                [t('factStatus'), statusLabel(copyFrom.status)],
                 [t('factVars'), String(copyFrom.variables.length)],
               ]
             : []

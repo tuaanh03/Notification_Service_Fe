@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { useStatusLabel } from '@/components/status-pill'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -35,6 +36,7 @@ export function AppTransitionDialog({
   onConfirm: (reason: string) => void
 }) {
   const t = useTranslations('appTransition')
+  const statusLabel = useStatusLabel()
   const [reason, setReason] = useState('')
 
   const close = () => {
@@ -52,7 +54,7 @@ export function AppTransitionDialog({
         app
           ? [
               ['app', `${app.name} · ${app.slug}`],
-              [t('factStatus'), app.status],
+              [t('factStatus'), statusLabel(app.status)],
               ['namespace', app.namespace],
             ]
           : undefined

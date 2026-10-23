@@ -41,6 +41,12 @@
   --popover-foreground: var(--text-primary);
   --border: var(--orbit);
   --radius: 12px;
+  /* components/ui đọc thẳng var() trong class tuỳ ý (nền hover nút secondary, viền sidebar) — thiếu biến thì
+     cả color-mix hỏng: nút đang chọn mất nền khi trỏ vào, chữ trắng trên nền trắng. */
+  --foreground: var(--text-primary);
+  --secondary: var(--pulsar);
+  --sidebar-accent: #F1F5F9;
+  --sidebar-border: #E2E8F0;
 }
 
 /* ---- shadcn/ui colour contract ------------------------------------------------------- */
