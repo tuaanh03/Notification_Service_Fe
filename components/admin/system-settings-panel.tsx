@@ -28,6 +28,9 @@ const LABEL: Partial<
         | 'baseUrlLabel'
         | 'maxKeysLabel'
         | 'maxEndpointsLabel'
+        | 'mailboxDailyCapLabel'
+        | 'maxPendingLabel'
+        | 'defaultHourlyLabel'
         | 'htmlCheckLabel'
         | 'lockoutEnabledLabel'
         | 'maxFailedLabel'
@@ -42,6 +45,9 @@ const LABEL: Partial<
         | 'baseUrlHelp'
         | 'maxKeysHelp'
         | 'maxEndpointsHelp'
+        | 'mailboxDailyCapHelp'
+        | 'maxPendingHelp'
+        | 'defaultHourlyHelp'
         | 'htmlCheckHelp'
         | 'lockoutEnabledHelp'
         | 'maxFailedHelp'
@@ -49,7 +55,17 @@ const LABEL: Partial<
         | 'lockoutMinutesHelp'
         | 'ipMaxFailedHelp'
         | 'permanentAfterHelp'
-      unit?: 'unitMinutes' | 'unitPerMinute' | 'unitKeys' | 'unitHooks' | 'unitUrls' | 'unitTimes' | 'unitLockouts'
+      unit?:
+        | 'unitMinutes'
+        | 'unitPerMinute'
+        | 'unitKeys'
+        | 'unitHooks'
+        | 'unitUrls'
+        | 'unitTimes'
+        | 'unitLockouts'
+        | 'unitEmailsPerDay'
+        | 'unitEmails'
+        | 'unitEmailsPerHour'
     }
   >
 > = {
@@ -59,6 +75,9 @@ const LABEL: Partial<
   'api.public_base_url': { label: 'baseUrlLabel', help: 'baseUrlHelp' },
   'apps.max_active_api_keys': { label: 'maxKeysLabel', help: 'maxKeysHelp', unit: 'unitKeys' },
   'webhooks.max_endpoints_per_app': { label: 'maxEndpointsLabel', help: 'maxEndpointsHelp', unit: 'unitUrls' },
+  'delivery.mailbox_daily_cap': { label: 'mailboxDailyCapLabel', help: 'mailboxDailyCapHelp', unit: 'unitEmailsPerDay' },
+  'apps.max_pending_per_app': { label: 'maxPendingLabel', help: 'maxPendingHelp', unit: 'unitEmails' },
+  'apps.default_max_send_per_hour': { label: 'defaultHourlyLabel', help: 'defaultHourlyHelp', unit: 'unitEmailsPerHour' },
   'templates.html_check_enabled': { label: 'htmlCheckLabel', help: 'htmlCheckHelp' },
   'auth.lockout_enabled': { label: 'lockoutEnabledLabel', help: 'lockoutEnabledHelp' },
   'auth.max_failed_attempts': { label: 'maxFailedLabel', help: 'maxFailedHelp', unit: 'unitTimes' },
@@ -71,9 +90,18 @@ const LABEL: Partial<
 /** Nhóm `auth.*` (chặn đăng nhập sai — ADR-0039 của backend) ở mục riêng "Theo dõi & Bảo mật", không ở trang này. */
 export const isSecuritySetting = (key: string): boolean => key.startsWith('auth.')
 
-/** Nhóm trên màn: `apps.*` / `webhooks.*` -> Ứng dụng; `templates.*` -> Template; còn lại -> Incoming webhook. */
-const groupOf = (key: string): 'apps' | 'templates' | 'incoming' =>
-  key.startsWith('apps.') || key.startsWith('webhooks.') ? 'apps' : key.startsWith('templates.') ? 'templates' : 'incoming'
+/** Ngưỡng của cửa nhận thư (ADR-0041 của backend) — nhóm "Gửi thư", cùng chỗ với màn Hàng chờ gửi nhắc tới. */
+const DELIVERY_KEYS = new Set(['delivery.mailbox_daily_cap', 'apps.max_pending_per_app', 'apps.default_max_send_per_hour'])
+
+/** Nhóm trên màn: ngưỡng gửi thư -> Gửi thư; `apps.*` / `webhooks.*` -> Ứng dụng; `templates.*` -> Template; còn lại -> Incoming webhook. */
+const groupOf = (key: string): 'delivery' | 'apps' | 'templates' | 'incoming' =>
+  DELIVERY_KEYS.has(key)
+    ? 'delivery'
+    : key.startsWith('apps.') || key.startsWith('webhooks.')
+      ? 'apps'
+      : key.startsWith('templates.')
+        ? 'templates'
+        : 'incoming'
 
 /**
  * Sửa cài đặt hệ thống (ADR-0030 của backend) — dùng chung cho trang Cài đặt hệ thống và "Theo dõi & Bảo mật". Mỗi
@@ -219,6 +247,11 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
         <h2 className="text-sm font-semibold">{t('incomingTitle')}</h2>
         <p className="mt-1 mb-5 text-xs text-[var(--text-secondary)]">{t('incomingIntro')}</p>
         <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'incoming').map(row)}</div>
+      </Panel>
+      <Panel className="mt-5 p-5" data-testid="settings-delivery">
+        <h2 className="text-sm font-semibold">{t('deliveryTitle')}</h2>
+        <p className="mt-1 mb-5 text-xs text-[var(--text-secondary)]">{t('deliveryIntro')}</p>
+        <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'delivery').map(row)}</div>
       </Panel>
       <Panel className="mt-5 p-5">
         <h2 className="mb-5 text-sm font-semibold">{t('appsTitle')}</h2>

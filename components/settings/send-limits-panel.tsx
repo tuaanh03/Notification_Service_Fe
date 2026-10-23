@@ -36,6 +36,8 @@ const MAX_PER_RECIPIENT_DAY = 1000
 const MAX_PER_HOUR = 100_000
 const DEFAULT_PER_RECIPIENT_DAY = 5
 const DEFAULT_PER_HOUR = 1000
+/** Số lần gọi API gửi mỗi phút (ADR-0041): khoảng backend nhận (`API_RATE_LIMIT_INVALID`). */
+const MAX_API_RATE = 10_000
 
 /**
  * Mốc giờ chọn được, mỗi 30 phút. Không dùng ô giờ của trình duyệt: nó hiện AM/PM theo máy người xem và
@@ -62,6 +64,7 @@ type Draft = {
   hourlyOn: boolean
   perHour: string
   hourlyBypass: boolean
+  apiRate: string
 }
 
 const draftOf = (limits: SendLimits): Draft => ({
@@ -79,6 +82,7 @@ const draftOf = (limits: SendLimits): Draft => ({
   hourlyOn: limits.maxSendPerHour !== null,
   perHour: String(limits.maxSendPerHour ?? DEFAULT_PER_HOUR),
   hourlyBypass: limits.mandatoryBypassHourly,
+  apiRate: String(limits.apiRatePerMinute),
 })
 
 /** "12" -> 12; rỗng, số lẻ, ngoài 1..max -> null. */
@@ -186,10 +190,10 @@ function SwitchRow({
 
 /**
  * `/settings/limits` — Giới hạn gửi của app đang xem (ADR-0032 của backend): Khung giờ gửi · Dàn đều · Trần tốc độ ·
- * Mỗi người nhận mỗi ngày · Trần mỗi giờ (GĐ 3).
+ * Mỗi người nhận mỗi ngày · Trần mỗi giờ (GĐ 3) · Số lần gọi API mỗi phút (ADR-0041).
  * Mục con luôn hiện; công tắc mục cha tắt thì NÚT CHỈNH của mục con mờ + khoá (giá trị giữ nguyên, bật lại còn đó).
  * Giải thích nằm trong ⓘ của mục cha, không viết trên màn. Một lần lưu cho cả trang qua thanh dính đáy.
- * Trần tốc độ + trần mỗi giờ chỉ Super Admin sửa; người khác thấy con số. Người không quản lý app: mọi nút khoá, không có thanh lưu.
+ * Trần tốc độ, trần mỗi giờ, số lần gọi API chỉ Super Admin sửa; người khác thấy con số. Người không quản lý app: mọi nút khoá, không có thanh lưu.
  */
 export function SendLimitsPanel() {
   const t = useTranslations('limits')
@@ -271,7 +275,9 @@ export function SendLimitsPanel() {
   const perHourValue = hourlyOn && draft ? countOf(draft.perHour, MAX_PER_HOUR) : null
   const perDayError = recipientOn && perDayValue === null ? t('errNumber', { max: MAX_PER_RECIPIENT_DAY }) : null
   const perHourError = superAdmin && hourlyOn && perHourValue === null ? t('errNumber', { max: MAX_PER_HOUR }) : null
-  const invalid = Boolean(daysError ?? timeError ?? perMinuteError ?? ceilingError ?? perDayError ?? perHourError)
+  const apiRateValue = draft ? countOf(draft.apiRate, MAX_API_RATE) : null
+  const apiRateError = superAdmin && draft && apiRateValue === null ? t('errNumber', { max: MAX_API_RATE }) : null
+  const invalid = Boolean(daysError ?? timeError ?? perMinuteError ?? ceilingError ?? perDayError ?? perHourError ?? apiRateError)
 
   const changes: SendLimitsChanges = {}
   if (draft && saved) {
@@ -280,6 +286,7 @@ export function SendLimitsPanel() {
     if (!samePacingPart(draft, saved)) changes.pacing = { perMinute: perMinuteValue, mandatoryBypass: draft.mandatoryBypassPacing }
     if (!sameRecipientPart(draft, saved)) changes.recipient = { perDay: perDayValue, mandatoryBypass: draft.recipientBypass }
     if (superAdmin && !sameHourlyPart(draft, saved)) changes.hourly = { maxPerHour: perHourValue, mandatoryBypass: draft.hourlyBypass }
+    if (superAdmin && draft.apiRate !== saved.apiRate && apiRateValue !== null) changes.apiRate = apiRateValue
   }
   const dirty = Object.keys(changes).length > 0
   const update = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d))
@@ -531,6 +538,36 @@ export function SendLimitsPanel() {
               <p className="text-sm lg:pt-1.5">
                 {saved?.hourlyOn ? t('countPerHour', { count: Number(saved.perHour) }) : t('unlimited')}
               </p>
+            </Row>
+          )}
+        </Section>
+
+        <Section
+          title={t('apiRateTitle')}
+          badge={t('superAdmin')}
+          hint={hint(t('apiRateHint'), [[t('apiRate'), t('apiRateDef')]])}
+        >
+          {superAdmin ? (
+            <Row label={t('apiRate')} htmlFor="api-rate" error={apiRateError}>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="api-rate"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_API_RATE}
+                  aria-invalid={apiRateError !== null}
+                  className="w-28 font-mono"
+                  value={draft?.apiRate ?? ''}
+                  disabled={locked}
+                  onChange={(e) => update({ apiRate: e.target.value })}
+                />
+                <span className="text-sm text-[var(--text-secondary)]">{t('unitCallsPerMinute')}</span>
+              </div>
+            </Row>
+          ) : (
+            <Row label={t('apiRate')}>
+              <p className="text-sm lg:pt-1.5">{saved ? t('countCallsPerMinute', { count: Number(saved.apiRate) }) : '…'}</p>
             </Row>
           )}
         </Section>

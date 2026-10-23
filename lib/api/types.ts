@@ -78,6 +78,7 @@ export type AppDto = {
   origin: string
   /** CHANNELS: email | sms | push | in_app */
   grantedChannels: readonly string[]
+  /** Số lần gọi API gửi mỗi phút (`/v1` gửi + phát) — Super Admin chỉnh; vượt -> 429 `APP_RATE_LIMITED` (ADR-0041). */
   rateLimitPerMinute: number
   maxRecipientsPerEvent: number
   includedInOrgBroadcast: boolean
@@ -646,3 +647,25 @@ export type TemplateRecipientPageDto = { rows: TemplateRecipientDto[]; total: nu
 
 /** Màn danh sách template: template chưa gửi trong khoảng thì vắng mặt. */
 export type TemplateSendStatsListDto = { days: number; rows: { templateId: string; sent: number; tracked: number; opened: number }[] }
+
+/** Màn Hàng chờ gửi của Super Admin (ADR-0041 của backend). */
+export type DeliveryQueueDto = {
+  /** Hộp gửi chung: lượt đã giữ hôm nay (giờ Việt Nam) / trần ngày; tốc độ mỗi phút + phần giữ cho tin bắt buộc. */
+  mailbox: { usedToday: number; dailyCap: number; perMinute: number; priorityReservePerMinute: number }
+  maxPendingPerApp: number
+  /** Thư xếp hàng + đang gửi của mọi app. */
+  waiting: number
+  /** Thư hẹn giờ của mọi app. */
+  scheduled: number
+  /** Thư thường xếp vào lúc này đợi khoảng chừng này phút. */
+  estimatedWaitMinutes: number
+  apps: {
+    appId: string
+    name: string
+    slug: string
+    scheduled: number
+    queued: number
+    sending: number
+    oldestQueuedAt: string | null
+  }[]
+}

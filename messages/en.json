@@ -38,7 +38,8 @@
     "audit": "Activity log",
     "directory": "Directory",
     "systemSettings": "System settings",
-    "security": "Monitoring & Security"
+    "security": "Monitoring & Security",
+    "deliveryQueue": "Delivery queue"
   },
   "shell": {
     "collapseSidebar": "Collapse sidebar (Ctrl + B)",
@@ -127,7 +128,10 @@
     "ORG_HAS_APPS": "The organization still has active apps — revoke them first.",
     "ORG_NAME_MISMATCH": "The typed name does not match the organization.",
     "RECIPIENT_LIMIT_INVALID": "Enter a whole number from 1 to 1000.",
-    "HOURLY_LIMIT_INVALID": "Enter a whole number from 1 to 100000."
+    "HOURLY_LIMIT_INVALID": "Enter a whole number from 1 to 100000.",
+    "APP_RATE_LIMITED": "The app called the send API too often this minute — try again later.",
+    "APP_QUEUE_FULL": "The app has too many emails waiting — try again later.",
+    "API_RATE_LIMIT_INVALID": "Enter a whole number from 1 to 10000."
   },
   "common": {
     "loadErrorTitle": "Could not read data from the API",
@@ -229,7 +233,8 @@
     "SubscriptionOptedOutOptionalChanged": "changed optional-message opt-out",
     "SubscriptionUnsubscribed": "recipient unsubscribed",
     "SubscriptionResubscribed": "recipient resubscribed",
-    "UserTopicPreferenceChanged": "recipient changed topic choice"
+    "UserTopicPreferenceChanged": "recipient changed topic choice",
+    "AppApiRateLimitChanged": "changed API calls per minute"
   },
   "exclusion": {
     "no_channel": "no email on file",
@@ -1083,7 +1088,13 @@
     "hourlyMandatory": "Mandatory may exceed",
     "hourlyMandatoryDef": "On: mandatory emails are accepted even at the ceiling.",
     "unitPerHour": "emails / hour",
-    "countPerHour": "{count} emails / hour"
+    "countPerHour": "{count} emails / hour",
+    "apiRateTitle": "API calls per minute",
+    "apiRateHint": "How many times per minute the app may call the send API (single sends and topic publishes). Over it, the app gets 429 APP_RATE_LIMITED and retries later. Console sends are not counted.",
+    "apiRate": "Max calls per minute",
+    "apiRateDef": "Every call counts, including retries with the same idempotencyKey.",
+    "unitCallsPerMinute": "calls / min",
+    "countCallsPerMinute": "{count} calls / min"
   },
   "incoming": {
     "add": "Add webhook",
@@ -1199,7 +1210,18 @@
     "permanentAfterLabel": "Lock permanently after consecutive temporary locks",
     "permanentAfterHelp": "After this many temporary locks in a row (24 h) the account is locked for good: Super Admin only, sessions signed out, Microsoft blocked too. 0 = never — keep 0, anyone knowing an email could lock someone out.",
     "unitTimes": "times",
-    "unitLockouts": "locks"
+    "unitLockouts": "locks",
+    "deliveryTitle": "Sending",
+    "deliveryIntro": "Share the sending mailbox between apps. Watch it on Delivery queue.",
+    "mailboxDailyCapLabel": "Daily cap of the sending mailbox",
+    "mailboxDailyCapHelp": "All apps combined, per Vietnam-time day. Microsoft allows about 10,000 recipients per 24 hours per mailbox; going over blocks the mailbox. When full, regular emails move to the next day; mandatory ones still go.",
+    "maxPendingLabel": "Maximum waiting emails per app",
+    "maxPendingHelp": "Unfinished emails (queued, sending, scheduled) of one app. At the limit the app gets 429 APP_QUEUE_FULL until the queue drains.",
+    "defaultHourlyLabel": "Hourly ceiling for new apps",
+    "defaultHourlyHelp": "Applied to apps created from now on; existing apps keep theirs. Adjust each app under Sending limits. 0 = no ceiling for new apps.",
+    "unitEmailsPerDay": "emails / day",
+    "unitEmails": "emails",
+    "unitEmailsPerHour": "emails / hour"
   },
   "security": {
     "title": "Monitoring & Security",
@@ -1778,5 +1800,33 @@
     "sentInfo": "Handed off = Microsoft 365 accepted the mail. EWS does not read bounce messages yet, so it cannot tell whether mail reached the inbox. Failed = could not hand off to Microsoft 365. Skipped = not sent because the recipient turned the topic off, the address is unusable or a limit was hit.",
     "openInfo": "Unique opens ÷ mail with a tracking image. An estimate: Apple Mail prefetching can over-count, mail apps that block images under-count. Mail sent while tracking was off is not counted.",
     "chartInfo": "Vietnam days. Handed off, Failed and Skipped count on the send day; opens count on the day of the first open."
+  },
+  "deliveryQueue": {
+    "title": "Delivery queue",
+    "subtitle": "The shared sending mailbox: what is left today and who is waiting",
+    "loadFailed": "Could not load the delivery queue",
+    "refresh": "Refresh",
+    "mailboxTitle": "Mailbox today",
+    "mailboxInfo": "Emails that reserved a slot today (Vietnam time) on the sending mailbox shared by every app, against the daily cap. Microsoft allows about 10,000 recipients per day per mailbox; going over blocks the mailbox. When full, regular emails move to the next day; mandatory ones still go.",
+    "mailboxLeft": "{count} slots left today",
+    "waitingTitle": "Waiting to send",
+    "waitingInfo": "Emails queued or being sent, all apps combined. Regular emails go in turn at the mailbox speed; mandatory emails use their own lane and wait less.",
+    "waitHint": "A new regular email waits about {minutes} min",
+    "waitNone": "Nothing is waiting",
+    "scheduledTitle": "Scheduled",
+    "scheduledInfo": "Emails waiting for their send time: outside the app window, being paced, or the mailbox hit its daily cap.",
+    "speedHint": "{perMinute} emails/min, {reserve} kept for mandatory",
+    "appsTitle": "Apps with emails waiting",
+    "appsInfo": "Each app may have a limited number of unfinished emails (queue cap). At the cap the app gets 429 APP_QUEUE_FULL. Click an app to see its sending limits.",
+    "colApp": "App",
+    "colWaiting": "Waiting",
+    "colScheduled": "Scheduled",
+    "colUsage": "Against queue cap",
+    "colOldest": "Waiting since",
+    "ofMax": "{count} / {max}",
+    "unknownApp": "(app no longer exists)",
+    "emptyTitle": "Nothing is waiting to send",
+    "emptyBody": "Every app has sent all its emails.",
+    "settingsNote": "Change the daily and queue caps in <link>System settings</link>."
   }
 }

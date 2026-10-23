@@ -47,6 +47,7 @@ webservice/ews-astrolink/
 │                             # apps/[appId]/network/ = Giới hạn IP của một app (mục 2.10) — ĐÃ đấu API
 │                             # settings/ = Cài đặt hệ thống (ADR-0030 của backend, mục 2.14) — ĐÃ đấu API
 │                             # security/ = Theo dõi & Bảo mật (ADR-0039 của backend, mục 2.15) — ĐÃ đấu API
+│                             # queue/ = Hàng chờ gửi (ADR-0041 của backend, mục 2.21) — ĐÃ đấu API
 │                             # directory/ = Danh bạ (ADR-0027 của backend) — ĐÃ đấu API: nút Đồng bộ M365 (CHỈ ở đây,
 │                             # không ở màn Thành viên) + tích ai hiện trong hộp "Thêm thành viên" của các org
 ├── components/               # shared component (bảng ở mục 3)
@@ -282,7 +283,7 @@ mã lỗi là hợp đồng tĩnh sao đúng backend, nên cũng là số thật
 kèm `preview` = route tĩnh cùng cấp vẫn là mẫu. `/users/[id]` đã đấu nhưng `/users/import` khớp
 cùng hình dạng — thiếu nó trong `preview` là gỡ nhãn khỏi màn mẫu.
 
-Tính tới 10/2026 (sau khi xoá màn mẫu, mục 2.0): mọi route còn lại đều đã đấu — `/admin/apps` · `/admin/audit` · `/admin/security` · `/apps/new` · `/topics` · `/templates` · `/settings/*` · `/admin/settings` (kèm route con),
+Tính tới 10/2026 (sau khi xoá màn mẫu, mục 2.0): mọi route còn lại đều đã đấu — `/admin/apps` · `/admin/audit` · `/admin/security` · `/admin/queue` · `/apps/new` · `/topics` · `/templates` · `/settings/*` · `/admin/settings` (kèm route con),
 `/` · `/users` · `/notifications` · `/notifications/errors` (chỉ chính nó) và `/users/[id]`.
 
 Dải băng **không phủ khung** (thanh trên, sidebar). Số nào hiện ở đó phải là số thật — cái
@@ -784,6 +785,18 @@ code / cấu hình / incoming webhook, phải đọc được; trùng đã bị 
 *   Màn Thành viên có nút ⋯ "Quản lý tổ chức" (`<OrgSettingsMenu>`, chỉ Owner / Super Admin — ADR-0040 của backend): Đổi tên ·
     Chuyển Owner (chọn trong thành viên chưa là Owner; Owner cũ thành Org Admin) · Xoá (gõ lại tên, `tone="blocking"`, còn
     app chưa thu hồi -> `ORG_HAS_APPS`; xoá xong `push('/orgs')` RỒI `refresh()`). Lỗi hiện trong hộp.
+
+### 2.21. Cửa nhận khi nhiều app (ADR-0041 của backend)
+
+*   `/admin/queue` — **Hàng chờ gửi**, chỉ Super Admin: 3 thẻ (Hộp gửi hôm nay = lượt đã giữ / trần ngày, thanh đổi màu
+    `solar` từ 80%; Đang chờ gửi kèm thời gian chờ ước tính; Hẹn giờ kèm tốc độ + phần giữ cho tin bắt buộc) và bảng app
+    đang có thư chưa xong (bấm tên -> Giới hạn gửi của app đó). Đọc ở server (`GET /admin/delivery-queue`), nút Làm mới
+    = `router.refresh()`.
+*   `/settings/limits` thêm mục **Số lần gọi API mỗi phút** (chỉ Super Admin sửa, 1–10000, không có công tắc — luôn có
+    giá trị; `AppDto.rateLimitPerMinute`). Vượt -> `/v1` trả `429 APP_RATE_LIMITED`; hàng chờ app đầy -> `429 APP_QUEUE_FULL`
+    (cả hai trong `v1-errors.ts`).
+*   Cài đặt hệ thống có nhóm **Gửi thư** (`DELIVERY_KEYS`): trần ngày hộp gửi, số thư chờ tối đa mỗi app, trần mỗi giờ cho
+    app mới.
 
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 

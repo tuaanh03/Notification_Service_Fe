@@ -25,6 +25,11 @@ export async function setHourlyCeiling(appId: string, body: { maxPerHour: number
   return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/hourly-ceiling`, { method: 'PUT', body })
 }
 
+/** Số lần gọi API gửi mỗi phút — chỉ Super Admin; vượt thì app nhận 429 `APP_RATE_LIMITED` (ADR-0041). */
+export async function setApiRateLimit(appId: string, perMinute: number): Promise<AppDto> {
+  return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/api-rate-limit`, { method: 'PUT', body: { perMinute } })
+}
+
 /** Mỗi người nhận tối đa N thư / ngày — người quản lý app; thư vượt bị bỏ qua lý do `recipient_limit` (ADR-0032 GĐ 3). */
 export async function setRecipientLimit(appId: string, body: { perDay: number | null; mandatoryBypass: boolean }): Promise<AppDto> {
   return adminFetch<AppDto>(`/apps/${encodeURIComponent(appId)}/recipient-limit`, { method: 'PUT', body })

@@ -38,7 +38,8 @@
     "audit": "Nhật ký hoạt động",
     "directory": "Danh bạ",
     "systemSettings": "Cài đặt hệ thống",
-    "security": "Theo dõi & Bảo mật"
+    "security": "Theo dõi & Bảo mật",
+    "deliveryQueue": "Hàng chờ gửi"
   },
   "shell": {
     "collapseSidebar": "Thu gọn sidebar (Ctrl + B)",
@@ -127,7 +128,10 @@
     "ORG_HAS_APPS": "Tổ chức còn app đang dùng — thu hồi hết app rồi mới xoá được.",
     "ORG_NAME_MISMATCH": "Tên gõ lại không khớp tên tổ chức.",
     "RECIPIENT_LIMIT_INVALID": "Nhập số nguyên từ 1 đến 1000.",
-    "HOURLY_LIMIT_INVALID": "Nhập số nguyên từ 1 đến 100000."
+    "HOURLY_LIMIT_INVALID": "Nhập số nguyên từ 1 đến 100000.",
+    "APP_RATE_LIMITED": "App gọi API gửi quá số lần mỗi phút — gửi lại sau.",
+    "APP_QUEUE_FULL": "App có quá nhiều thư đang chờ gửi — gửi lại sau.",
+    "API_RATE_LIMIT_INVALID": "Nhập số nguyên từ 1 đến 10000."
   },
   "common": {
     "loadErrorTitle": "Không đọc được dữ liệu từ API",
@@ -229,7 +233,8 @@
     "SubscriptionOptedOutOptionalChanged": "đổi nhận tin không bắt buộc",
     "SubscriptionUnsubscribed": "người nhận huỷ đăng ký",
     "SubscriptionResubscribed": "người nhận đăng ký lại",
-    "UserTopicPreferenceChanged": "người nhận đổi chọn chủ đề"
+    "UserTopicPreferenceChanged": "người nhận đổi chọn chủ đề",
+    "AppApiRateLimitChanged": "đổi số lần gọi API mỗi phút"
   },
   "exclusion": {
     "no_channel": "chưa khai email",
@@ -1083,7 +1088,13 @@
     "hourlyMandatory": "Tin bắt buộc được vượt trần",
     "hourlyMandatoryDef": "Bật: tin bắt buộc vẫn nhận khi app đã chạm trần.",
     "unitPerHour": "thư / giờ",
-    "countPerHour": "{count} thư / giờ"
+    "countPerHour": "{count} thư / giờ",
+    "apiRateTitle": "Số lần gọi API mỗi phút",
+    "apiRateHint": "Số lần app được gọi API gửi thư (gửi lẻ và phát vào chủ đề) mỗi phút. Vượt thì app nhận lỗi 429 APP_RATE_LIMITED và gọi lại sau. Gửi từ console không tính.",
+    "apiRate": "Số lần gọi tối đa mỗi phút",
+    "apiRateDef": "Đếm mọi lời gọi, kể cả gọi lại với cùng idempotencyKey.",
+    "unitCallsPerMinute": "lần / phút",
+    "countCallsPerMinute": "{count} lần / phút"
   },
   "incoming": {
     "add": "Thêm webhook",
@@ -1199,7 +1210,18 @@
     "permanentAfterLabel": "Khoá hẳn sau số lần khoá tạm liên tiếp",
     "permanentAfterHelp": "Khoá tạm chừng này lần liên tiếp (24 giờ) thì khoá hẳn: chỉ Super Admin mở, đăng xuất mọi phiên, chặn cả Microsoft. 0 = không bao giờ — nên giữ 0, vì ai biết email cũng khoá được người khác.",
     "unitTimes": "lần",
-    "unitLockouts": "lần khoá"
+    "unitLockouts": "lần khoá",
+    "deliveryTitle": "Gửi thư",
+    "deliveryIntro": "Chia hộp gửi chung cho các app. Theo dõi ở màn Hàng chờ gửi.",
+    "mailboxDailyCapLabel": "Trần thư mỗi ngày của hộp gửi",
+    "mailboxDailyCapHelp": "Mọi app cộng lại, tính theo ngày giờ Việt Nam. Microsoft giới hạn khoảng 10.000 người nhận / 24 giờ cho một hộp; vượt là hộp bị khoá gửi. Đầy thì thư thường dời sang ngày sau, tin bắt buộc vẫn đi.",
+    "maxPendingLabel": "Số thư chờ tối đa mỗi app",
+    "maxPendingHelp": "Thư chưa gửi xong (xếp hàng, đang gửi, hẹn giờ) của một app. Đủ số thì app nhận lỗi 429 APP_QUEUE_FULL cho tới khi hàng chờ vơi.",
+    "defaultHourlyLabel": "Trần mỗi giờ cho app mới",
+    "defaultHourlyHelp": "Gắn sẵn cho app tạo sau này; app đã có không đổi. Chỉnh từng app ở Giới hạn gửi. 0 = app mới không có trần.",
+    "unitEmailsPerDay": "thư / ngày",
+    "unitEmails": "thư",
+    "unitEmailsPerHour": "thư / giờ"
   },
   "security": {
     "title": "Theo dõi & Bảo mật",
@@ -1778,5 +1800,33 @@
     "sentInfo": "Đã chuyển đi = Microsoft 365 đã nhận thư. EWS chưa đọc thư trả về, nên không biết thư đã vào hộp hay bị trả lại. Lỗi = không giao được cho Microsoft 365. Bỏ qua = không gửi vì người nhận tắt chủ đề, địa chỉ hỏng hoặc vượt giới hạn.",
     "openInfo": "Người mở ÷ thư có chèn ảnh theo dõi. Đây là ước lượng: Apple Mail tải sẵn ảnh có thể tính dư, trình mail chặn ảnh thì tính thiếu. Thư gửi lúc app chưa bật theo dõi không tính vào.",
     "chartInfo": "Theo ngày giờ Việt Nam. Đã chuyển đi, Lỗi, Bỏ qua tính theo ngày gửi; Người mở tính theo ngày mở lần đầu."
+  },
+  "deliveryQueue": {
+    "title": "Hàng chờ gửi",
+    "subtitle": "Hộp gửi chung của mọi app: còn bao nhiêu lượt, ai đang chờ",
+    "loadFailed": "Không tải được hàng chờ gửi",
+    "refresh": "Làm mới",
+    "mailboxTitle": "Hộp gửi hôm nay",
+    "mailboxInfo": "Số thư đã giữ lượt hôm nay (giờ Việt Nam) trên hộp thư gửi chung của mọi app, so với trần ngày. Microsoft giới hạn khoảng 10.000 người nhận mỗi ngày cho một hộp; vượt là hộp bị khoá gửi. Đầy thì thư thường dời sang ngày sau, tin bắt buộc vẫn đi.",
+    "mailboxLeft": "Còn {count} lượt hôm nay",
+    "waitingTitle": "Đang chờ gửi",
+    "waitingInfo": "Thư đã xếp hàng hoặc đang gửi, mọi app cộng lại. Thư thường đi lần lượt theo tốc độ của hộp gửi; tin bắt buộc đi làn riêng nên chờ ít hơn.",
+    "waitHint": "Thư thường mới vào chờ khoảng {minutes} phút",
+    "waitNone": "Không có thư nào đang chờ",
+    "scheduledTitle": "Hẹn giờ",
+    "scheduledInfo": "Thư chờ tới giờ gửi: ngoài khung giờ của app, đang dàn đều, hoặc hộp gửi đã đủ trần trong ngày.",
+    "speedHint": "Tốc độ {perMinute} thư/phút, giữ {reserve} cho tin bắt buộc",
+    "appsTitle": "App đang có thư chờ",
+    "appsInfo": "Mỗi app có tối đa một số thư chưa gửi xong (trần hàng chờ). Đủ trần thì app nhận lỗi 429 APP_QUEUE_FULL. Bấm tên app để xem giới hạn gửi của app đó.",
+    "colApp": "App",
+    "colWaiting": "Đang chờ",
+    "colScheduled": "Hẹn giờ",
+    "colUsage": "So với trần hàng chờ",
+    "colOldest": "Chờ từ lúc",
+    "ofMax": "{count} / {max}",
+    "unknownApp": "(app không còn)",
+    "emptyTitle": "Không có thư nào chờ gửi",
+    "emptyBody": "Mọi app đã gửi hết thư.",
+    "settingsNote": "Chỉnh trần ngày và trần hàng chờ ở <link>Cài đặt hệ thống</link>."
   }
 }

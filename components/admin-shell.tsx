@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Database, History, LayoutDashboard, Layers, ShieldCheck, SlidersHorizontal } from 'lucide-react'
+import { Database, History, Inbox, LayoutDashboard, Layers, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import type { AdminDto } from '@/lib/api/auth'
 import { ADMIN_HOME } from '@/lib/app-routes'
 import { AppLink } from './app-link'
@@ -38,6 +38,7 @@ const NAV = (
   [
     { href: ADMIN_HOME, name: 'allApps', icon: Layers },
     { href: '/admin/directory', name: 'directory', icon: Database },
+    { href: '/admin/queue', name: 'deliveryQueue', icon: Inbox },
     { href: '/admin/settings', name: 'systemSettings', icon: SlidersHorizontal },
     { href: '/admin/security', name: 'security', icon: ShieldCheck },
     { href: '/admin/audit', name: 'audit', icon: History },
