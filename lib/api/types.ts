@@ -669,3 +669,45 @@ export type DeliveryQueueDto = {
     oldestQueuedAt: string | null
   }[]
 }
+
+/** Một nhóm xử lý (consumer group) trên hàng đợi của nó — tab Stream của Hàng chờ gửi (ADR-0042 của backend). */
+export type QueueGroupDto = {
+  stream: string
+  group: string
+  /** Số entry còn trong stream (gồm cả đã xử lý — stream cắt theo độ dài, không phải hàng chờ thuần). */
+  length: number
+  /** Chưa giao cho worker — hàng chờ thật. null = Redis không tính được. */
+  lag: number | null
+  /** Đã giao, chưa xong (đang xử lý hoặc treo chờ giao lại). */
+  pending: number
+  oldestPendingIdleMs: number | null
+  deadLetters: number
+  consumers: { name: string; pending: number; idleMs: number }[]
+  paused: boolean
+  pausable: boolean
+  options: {
+    batchSize: number
+    blockMs: number
+    claimIdleMs: number
+    maxDeliveries: number
+    reclaimEveryMs: number
+    idempotency: string
+  }
+}
+
+export type QueuesDto = { groups: QueueGroupDto[]; redis: { usedMemoryBytes: number } }
+
+/** Message lỗi trong DLQ — không có nội dung thư, chỉ loại sự kiện + id đối tượng. */
+export type DeadLetterDto = {
+  id: string
+  stream: string
+  deadLetteredAt: string
+  group: string
+  /** permanent_error | max_deliveries */
+  reason: string
+  error: string
+  deliveries: number
+  eventType: string | null
+  aggregateType: string | null
+  aggregateId: string | null
+}

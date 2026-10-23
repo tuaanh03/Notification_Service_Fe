@@ -798,6 +798,17 @@ code / cấu hình / incoming webhook, phải đọc được; trùng đã bị 
 *   Cài đặt hệ thống có nhóm **Gửi thư** (`DELIVERY_KEYS`): trần ngày hộp gửi, số thư chờ tối đa mỗi app, trần mỗi giờ cho
     app mới.
 
+### 2.22. Quản trị hàng đợi (ADR-0042 của backend) — tab của `/admin/queue`
+
+*   `/admin/queue` có 3 tab (`?tab=`, `lib/queue-tabs.ts` — dùng chung server / client): **Tổng quan** (`<DeliveryOverview>`,
+    mục 2.21) · **Stream** (`<QueueStreamsTab>`: mỗi nhóm xử lý một thẻ — chờ giao / đang xử lý / message lỗi / worker
+    đang chạy, thông số trong `<details>`, Tạm dừng / Chạy lại qua `<ConfirmDialog>`; `audit-writer` không có nút) ·
+    **Message lỗi** (`<QueueDeadLettersTab>`: Đẩy lại · Bỏ với lý do bắt buộc, `tone="blocking"`). Page đọc cả ba ở server
+    (`getDeliveryQueue` + `getQueues` + `listDeadLetters`), thao tác xong `router.refresh()`.
+*   Tên nhóm / hàng đợi dịch bằng khoá `queueAdmin.group_<group>` / `stream_<stream>` (gạch, chấm -> `_`) qua `tOr` — nhóm
+    mới chưa dịch hiện tên gốc. Không hiện nội dung message (backend không trả), chỉ loại việc (`auditActions`) + 8 ký tự đầu
+    mã đối tượng.
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là

@@ -1,22 +1,26 @@
 import { PlugZap } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
-import { DeliveryQueuePanel } from '@/components/admin/delivery-queue-panel'
+import { QueueAdminScreen } from '@/components/admin/queue-admin-screen'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { getDeliveryQueue } from '@/lib/api/delivery-queue'
 import { describeError } from '@/lib/api/error-message'
 import { ApiError } from '@/lib/api/problem'
+import { getQueues, listDeadLetters } from '@/lib/api/queues'
+import { queueTabOf } from '@/lib/queue-tabs'
 
 /**
- * Hàng chờ gửi (ADR-0041 của backend) — hộp gửi chung còn bao nhiêu lượt hôm nay, app nào đang chiếm hàng chờ, thư mới
- * đợi khoảng bao lâu. Đọc ở server bằng phiên của Super Admin; nút Làm mới đọc lại cả trang.
+ * Hàng chờ gửi — Tổng quan (ADR-0041 của backend), Stream và Message lỗi (ADR-0042). Đọc cả ba ở server bằng phiên của
+ * Super Admin; `?tab=streams|errors` chọn tab mở sẵn.
  */
 export const dynamic = 'force-dynamic'
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams
   try {
-    return <DeliveryQueuePanel queue={await getDeliveryQueue()} />
+    const [overview, queues, letters] = await Promise.all([getDeliveryQueue(), getQueues(), listDeadLetters()])
+    return <QueueAdminScreen initialTab={queueTabOf(tab)} overview={overview} queues={queues} letters={letters} />
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
     const t = await getTranslations('deliveryQueue')

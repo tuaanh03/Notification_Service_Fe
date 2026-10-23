@@ -34,6 +34,9 @@ export const AUDIT_GROUPS = {
     'AppSendWindowChanged',
     'AppPacingChanged',
     'AppPacingCeilingChanged',
+    'AppHourlyCeilingChanged',
+    'AppRecipientLimitChanged',
+    'AppApiRateLimitChanged',
     'WebhookEndpointCreated',
     'WebhookEndpointUpdated',
     'WebhookEndpointDeleted',
@@ -57,7 +60,7 @@ export const AUDIT_GROUPS = {
     'TopicSuspended',
     'TopicMandatoryChanged',
   ],
-  settings: ['SystemSettingsUpdated'],
+  settings: ['SystemSettingsUpdated', 'DeadLetterRequeued', 'DeadLetterDiscarded', 'ConsumerGroupPaused', 'ConsumerGroupResumed'],
   sending: [
     'NotificationQueued',
     'NotificationScheduled',

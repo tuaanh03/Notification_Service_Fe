@@ -1,15 +1,11 @@
 'use client'
-import { useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { useFormatter, useTranslations } from 'next-intl'
-import { Inbox, RefreshCw } from 'lucide-react'
+import { Inbox } from 'lucide-react'
 import { AppLink } from '@/components/app-link'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { InfoHint } from '@/components/info-hint'
-import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
-import { Button } from '@/components/ui/button'
 import type { DeliveryQueueDto } from '@/lib/api/types'
 import { cosmicTokens } from '@/lib/theme'
 import { fmtDateTime } from '@/lib/time'
@@ -20,16 +16,14 @@ type Row = DeliveryQueueDto['apps'][number] & Record<string, unknown>
 const WARN_RATIO = 0.8
 
 /**
- * `/admin/queue` — Hàng chờ gửi (ADR-0041 của backend). Ba thẻ: hộp gửi chung hôm nay (lượt đã dùng / trần ngày), thư đang
+ * Tab Tổng quan của `/admin/queue` — Hàng chờ gửi (ADR-0041 của backend). Ba thẻ: hộp gửi chung hôm nay (lượt đã dùng / trần ngày), thư đang
  * chờ (kèm thời gian chờ ước tính), thư hẹn giờ; bảng app đang có thư chưa xong, nhiều nhất trước. Ngưỡng chỉnh ở Cài đặt
  * hệ thống; số lần gọi API / trần mỗi giờ của từng app chỉnh ở Giới hạn gửi của app đó.
  */
-export function DeliveryQueuePanel({ queue }: { queue: DeliveryQueueDto }) {
+export function DeliveryOverview({ queue }: { queue: DeliveryQueueDto }) {
   const t = useTranslations('deliveryQueue')
   const format = useFormatter()
   const num = (n: number) => format.number(n)
-  const router = useRouter()
-  const [refreshing, startRefresh] = useTransition()
 
   const { mailbox } = queue
   const ratio = mailbox.dailyCap > 0 ? Math.min(1, mailbox.usedToday / mailbox.dailyCap) : 0
@@ -65,16 +59,6 @@ export function DeliveryQueuePanel({ queue }: { queue: DeliveryQueueDto }) {
 
   return (
     <>
-      <PageHeader
-        title={t('title')}
-        subtitle={t('subtitle')}
-        actions={
-          <Button variant="outline" size="sm" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}>
-            <RefreshCw className={refreshing ? 'animate-spin' : undefined} /> {t('refresh')}
-          </Button>
-        }
-      />
-
       <div className="grid gap-4 md:grid-cols-3">
         <Panel className="p-5" data-testid="queue-mailbox">
           <div className="flex items-center gap-1">
