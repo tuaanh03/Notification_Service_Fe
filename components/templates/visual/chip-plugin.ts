@@ -266,7 +266,9 @@ function paintChip(el: HTMLElement, model: Component, labelOf: ChipOptions['labe
 
 /** Đổi chữ `{{ … }}` trong các nút chữ con của `component` thành chip. */
 export function chipifyText(component: Component): void {
-  component.components().forEach((child: Component) => {
+  // Duyệt trên BẢN CHÉP: thay một nút chữ bằng chữ + chip + chữ làm danh sách dài ra, mà `forEach` của collection
+  // giữ độ dài lúc bắt đầu — biến cuối khối bị bỏ sót, nằm lại dạng chữ thô (con trỏ lọt vào giữa `{{ … }}`).
+  component.components().models.slice().forEach((child: Component) => {
     if (child.get('type') !== 'textnode') {
       chipifyText(child)
       return
@@ -288,6 +290,16 @@ export function chipifyText(component: Component): void {
     child.remove()
     collection.add(parts, { at })
   })
+}
+
+/** Đặt / bỏ chữ hiện khi app không gửi biến của một chip có sẵn (vd chip đến từ mẫu). Rỗng = bỏ. */
+export function setChipDefault(chip: Component, fallback: string): void {
+  const attrs = { ...chip.getAttributes() }
+  if (fallback) attrs['data-default'] = fallback
+  else delete attrs['data-default']
+  chip.set('varDefault', fallback || undefined)
+  // Đổi thuộc tính -> GrapesJS báo "update": màn đánh dấu chưa lưu + kiểm lại khối.
+  chip.setAttributes(attrs)
 }
 
 /** Chữ thường -> an toàn để ghép vào HTML (nhãn nút trên thanh định dạng). */

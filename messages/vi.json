@@ -1721,6 +1721,7 @@
     "variablesInBlock": "Biến trong khối này",
     "chipFallback": "khi thiếu hiện «{value}»",
     "chipUndeclared": "Biến này chưa có trong bảng Biến — thư chưa xuất bản được.",
+    "chipNeedsDefault": "Biến không bắt buộc — cần chữ hiện khi app không gửi.",
     "advanced": "Nâng cao — khoảng cách, mã màu",
     "padding": "Khoảng cách quanh khối",
     "hexOf": "Mã màu ({field})",
@@ -2016,5 +2017,13 @@
     "cItems": "{v} phần tử",
     "cDefault": "mặc định {v}",
     "cPattern": "mẫu {v}"
+  },
+  "pageError": {
+    "staleTitle": "Console vừa được cập nhật",
+    "staleBody": "Tải lại trang để dùng bản mới rồi làm lại thao tác vừa rồi.",
+    "failedTitle": "Trang này gặp lỗi",
+    "failedBody": "Thử lại; nếu vẫn lỗi thì tải lại trang.",
+    "retry": "Thử lại",
+    "reload": "Tải lại trang"
   }
 }

@@ -1721,6 +1721,7 @@
     "variablesInBlock": "Variables in this block",
     "chipFallback": "shows “{value}” when missing",
     "chipUndeclared": "This variable is not in the Variables tab — the email cannot be published yet.",
+    "chipNeedsDefault": "Optional variable — needs text to show when the app does not send it.",
     "advanced": "Advanced — spacing, colour codes",
     "padding": "Spacing around the block",
     "hexOf": "Colour code ({field})",
@@ -2016,5 +2017,13 @@
     "cItems": "{v} items",
     "cDefault": "default {v}",
     "cPattern": "pattern {v}"
+  },
+  "pageError": {
+    "staleTitle": "The console was just updated",
+    "staleBody": "Reload the page to get the new version, then repeat what you just did.",
+    "failedTitle": "Something went wrong on this page",
+    "failedBody": "Try again; if it keeps failing, reload the page.",
+    "retry": "Try again",
+    "reload": "Reload page"
   }
 }

@@ -1,5 +1,5 @@
 'use client'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Component, Editor } from 'grapesjs'
 import { AlignCenter, AlignLeft, AlignRight, Braces, ChevronRight, Copy, Rows3, Trash2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { TemplateVariableDto } from '@/lib/api/types'
 import { parseVariables } from '@/lib/template-syntax'
-import { variableLabel } from '@/lib/variable-labels'
-import { CHIP_TYPE } from './chip-plugin'
+import { FORBIDDEN_DEFAULT_RE, variableLabel } from '@/lib/variable-labels'
+import { CHIP_TYPE, setChipDefault } from './chip-plugin'
 import { ColorField, PALETTES } from './color-field'
 import type { EmailSettings } from './email-settings'
 
@@ -45,12 +45,13 @@ function Choice({ label, value, options, onChange, testId }: { label: string; va
 }
 
 /** Ô chữ chỉ ghi khi rời ô / Enter — gõ từng phím không làm khung thư vẽ lại liên tục. */
-function TextField({ id, label, value, onCommit, placeholder, error, mono }: { id: string; label: string; value: string; onCommit: (v: string) => void; placeholder?: string; error?: string | null; mono?: boolean }) {
+function TextField({ id, label, ariaLabel, value, onCommit, placeholder, error, mono }: { id: string; label: string; ariaLabel?: string; value: string; onCommit: (v: string) => void; placeholder?: string; error?: string | null; mono?: boolean }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-semibold">{label}</Label>
+      {label && <Label htmlFor={id} className="text-xs font-semibold">{label}</Label>}
       <Input
         id={id}
+        aria-label={ariaLabel}
         key={value}
         defaultValue={value}
         placeholder={placeholder}
@@ -395,10 +396,15 @@ function VariablesInBlock({ component, variables }: { component: Component; vari
           const path = String(chip.get('varPath') ?? '')
           const v = variables.find((x) => x.name === path)
           const fallback = chip.get('varDefault') as string | undefined
+          // Biến không bắt buộc: sửa chữ mặc định ngay tại đây (chip từ mẫu không qua hộp "Chèn biến").
+          const editable = (v && !v.required) || !!fallback
           return (
-            <li key={chip.getId()} className="text-xs text-[var(--text-secondary)]">
-              <span className={v ? 'font-medium text-[var(--starlight)]' : 'font-medium text-[var(--supernova)]'}>{v ? variableLabel(v) : path}</span>
-              {fallback ? ` — ${t('chipFallback', { value: fallback })}` : null}
+            <li key={chip.getId()} className="space-y-1 text-xs text-[var(--text-secondary)]">
+              <p>
+                <span className={v ? 'font-medium text-[var(--starlight)]' : 'font-medium text-[var(--supernova)]'}>{v ? variableLabel(v) : path}</span>
+                {fallback && !editable ? ` — ${t('chipFallback', { value: fallback })}` : null}
+              </p>
+              {editable && <ChipDefaultField chip={chip} variable={v} compact />}
             </li>
           )
         })}
@@ -417,9 +423,35 @@ function ChipInfo({ component, variables }: { component: Component; variables: r
       <p className="text-sm font-medium text-[var(--text-primary)]">{v ? variableLabel(v) : path}</p>
       {!v && <p className="text-[var(--supernova)]">{t('chipUndeclared')}</p>}
       {v?.sample && <p>{t('insertExample', { value: v.sample })}</p>}
-      {fallback && <p>{t('chipFallback', { value: fallback })}</p>}
+      {(v && !v.required) || fallback ? <ChipDefaultField chip={component} variable={v} /> : null}
       <p className="font-mono text-[11px] text-[var(--text-muted)]">{path}</p>
     </div>
+  )
+}
+
+/**
+ * Chữ hiện khi app không gửi biến của MỘT chip (`| default: "…"`). Ghi khi rời ô / Enter; rỗng = bỏ mặc định. Cùng
+ * luật ký tự với hộp "Chèn biến" (`FORBIDDEN_DEFAULT_RE`). Biến không bắt buộc mà chưa có chữ -> nhắc (xuất bản sẽ cảnh báo).
+ */
+function ChipDefaultField({ chip, variable, compact }: { chip: Component; variable: TemplateVariableDto | undefined; compact?: boolean }) {
+  const t = useTranslations('visualEditor')
+  const value = String(chip.get('varDefault') ?? '')
+  const [bad, setBad] = useState(false)
+  const missing = !!variable && !variable.required && !value
+  return (
+    <TextField
+      id={`chip-default-${chip.getId()}`}
+      label={compact ? '' : t('insertFallbackRequired')}
+      ariaLabel={t('insertFallbackRequired')}
+      value={value}
+      placeholder={compact ? t('insertFallbackRequired') : t('insertFallbackPlaceholder')}
+      error={bad ? t('insertBadFallback') : missing ? t('chipNeedsDefault') : null}
+      onCommit={(next) => {
+        if (FORBIDDEN_DEFAULT_RE.test(next)) return setBad(true)
+        setBad(false)
+        if (next !== value) setChipDefault(chip, next)
+      }}
+    />
   )
 }
 
