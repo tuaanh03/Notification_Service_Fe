@@ -71,6 +71,11 @@ export function chipPlugin(options: ChipOptions) {
         },
       },
       view: {
+        init(this: { el: HTMLElement; model: Component; listenTo: (obj: Component, event: string, cb: () => void) => void }) {
+          // Đổi thuộc tính (vd sửa chữ mặc định) -> GrapesJS ghi lại thuộc tính của phần tử, xoá mất `style` đã tô:
+          // tô lại. Lắng nghe sau GrapesJS (`init` chạy cuối `initialize`) nên luôn tô SAU khi nó ghi.
+          this.listenTo(this.model, 'change:attributes', () => paintChip(this.el, this.model, options.labelOf, options.colors))
+        },
         onRender(this: { el: HTMLElement; model: Component }) {
           paintChip(this.el, this.model, options.labelOf, options.colors)
         },
