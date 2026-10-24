@@ -59,6 +59,8 @@ export type AdminProfileDto = {
   orgs: { id: string; name: string; role: OrgRole | null }[]
   /** Vai cấp TRỰC TIẾP trên app. Owner / Org Admin còn có quyền ngầm trên mọi app của org. */
   appRoles: Record<string, AppRole>
+  /** Đang gọi bằng phiên hay PAT (ADR-0041). Console luôn là phiên. Optional: backend cũ chưa có. */
+  auth?: { via: 'session' | 'pat'; tokenId: string | null; scope: PatScope | null }
 }
 
 /** Sao đúng `AppDto` của backend (`src/modules/apps/application/dto.ts`). */
@@ -465,9 +467,32 @@ export type IncomingVariableMapping =
 
 export type IncomingCondition = { path: string; values: string[] }
 
+/**
+ * Công cụ giám sát cắm vào incoming webhook (ADR-0043) — sao đúng `IncomingIntegrationDto`. Danh mục viết trong
+ * code backend: `custom` = công cụ cho tự viết body (EWS dựng body để dán), `fixed` = JSON cố định (EWS tự ánh xạ),
+ * `generic` = trường trùng tên biến.
+ */
+export type IncomingIntegrationId = 'generic' | 'datadog' | 'grafana' | 'alertmanager' | 'gatus' | 'uptime-kuma'
+export type AlertTrigger = 'firing' | 'resolved' | 'all'
+export type IncomingIntegrationDto = {
+  id: IncomingIntegrationId
+  name: string
+  payload: 'generic' | 'custom' | 'fixed'
+  docsUrl: string | null
+  fields: { variable: string; source: string }[]
+  /** `null` = công cụ không phân biệt đang lỗi / đã khắc phục -> không có ô "Gửi khi". */
+  status: { field: string; source: string; firing: string[]; resolved: string[] } | null
+  steps: { vi: string[]; en: string[] }
+}
+
 export type IncomingHookDto = {
   id: string
   name: string
+  /** ADR-0043. Optional: backend cũ chưa có. `null` = hook dựng trước khi có danh mục công cụ. */
+  integration?: IncomingIntegrationId | null
+  trigger?: AlertTrigger | null
+  /** Body dán vào công cụ `custom` — backend dựng, console chỉ hiện. */
+  setupBody?: Record<string, string> | null
   topic: { id: string; key: string | null }
   template: { id: string; name: string | null; status: string | null; version: number | null }
   mappings: IncomingVariableMapping[]
@@ -492,9 +517,12 @@ export type IncomingHookConfigInput = {
   name: string
   topicId: string
   templateId: string
-  mappings: IncomingVariableMapping[]
+  /** Bỏ trống khi có `integration` — backend tự dựng ánh xạ + điều kiện từ danh mục (ADR-0043 §4). */
+  mappings?: IncomingVariableMapping[]
   dedupePath: string | null
-  condition: IncomingCondition | null
+  condition?: IncomingCondition | null
+  integration?: IncomingIntegrationId | null
+  trigger?: AlertTrigger | null
 }
 
 export type IssuedHookUrlDto = { hook: IncomingHookDto; token: string; path: string; url: string | null }
@@ -713,3 +741,21 @@ export type DeadLetterDto = {
   aggregateType: string | null
   aggregateId: string | null
 }
+
+/** Personal access token (ADR-0041) — sao đúng `PersonalAccessTokenDto`. Token gốc `ewspat_…` CHỈ có trong response tạo. */
+export type PatScope = 'read' | 'write'
+export type PersonalAccessTokenDto = {
+  tokenId: string
+  name: string
+  scope: PatScope
+  /** `ewspat_…a1b2` */
+  hint: string
+  status: 'active' | 'expired' | 'revoked'
+  createdAt: string
+  expiresAt: string
+  lastUsedAt: string | null
+  lastUsedIp: string | null
+  revokedAt: string | null
+}
+export type AdminPersonalAccessTokenDto = PersonalAccessTokenDto & { adminId: string; adminEmail: string; adminName: string | null }
+export type IssuedPersonalAccessTokenDto = { token: PersonalAccessTokenDto; secret: string }

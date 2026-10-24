@@ -6,6 +6,7 @@ import type {
   IncomingHookConfigInput,
   IncomingHookDto,
   IncomingHookListDto,
+  IncomingIntegrationDto,
   IssuedHookUrlDto,
 } from './types'
 
@@ -58,4 +59,9 @@ export async function previewIncomingHook(
 /** 50 lần gọi gần nhất, mới nhất trước. */
 export async function listIncomingCalls(appId: string, hookId: string): Promise<IncomingCallDto[]> {
   return adminFetch<IncomingCallDto[]>(`${one(appId, hookId)}/calls`)
+}
+
+/** Danh mục công cụ giám sát cắm được (ADR-0043) — viết trong code backend, giống nhau cho mọi app. */
+export async function listIncomingIntegrations(): Promise<IncomingIntegrationDto[]> {
+  return (await adminFetch<{ integrations: IncomingIntegrationDto[] }>('/incoming-integrations')).integrations
 }

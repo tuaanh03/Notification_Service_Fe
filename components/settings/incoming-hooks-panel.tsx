@@ -17,10 +17,11 @@ import { EmptyState } from '@/components/empty-state'
 import { Panel } from '@/components/panel'
 import { StatusPill } from '@/components/status-pill'
 import { IncomingHookGuide } from '@/components/settings/incoming-hook-guide'
+import { IntegrationSetup } from '@/components/settings/integration-setup'
+import { AlertPresetHint, GENERIC, HookForm, TRIGGER_KEY, type Selection } from '@/components/settings/incoming-hook-form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
@@ -30,6 +31,8 @@ import {
   type IncomingHookConfigInput,
   type IncomingHookDto,
   type IncomingHookListDto,
+  type IncomingIntegrationDto,
+  type IncomingIntegrationId,
   type TemplateSummaryDto,
   type TopicDto,
 } from '@/lib/api/types'
@@ -37,7 +40,8 @@ import { fmtDateTime } from '@/lib/time'
 import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
-type View = { list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[] }
+type View = { list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[]; integrations: IncomingIntegrationDto[] }
+
 type Confirm = { kind: 'rotate' | 'delete'; hook: IncomingHookDto } | null
 
 /** Cảnh báo về topic / template -> câu ngắn. Cảnh báo về ánh xạ biến KHÔNG hiện (console không có ánh xạ). */
@@ -55,7 +59,16 @@ const WARNING_KEY: Partial<
 const CALL_ERROR_KEY: Partial<
   Record<
     string,
-    'errMissing' | 'errInvalidValue' | 'errBody' | 'errRateLimited' | 'errTooLarge' | 'errTopic' | 'errTemplate' | 'errNetwork' | 'errAppInactive'
+    | 'errMissing'
+    | 'errInvalidValue'
+    | 'errBody'
+    | 'errRateLimited'
+    | 'errTooLarge'
+    | 'errTopic'
+    | 'errTemplate'
+    | 'errNetwork'
+    | 'errAppInactive'
+    | 'errLinkScheme'
   >
 > = {
   MISSING_VARIABLE: 'errMissing',
@@ -70,19 +83,31 @@ const CALL_ERROR_KEY: Partial<
   TEMPLATE_NOT_FOUND: 'errTemplate',
   IP_NOT_ALLOWED: 'errNetwork',
   APP_NOT_ACTIVE: 'errAppInactive',
+  LINK_SCHEME_NOT_ALLOWED: 'errLinkScheme',
 }
 
-/** Cấu hình gửi lên khi đổi topic / template — tên tự theo template; phần kỹ thuật (đội EWS đặt qua API) giữ nguyên, trừ ánh xạ khi đổi template. */
-function configOf(hook: IncomingHookDto | null, topicId: string, templateId: string, templates: TemplateSummaryDto[]): IncomingHookConfigInput {
-  const name = templates.find((x) => x.id === templateId)?.name ?? hook?.name ?? 'Incoming webhook'
-  return {
-    name: name.slice(0, 100),
-    topicId,
-    templateId,
-    mappings: hook && hook.template.id === templateId ? hook.mappings : [],
-    dedupePath: hook?.dedupePath ?? null,
-    condition: hook?.condition ?? null,
+/**
+ * Cấu hình gửi lên — tên tự theo template. Có công cụ (ADR-0043) thì KHÔNG gửi ánh xạ / điều kiện: backend tự dựng từ
+ * danh mục ∩ biến của template + `trigger`. Hook cũ chưa có công cụ mà người dùng không đổi công cụ -> giữ đúng như
+ * trước (ánh xạ / điều kiện đội EWS đặt qua API giữ nguyên, trừ ánh xạ khi đổi template).
+ */
+function configOf(
+  hook: IncomingHookDto | null,
+  sel: Selection,
+  templates: TemplateSummaryDto[],
+  integrations: IncomingIntegrationDto[],
+): IncomingHookConfigInput {
+  const name = (templates.find((x) => x.id === sel.templateId)?.name ?? hook?.name ?? 'Incoming webhook').slice(0, 100)
+  const base = { name, topicId: sel.topicId, templateId: sel.templateId, dedupePath: hook?.dedupePath ?? null }
+  if (hook && !hook.integration && sel.integration === GENERIC) {
+    return {
+      ...base,
+      mappings: hook.template.id === sel.templateId ? hook.mappings : [],
+      condition: hook.condition ?? null,
+    }
   }
+  const hasStatus = integrations.find((i) => i.id === sel.integration)?.status != null
+  return { ...base, integration: sel.integration, trigger: hasStatus ? sel.trigger : null }
 }
 
 /**
@@ -103,6 +128,8 @@ export function IncomingHooksPanel() {
   const [openId, setOpenId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [confirm, setConfirm] = useState<Confirm>(null)
+  /** Hook vừa tạo: mở sẵn mục "Cài trên <công cụ>" — việc tiếp theo của người dùng là dán URL + body vào công cụ. */
+  const [createdId, setCreatedId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const failText = useCallback(
@@ -177,6 +204,9 @@ export function IncomingHooksPanel() {
     const topic = view.topics.find((x) => x.id === id)
     return topic ? topic.name : (key ?? '—')
   }
+  const integrationOf = (id: IncomingIntegrationId | null | undefined) => view.integrations.find((i) => i.id === (id ?? GENERIC)) ?? null
+  // Chưa có template nhóm "Cảnh báo" -> gợi ý tạo từ mẫu (luồng from-preset sẵn có ở /templates/new).
+  const noAlertTemplate = !view.templates.some((x) => x.category === 'alert' && x.status !== 'archived')
   const groups = [...new Set(hooks.map((h) => h.topic.id))].map((topicId) => ({
     topicId,
     hooks: hooks.filter((h) => h.topic.id === topicId),
@@ -196,6 +226,7 @@ export function IncomingHooksPanel() {
             <Plus /> {t('add')}
           </Button>
           {cannotAdd && <span className="text-xs text-[var(--text-muted)]">{cannotAdd}</span>}
+          {cannotAdd !== null && view.list.configured && noAlertTemplate && <AlertPresetHint />}
         </div>
       )}
 
@@ -211,17 +242,24 @@ export function IncomingHooksPanel() {
           <HookForm
             topics={activeTopics}
             templates={publishedTemplates}
-            initialTopicId={activeTopics[0]?.id ?? ''}
-            initialTemplateId={publishedTemplates[0]?.id ?? ''}
+            integrations={view.integrations}
+            initial={{
+              topicId: activeTopics[0]?.id ?? '',
+              templateId: publishedTemplates[0]?.id ?? '',
+              integration: GENERIC,
+              trigger: 'firing',
+            }}
+            suggestPresets={noAlertTemplate}
             submitLabel={t('create')}
             pending={pending}
             onCancel={() => setAdding(false)}
-            onSubmit={(topicId, templateId) =>
+            onSubmit={(sel) =>
               run(
-                () => createIncomingHookAction(appId, configOf(null, topicId, templateId, view.templates)),
+                () => createIncomingHookAction(appId, configOf(null, sel, view.templates, view.integrations)),
                 (data) => {
                   setAdding(false)
                   setOpenId(data.hook.id)
+                  setCreatedId(data.hook.id)
                 },
               )
             }
@@ -244,6 +282,12 @@ export function IncomingHooksPanel() {
                 <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[var(--orbit)]/30">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{hook.template.name ?? hook.name}</span>
+                    {hook.integration && hook.integration !== GENERIC && (
+                      <span className="block truncate text-[11px] text-[var(--text-secondary)]">
+                        {integrationOf(hook.integration)?.name ?? hook.integration}
+                        {integrationOf(hook.integration)?.status && ` · ${t(TRIGGER_KEY[hook.trigger ?? 'all'])}`}
+                      </span>
+                    )}
                     {hook.warnings
                       .filter((w) => WARNING_KEY[w.code])
                       .map((w) => (
@@ -262,13 +306,21 @@ export function IncomingHooksPanel() {
                         key={`${hook.id}:${hook.updatedAt}`}
                         topics={view.topics}
                         templates={view.templates.filter((x) => x.status !== 'archived')}
-                        initialTopicId={hook.topic.id}
-                        initialTemplateId={hook.template.id}
+                        integrations={view.integrations}
+                        initial={{
+                          topicId: hook.topic.id,
+                          templateId: hook.template.id,
+                          integration: hook.integration ?? GENERIC,
+                          trigger: hook.trigger ?? 'all',
+                        }}
                         submitLabel={t('save')}
                         pending={pending}
-                        onSubmit={(topicId, templateId) =>
+                        onSubmit={(sel) =>
                           run(
-                            () => updateIncomingHookAction(appId, hook.id, { config: configOf(hook, topicId, templateId, view.templates) }),
+                            () =>
+                              updateIncomingHookAction(appId, hook.id, {
+                                config: configOf(hook, sel, view.templates, view.integrations),
+                              }),
                             () => toast.success(t('saved')),
                           )
                         }
@@ -301,9 +353,18 @@ export function IncomingHooksPanel() {
                         </Button>
                       </div>
                     )}
-                    <Section title={t('bodySample')}>
-                      <IncomingHookGuide appId={appId} topicId={hook.topic.id} templateId={hook.template.id} />
-                    </Section>
+                    {(() => {
+                      const tool = integrationOf(hook.integration)
+                      return tool && tool.payload !== 'generic' ? (
+                        <Section title={t('setupOn', { tool: tool.name })} defaultOpen={createdId === hook.id}>
+                          <IntegrationSetup hook={hook} integration={tool} />
+                        </Section>
+                      ) : (
+                        <Section title={t('bodySample')}>
+                          <IncomingHookGuide appId={appId} topicId={hook.topic.id} templateId={hook.template.id} />
+                        </Section>
+                      )
+                    })()}
                     <Section title={t('callsTitle')}>
                       <CallLog appId={appId} hookId={hook.id} />
                     </Section>
@@ -339,69 +400,9 @@ export function IncomingHooksPanel() {
   )
 }
 
-/** Hai ô chọn + nút — dùng cho dòng "Thêm" và phần sửa trong hook. */
-function HookForm({
-  topics,
-  templates,
-  initialTopicId,
-  initialTemplateId,
-  submitLabel,
-  pending,
-  onCancel,
-  onSubmit,
-}: {
-  topics: TopicDto[]
-  templates: TemplateSummaryDto[]
-  initialTopicId: string
-  initialTemplateId: string
-  submitLabel: string
-  pending: boolean
-  onCancel?: () => void
-  onSubmit: (topicId: string, templateId: string) => void
-}) {
-  const t = useTranslations('incoming')
-  const [topicId, setTopicId] = useState(initialTopicId)
-  const [templateId, setTemplateId] = useState(initialTemplateId)
-  const changed = topicId !== initialTopicId || templateId !== initialTemplateId
+function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <label className="min-w-[12rem] flex-1 space-y-1 text-xs">
-        <span className="text-[var(--text-muted)]">{t('topicLabel')}</span>
-        <NativeSelect value={topicId} onChange={(e) => setTopicId(e.target.value)} className="w-full">
-          {topics.map((x) => (
-            <NativeSelectOption key={x.id} value={x.id}>
-              {x.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </label>
-      <label className="min-w-[12rem] flex-1 space-y-1 text-xs">
-        <span className="text-[var(--text-muted)]">{t('templateLabel')}</span>
-        <NativeSelect value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="w-full">
-          {templates.map((x) => (
-            <NativeSelectOption key={x.id} value={x.id}>
-              {x.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </label>
-      <div className="flex gap-2">
-        <Button size="sm" disabled={pending || !topicId || !templateId || (onCancel === undefined && !changed)} onClick={() => onSubmit(topicId, templateId)}>
-          {submitLabel}
-        </Button>
-        {onCancel && (
-          <Button size="sm" variant="ghost" onClick={onCancel}>
-            {t('cancel')}
-          </Button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Collapsible>
+    <Collapsible defaultOpen={defaultOpen}>
       <CollapsibleTrigger className="group/sec flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-foreground">
         <ChevronRight className="size-3.5 transition-transform group-data-[panel-open]/sec:rotate-90" />
         {title}

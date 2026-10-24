@@ -1,6 +1,7 @@
 import { PlugZap } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { LoginSecurityPanel } from '@/components/admin/login-security-panel'
+import { PatAdminPanel } from '@/components/admin/pat-admin-panel'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
@@ -9,6 +10,7 @@ import { listLoginLocks } from '@/lib/api/login-security'
 import { ApiError } from '@/lib/api/problem'
 import { getSystemSettings } from '@/lib/api/system-settings'
 import { searchAudit } from '@/lib/api/audit'
+import { listAllTokens } from '@/lib/api/tokens'
 import type { SecurityActivity } from '@/components/admin/login-security-panel'
 
 /**
@@ -19,8 +21,13 @@ export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   try {
-    const [settings, locks, activity] = await Promise.all([getSystemSettings(), listLoginLocks(), securityActivity()])
-    return <LoginSecurityPanel initialSettings={settings} initialLocks={locks} activity={activity} />
+    const [settings, locks, activity, tokens] = await Promise.all([getSystemSettings(), listLoginLocks(), securityActivity(), activeTokens()])
+    return (
+      <>
+        <LoginSecurityPanel initialSettings={settings} initialLocks={locks} activity={activity} />
+        <PatAdminPanel initial={tokens.ok ? tokens.data : []} error={tokens.ok ? null : tokens.error} />
+      </>
+    )
   } catch (err) {
     if (!(err instanceof ApiError)) throw err
     const t = await getTranslations('security')
@@ -52,5 +59,18 @@ async function securityActivity(): Promise<SecurityActivity | null> {
     return { locked, permanent, unlocked, recent: recent.items }
   } catch {
     return null
+  }
+}
+
+/**
+ * PAT đang hoạt động của mọi người (ADR-0041 §9). Hỏng thì khối PAT hiện mã lỗi, phần khoá đăng nhập vẫn dùng được —
+ * dập token lộ và mở khoá đăng nhập là hai việc độc lập.
+ */
+async function activeTokens(): Promise<{ ok: true; data: Awaited<ReturnType<typeof listAllTokens>> } | { ok: false; error: string }> {
+  try {
+    return { ok: true, data: await listAllTokens('active') }
+  } catch (err) {
+    if (!(err instanceof ApiError)) throw err
+    return { ok: false, error: await describeError(err) }
   }
 }

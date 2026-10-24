@@ -1,11 +1,12 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Check, ChevronsUpDown, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import { Check, ChevronsUpDown, Code2, KeyRound, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { AppLink } from './app-link'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
+import { ACCOUNT_TOKENS, DEVELOPERS } from '@/lib/app-routes'
 import { LOCALES } from '@/i18n/locales'
 import { LocaleFlag } from './locale-flag'
 import { useLocaleSwitch } from './locale-switcher'
@@ -116,7 +117,7 @@ function initialsOf(email: string): string {
 /** Lối sang khu kia: console app -> Quản trị EWS (Super Admin), hoặc ngược lại (khi là thành viên org). */
 export type AreaSwitch = { href: string; label: string; icon: LucideIcon }
 
-/** Chân sidebar: tài khoản, vai thật, chuyển khu, ngôn ngữ, đăng xuất. */
+/** Chân sidebar: tài khoản, vai thật, khoá truy cập + API (ADR-0041 / 0042), chuyển khu, ngôn ngữ, đăng xuất. */
 export function AccountMenu({
   admin,
   roleLabel,
@@ -129,6 +130,7 @@ export function AccountMenu({
 }) {
   const t = useTranslations('shell')
   const tl = useTranslations('locale')
+  const ta = useTranslations('account')
   const { locale, change: changeLocale, pending: localePending } = useLocaleSwitch()
   return (
     <SidebarMenu className="group-data-[collapsible=icon]:items-center">
@@ -175,6 +177,23 @@ export function AccountMenu({
               </div>
             </div>
 
+            <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+            {(
+              [
+                [ACCOUNT_TOKENS, KeyRound, ta('navTokens')],
+                [DEVELOPERS, Code2, ta('navDevelopers')],
+              ] as const
+            ).map(([href, Icon, label]) => (
+              <DropdownMenuItem
+                key={href}
+                render={<AppLink href={href} />}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 cursor-pointer text-xs"
+              >
+                <Icon className="size-3.5 text-muted-foreground" />
+                <span>{label}</span>
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator className="my-1 bg-border/60" />
 
             {switchArea && (

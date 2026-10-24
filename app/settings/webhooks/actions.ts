@@ -5,6 +5,7 @@ import {
   deleteIncomingHook,
   listIncomingCalls,
   listIncomingHooks,
+  listIncomingIntegrations,
   previewIncomingHook,
   revealIncomingHookUrl,
   rotateIncomingHookToken,
@@ -19,6 +20,7 @@ import type {
   IncomingHookConfigInput,
   IncomingHookDto,
   IncomingHookListDto,
+  IncomingIntegrationDto,
   IssuedHookUrlDto,
   TemplateSummaryDto,
   TopicDto,
@@ -92,13 +94,18 @@ export async function loadWebhookDeliveriesAction(
 
 // --- Incoming webhook (ADR-0030): công cụ ngoài gọi vào URL bí mật để phát vào topic. ---
 
-/** Danh sách hook + chọn lựa cho hộp thêm / sửa (topic, template của app). */
+/** Danh sách hook + chọn lựa cho dòng thêm / sửa (topic, template của app, công cụ giám sát — ADR-0043). */
 export async function loadIncomingAction(appId: string): Promise<
-  ActionResult<{ list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[] }>
+  ActionResult<{ list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[]; integrations: IncomingIntegrationDto[] }>
 > {
   return toResult(async () => {
-    const [list, topics, templates] = await Promise.all([listIncomingHooks(appId), listTopics(appId), listTemplates(appId)])
-    return { list, topics, templates }
+    const [list, topics, templates, integrations] = await Promise.all([
+      listIncomingHooks(appId),
+      listTopics(appId),
+      listTemplates(appId),
+      listIncomingIntegrations(),
+    ])
+    return { list, topics, templates, integrations }
   })
 }
 

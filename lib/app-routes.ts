@@ -48,6 +48,19 @@ export function orgPath(orgId: string): string {
   return `${ORGS_HOME}/${encodeURIComponent(orgId)}`
 }
 
+/**
+ * Màn của TÀI KHOẢN đang đăng nhập, không thuộc app / org nào: PAT (`/account/tokens`, ADR-0041 của backend) và
+ * trang API cho lập trình viên (`/developers`, ADR-0042). Vào từ menu tài khoản; dựng trong khung `<OrgsShell>`
+ * (không cần app — người chưa thuộc org nào vẫn tạo được PAT). Link tới đây không mang `?app=`.
+ */
+export const ACCOUNT_TOKENS = '/account/tokens'
+export const DEVELOPERS = '/developers'
+const ACCOUNT_ROUTES = ['/account', DEVELOPERS] as const
+
+export function isAccountRoute(pathname: string): boolean {
+  return ACCOUNT_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))
+}
+
 /** Màn định mở khi bị đưa sang trang Tổ chức chọn app (`chooseAppPath`). */
 export const NEXT_PARAM = 'next'
 /** Giá trị `?app=` sai đã khiến người dùng bị đưa sang trang Tổ chức — để trang đó báo "không có app «x»". */
@@ -75,7 +88,7 @@ export function safeNext(raw: string | null): string {
   if (raw === null || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return '/'
   const queryAt = raw.indexOf('?')
   const path = queryAt === -1 ? raw : raw.slice(0, queryAt)
-  if (isOrgsRoute(path) || isAdminRoute(path)) return '/'
+  if (isOrgsRoute(path) || isAdminRoute(path) || isAccountRoute(path)) return '/'
   const params = new URLSearchParams(queryAt === -1 ? '' : raw.slice(queryAt + 1))
   params.delete(APP_PARAM)
   const query = params.toString()
@@ -129,7 +142,7 @@ export function appKey(app: { app_id: string }): string {
   return app.app_id
 }
 
-/** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `key = null`, link ngoài, khu Quản trị EWS hoặc `/orgs` -> để nguyên. */
+/** Gắn `?app=` vào một đường dẫn nội bộ, giữ các tham số khác. `key = null`, link ngoài, khu Quản trị EWS, `/orgs` hoặc màn tài khoản -> để nguyên. */
 export function withApp(href: string, key: string | null): string {
   if (key === null || !href.startsWith('/')) return href
   const hashAt = href.indexOf('#')
@@ -137,8 +150,8 @@ export function withApp(href: string, key: string | null): string {
   const beforeHash = hashAt === -1 ? href : href.slice(0, hashAt)
   const queryAt = beforeHash.indexOf('?')
   const path = queryAt === -1 ? beforeHash : beforeHash.slice(0, queryAt)
-  // Khu Quản trị EWS và trang Tổ chức không thuộc app nào: link tới đó không mang `?app=`.
-  if (isAdminRoute(path) || isOrgsRoute(path)) return href
+  // Khu Quản trị EWS, trang Tổ chức, màn tài khoản không thuộc app nào: link tới đó không mang `?app=`.
+  if (isAdminRoute(path) || isOrgsRoute(path) || isAccountRoute(path)) return href
   const params = new URLSearchParams(queryAt === -1 ? '' : beforeHash.slice(queryAt + 1))
   params.set(APP_PARAM, key)
   return `${path}?${params.toString()}${hash}`

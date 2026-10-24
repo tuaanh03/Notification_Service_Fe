@@ -6,7 +6,7 @@
  * vùi mất việc người quản trị làm.
  */
 export const AUDIT_GROUPS = {
-  security: ['AdminSignedIn', 'AdminSignedOut', 'LoginLocked', 'AdminLocked', 'LoginUnlocked', 'AdminPasswordChanged', 'AdminMicrosoftLinked'],
+  security: ['AdminSignedIn', 'AdminSignedOut', 'LoginLocked', 'AdminLocked', 'LoginUnlocked', 'AdminPasswordChanged', 'AdminMicrosoftLinked', 'PersonalAccessTokenCreated', 'PersonalAccessTokenRevoked'],
   people: [
     'AccountCreated',
     'AdminCreated',

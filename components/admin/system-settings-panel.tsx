@@ -38,6 +38,8 @@ const LABEL: Partial<
         | 'lockoutMinutesLabel'
         | 'ipMaxFailedLabel'
         | 'permanentAfterLabel'
+        | 'patMaxPerAdminLabel'
+        | 'patMaxLifetimeLabel'
       help:
         | 'dedupeHelp'
         | 'rateHelp'
@@ -55,6 +57,8 @@ const LABEL: Partial<
         | 'lockoutMinutesHelp'
         | 'ipMaxFailedHelp'
         | 'permanentAfterHelp'
+        | 'patMaxPerAdminHelp'
+        | 'patMaxLifetimeHelp'
       unit?:
         | 'unitMinutes'
         | 'unitPerMinute'
@@ -66,6 +70,8 @@ const LABEL: Partial<
         | 'unitEmailsPerDay'
         | 'unitEmails'
         | 'unitEmailsPerHour'
+        | 'unitTokens'
+        | 'unitDays'
     }
   >
 > = {
@@ -85,6 +91,8 @@ const LABEL: Partial<
   'auth.lockout_minutes': { label: 'lockoutMinutesLabel', help: 'lockoutMinutesHelp', unit: 'unitMinutes' },
   'auth.ip_max_failed_attempts': { label: 'ipMaxFailedLabel', help: 'ipMaxFailedHelp', unit: 'unitTimes' },
   'auth.permanent_lock_after': { label: 'permanentAfterLabel', help: 'permanentAfterHelp', unit: 'unitLockouts' },
+  'pat.max_per_admin': { label: 'patMaxPerAdminLabel', help: 'patMaxPerAdminHelp', unit: 'unitTokens' },
+  'pat.max_lifetime_days': { label: 'patMaxLifetimeLabel', help: 'patMaxLifetimeHelp', unit: 'unitDays' },
 }
 
 /** Nhóm `auth.*` (chặn đăng nhập sai — ADR-0039 của backend) ở mục riêng "Theo dõi & Bảo mật", không ở trang này. */
@@ -93,15 +101,20 @@ export const isSecuritySetting = (key: string): boolean => key.startsWith('auth.
 /** Ngưỡng của cửa nhận thư (ADR-0041 của backend) — nhóm "Gửi thư", cùng chỗ với màn Hàng chờ gửi nhắc tới. */
 const DELIVERY_KEYS = new Set(['delivery.mailbox_daily_cap', 'apps.max_pending_per_app', 'apps.default_max_send_per_hour'])
 
-/** Nhóm trên màn: ngưỡng gửi thư -> Gửi thư; `apps.*` / `webhooks.*` -> Ứng dụng; `templates.*` -> Template; còn lại -> Incoming webhook. */
-const groupOf = (key: string): 'delivery' | 'apps' | 'templates' | 'incoming' =>
+/**
+ * Nhóm trên màn: ngưỡng gửi thư -> Gửi thư; `apps.*` / `webhooks.*` -> Ứng dụng; `templates.*` -> Template;
+ * `pat.*` -> Khoá truy cập cá nhân (ADR-0044); còn lại -> Incoming webhook.
+ */
+const groupOf = (key: string): 'delivery' | 'apps' | 'templates' | 'pat' | 'incoming' =>
   DELIVERY_KEYS.has(key)
     ? 'delivery'
     : key.startsWith('apps.') || key.startsWith('webhooks.')
       ? 'apps'
       : key.startsWith('templates.')
         ? 'templates'
-        : 'incoming'
+        : key.startsWith('pat.')
+          ? 'pat'
+          : 'incoming'
 
 /**
  * Sửa cài đặt hệ thống (ADR-0030 của backend) — dùng chung cho trang Cài đặt hệ thống và "Theo dõi & Bảo mật". Mỗi
@@ -261,6 +274,12 @@ export function SystemSettingsPanel({ initial }: { initial: SystemSettingDto[] }
         <Panel className="mt-5 p-5">
           <h2 className="mb-5 text-sm font-semibold">{t('templatesTitle')}</h2>
           <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'templates').map(row)}</div>
+        </Panel>
+      )}
+      {settings.some((s) => groupOf(s.key) === 'pat') && (
+        <Panel className="mt-5 p-5">
+          <h2 className="mb-5 text-sm font-semibold">{t('patTitle')}</h2>
+          <div className="space-y-6">{settings.filter((s) => groupOf(s.key) === 'pat').map(row)}</div>
         </Panel>
       )}
       <p className="mt-4 text-xs text-[var(--text-muted)]">{t('propagation')}</p>

@@ -1,5 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { FilePlus2, RotateCcw } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Panel } from '@/components/panel'
@@ -22,6 +23,7 @@ const ALL = 'all'
  * Bước chọn trước của màn Tạo template (ADR-0035 của backend): ô "Bắt đầu từ trống" + lưới mẫu dựng sẵn lọc
  * theo nhóm. Thẻ mẫu theo ngôn ngữ màn hình; bấm thẻ mở hộp xem trước để chọn ngôn ngữ thư + tên rồi "Dùng mẫu".
  * Chỉ hiện nút lọc của nhóm có mẫu — nhóm rỗng chỉ làm người dùng bấm vào chỗ trống.
+ * `?preset=<id>` (link từ màn khác — vd gợi ý mẫu cảnh báo ở tab incoming webhook, ADR-0043) mở sẵn hộp của mẫu đó.
  */
 export function PresetGallery({ onBlank }: { onBlank: () => void }) {
   const t = useTranslations('templatePresets')
@@ -33,6 +35,14 @@ export function PresetGallery({ onBlank }: { onBlank: () => void }) {
   const error = presetErrorOf(library.state[locale])
   const [category, setCategory] = useState<TemplateCategory | typeof ALL>(ALL)
   const [open, setOpen] = useState<TemplatePresetDto | null>(null)
+  const wanted = useSearchParams().get('preset')
+  // Mở hộp của `?preset=` MỘT lần khi danh sách mẫu đã nạp — đóng hộp rồi thì không tự mở lại.
+  const [handled, setHandled] = useState(false)
+  if (!handled && wanted && presets) {
+    setHandled(true)
+    const found = presets.find((p) => p.id === wanted)
+    if (found) setOpen(found)
+  }
 
   const categories = useMemo(
     () => TEMPLATE_CATEGORIES.filter((c) => presets?.some((p) => p.category === c)),
