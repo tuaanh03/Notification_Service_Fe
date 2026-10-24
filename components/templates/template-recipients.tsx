@@ -7,6 +7,7 @@ import { useApp } from '@/components/app-context'
 import { AppLink } from '@/components/app-link'
 import { DataTable, type Column } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
+import { InfoHint } from '@/components/info-hint'
 import { Panel } from '@/components/panel'
 import { StatusTabs, type StatusTab } from '@/components/status-tabs'
 import { Button } from '@/components/ui/button'
@@ -138,6 +139,23 @@ export function TemplateRecipients({
             render: (r: Row) => (
               <span className="tabular-nums">{r.firstOpenedAt ? fmtDateTime(r.firstOpenedAt) : r.openTracked ? t('notOpened') : t('notTracked')}</span>
             ),
+          },
+          {
+            key: 'lastOpenedAt' as const,
+            label: t('colLastOpened'),
+            hideBelow: 'lg' as const,
+            render: (r: Row) =>
+              r.lastOpenedAt ? (
+                <span className="tabular-nums">{fmtDateTime(r.lastOpenedAt)}</span>
+              ) : r.firstOpenedAt ? (
+                // Mở >= 2 lần trước khi có cột này (migration 0032): không biết lần cuối, không đoán bằng lần đầu.
+                <span className="inline-flex items-center gap-1 text-[var(--text-muted)]">
+                  —
+                  <InfoHint label={t('colLastOpened')} summary={t('lastOpenedUnknown')} />
+                </span>
+              ) : (
+                <span className="text-[var(--text-muted)]">—</span>
+              ),
           },
           { key: 'openCount' as const, label: t('colOpens'), numeric: true, hideBelow: 'sm' as const, render: (r: Row) => (r.openTracked ? r.openCount : '—') },
         ]),

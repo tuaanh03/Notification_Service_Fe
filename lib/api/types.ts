@@ -640,6 +640,8 @@ export type TemplateRecipientDto = {
   sentAt: string | null
   openTracked: boolean
   firstOpenedAt: string | null
+  /** null: chưa mở, hoặc mở >= 2 lần trước khi API ghi lần cuối (migration 0032). */
+  lastOpenedAt: string | null
   openCount: number
 }
 

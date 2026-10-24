@@ -1794,6 +1794,8 @@
     "colVersion": "Phiên bản",
     "colSentAt": "Gửi lúc",
     "colFirstOpened": "Mở lần đầu",
+    "colLastOpened": "Mở lần cuối",
+    "lastOpenedUnknown": "Thư này đã mở nhiều lần trước khi hệ thống bắt đầu ghi lần mở cuối, nên không biết lần cuối là lúc nào. Từ nay mỗi lượt mở đều được ghi.",
     "colOpens": "Lượt mở",
     "colReason": "Lý do",
     "notOpened": "Chưa mở",

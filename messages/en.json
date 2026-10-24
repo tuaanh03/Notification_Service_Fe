@@ -1794,6 +1794,8 @@
     "colVersion": "Version",
     "colSentAt": "Sent at",
     "colFirstOpened": "First opened",
+    "colLastOpened": "Last opened",
+    "lastOpenedUnknown": "This email was opened several times before the system started recording the last open, so the last open time is unknown. Every open is recorded from now on.",
     "colOpens": "Opens",
     "colReason": "Reason",
     "notOpened": "Not opened",
