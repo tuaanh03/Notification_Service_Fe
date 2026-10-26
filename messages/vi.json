@@ -917,7 +917,8 @@
     "nameLabel": "Tên khoá",
     "namePlaceholder": "Ví dụ: backend prod",
     "factName": "tên",
-    "factLastUsed": "dùng lần cuối"
+    "factLastUsed": "dùng lần cuối",
+    "guide": "Hướng dẫn gọi API"
   },
   "credentialDialog": {
     "title": "Chỉ hiển thị một lần",
@@ -1028,7 +1029,8 @@
     "howTermCall": "Cách gọi",
     "howTermSignature": "Chữ ký",
     "howTermRetry": "Gọi lại",
-    "howTermDuplicate": "Trùng lặp"
+    "howTermDuplicate": "Trùng lặp",
+    "guide": "Hướng dẫn"
   },
   "tracking": {
     "title": "Theo dõi mở thư",
@@ -1985,7 +1987,8 @@
     "adminInfo": "Khoá của mọi người. Thu hồi khoá bị lộ ở đây — người tạo không cần làm gì.",
     "adminEmpty": "Không có khoá nào đang hoạt động",
     "adminEmptyHint": "Khoá người dùng tạo sẽ hiện ở đây.",
-    "goneAlready": "Khoá này đã không còn — đã tải lại danh sách."
+    "goneAlready": "Khoá này đã không còn — đã tải lại danh sách.",
+    "navGuide": "Hướng dẫn tích hợp"
   },
   "developers": {
     "title": "API cho lập trình viên",
@@ -2016,7 +2019,9 @@
     "cRange": "giá trị {v}",
     "cItems": "{v} phần tử",
     "cDefault": "mặc định {v}",
-    "cPattern": "mẫu {v}"
+    "cPattern": "mẫu {v}",
+    "toGuide": "Hướng dẫn tích hợp",
+    "toReference": "Tra cứu API"
   },
   "pageError": {
     "staleTitle": "Console vừa được cập nhật",

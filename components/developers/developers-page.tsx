@@ -1,6 +1,6 @@
 'use client'
 import { useDeferredValue, useMemo, useState } from 'react'
-import { ArrowRight, Download, KeyRound, Search } from 'lucide-react'
+import { ArrowRight, BookOpen, Download, KeyRound, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { AppLink } from '@/components/app-link'
 import { InfoHint } from '@/components/info-hint'
@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/page-header'
 import { Panel } from '@/components/panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ACCOUNT_TOKENS } from '@/lib/app-routes'
+import { ACCOUNT_TOKENS, DEVELOPERS_GUIDE } from '@/lib/app-routes'
 import { apiBaseOf, groupOperations, matchesQuery, type OpenApiDoc } from '@/lib/openapi'
 import { cn } from '@/lib/utils'
 import { OperationCard } from './operation-card'
@@ -45,9 +45,14 @@ export function DevelopersPage({ spec }: { spec: OpenApiDoc }) {
         title={t('title')}
         subtitle={t('subtitle')}
         actions={
-          <Button variant="outline" onClick={download}>
-            <Download /> openapi.json
-          </Button>
+          <>
+            <Button variant="outline" nativeButton={false} render={<AppLink href={DEVELOPERS_GUIDE} />}>
+              <BookOpen /> {t('toGuide')}
+            </Button>
+            <Button variant="outline" onClick={download}>
+              <Download /> openapi.json
+            </Button>
+          </>
         }
       />
 

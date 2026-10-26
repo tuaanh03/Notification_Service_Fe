@@ -917,7 +917,8 @@
     "nameLabel": "Key name",
     "namePlaceholder": "e.g. backend prod",
     "factName": "name",
-    "factLastUsed": "last used"
+    "factLastUsed": "last used",
+    "guide": "API guide"
   },
   "credentialDialog": {
     "title": "Shown only once",
@@ -1028,7 +1029,8 @@
     "howTermCall": "Call",
     "howTermSignature": "Signature",
     "howTermRetry": "Retries",
-    "howTermDuplicate": "Duplicates"
+    "howTermDuplicate": "Duplicates",
+    "guide": "Guide"
   },
   "tracking": {
     "title": "Open tracking",
@@ -1985,7 +1987,8 @@
     "adminInfo": "Tokens of every user. Revoke a leaked token here — its owner does not need to act.",
     "adminEmpty": "No active tokens",
     "adminEmptyHint": "Tokens people create will appear here.",
-    "goneAlready": "That token no longer exists — the list was reloaded."
+    "goneAlready": "That token no longer exists — the list was reloaded.",
+    "navGuide": "Integration guide"
   },
   "developers": {
     "title": "API reference",
@@ -2016,7 +2019,9 @@
     "cRange": "value {v}",
     "cItems": "{v} items",
     "cDefault": "default {v}",
-    "cPattern": "pattern {v}"
+    "cPattern": "pattern {v}",
+    "toGuide": "Integration guide",
+    "toReference": "API reference"
   },
   "pageError": {
     "staleTitle": "The console was just updated",

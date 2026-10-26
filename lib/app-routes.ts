@@ -55,6 +55,14 @@ export function orgPath(orgId: string): string {
  */
 export const ACCOUNT_TOKENS = '/account/tokens'
 export const DEVELOPERS = '/developers'
+/** Hướng dẫn tích hợp cho đội app — nằm dưới `/developers` nên cũng là màn tài khoản (không mang `?app=`). */
+export const DEVELOPERS_GUIDE = '/developers/guide'
+/** Neo các mục của trang Hướng dẫn — màn khác (Webhooks, Credentials) dẫn thẳng tới đúng mục. */
+export const GUIDE_ANCHOR = { api: 'api', webhookOut: 'webhook-out', webhookIn: 'webhook-in', pat: 'pat' } as const
+
+export function guidePath(anchor?: (typeof GUIDE_ANCHOR)[keyof typeof GUIDE_ANCHOR]): string {
+  return anchor ? `${DEVELOPERS_GUIDE}#${anchor}` : DEVELOPERS_GUIDE
+}
 const ACCOUNT_ROUTES = ['/account', DEVELOPERS] as const
 
 export function isAccountRoute(pathname: string): boolean {

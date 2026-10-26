@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { AlertTriangle, KeyRound, PlugZap, RotateCcw, ShieldOff } from 'lucide-react'
+import { AlertTriangle, BookOpen, KeyRound, PlugZap, RotateCcw, ShieldOff } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
@@ -9,6 +9,7 @@ import {
   revokeSecretAction,
   type CredentialsView,
 } from '@/app/settings/credentials/actions'
+import { AppLink } from '@/components/app-link'
 import { AuditTrail } from '@/components/audit-trail'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
@@ -23,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApp } from '@/components/app-context'
 import { useRole } from '@/components/role-context'
+import { GUIDE_ANCHOR, guidePath } from '@/lib/app-routes'
 import { TABLE_HEADER_CLASS } from '@/lib/theme'
 import type { AppSecretDto, IssuedAppSecretDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
@@ -113,7 +115,15 @@ export function CredentialsPanel() {
   }
 
   const header = (
-    <PageHeader title={t('title')} subtitle={t('subtitle', { app: app.slug })} />
+    <PageHeader
+      title={t('title')}
+      subtitle={t('subtitle', { app: app.slug })}
+      actions={
+        <Button variant="outline" nativeButton={false} render={<AppLink href={guidePath(GUIDE_ANCHOR.api)} />}>
+          <BookOpen /> {t('guide')}
+        </Button>
+      }
+    />
   )
 
   if (loadError) {

@@ -809,6 +809,17 @@ code / cấu hình / incoming webhook, phải đọc được; trùng đã bị 
     mới chưa dịch hiện tên gốc. Không hiện nội dung message (backend không trả), chỉ loại việc (`auditActions`) + 8 ký tự đầu
     mã đối tượng.
 
+### 2.23. Hướng dẫn tích hợp (`/developers/guide`) — trang ĐỌC cho đội app
+
+Nội dung tĩnh trong code, không gọi backend: `components/developers/guide/guide-vi.tsx` + `guide-en.tsx` (CÙNG `id` mục —
+neo dùng chung), đoạn code chung ở `snippets.ts`, mảnh dựng ở `parts.tsx`. Bảng mã lỗi `/v1` nhúng `<ErrorCodesTable>`, không chép.
+*   Đây là trang ĐỌC: luật chữ ngắn §2.18 không áp cho thân bài (tiêu đề / phụ đề vẫn theo luật); chạy bài quét `qa-verbose` thì loại route này ra.
+*   Route, body, header, mã lỗi trong bài phải sao đúng backend (`docs/huong-dan-tich-hop-cho-doi-app.md`, `admin-incoming-hooks.routes.ts`,
+    `integrations.ts`). Backend đổi `/v1`, khuôn webhook hay danh mục công cụ giám sát thì sửa CẢ hai file ngôn ngữ + `snippets.ts`.
+*   Màn khác dẫn tới đúng mục bằng `guidePath(GUIDE_ANCHOR.x)` (`lib/app-routes.ts`): Webhooks (theo tab đang mở), Credentials (mục API).
+    Menu tài khoản có mục riêng; trang API (`/developers`) và trang Hướng dẫn trỏ qua lại.
+*   Ánh xạ JSON tự do của webhook nhận vào CHỈ dạy ở đây (qua admin API + PAT) — vẫn KHÔNG đưa lên form (§2.13).
+
 ### 2.3. Segment filter — tạm ngưng, KHÔNG xoá
 
 `components/topics/topic-segment-editor-dialog.tsx`, kiểu `SegmentFilterGroup` và mock kèm theo là

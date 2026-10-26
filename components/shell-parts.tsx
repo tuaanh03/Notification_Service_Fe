@@ -1,12 +1,12 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Check, ChevronsUpDown, Code2, KeyRound, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import { BookOpen, Check, ChevronsUpDown, Code2, KeyRound, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 import { signOutAction } from '@/app/login/actions'
 import type { AdminDto } from '@/lib/api/auth'
 import { AppLink } from './app-link'
 import { BRAND_LOGO_SRC } from '@/lib/brand'
-import { ACCOUNT_TOKENS, DEVELOPERS } from '@/lib/app-routes'
+import { ACCOUNT_TOKENS, DEVELOPERS, DEVELOPERS_GUIDE } from '@/lib/app-routes'
 import { LOCALES } from '@/i18n/locales'
 import { LocaleFlag } from './locale-flag'
 import { useLocaleSwitch } from './locale-switcher'
@@ -182,6 +182,7 @@ export function AccountMenu({
             {(
               [
                 [ACCOUNT_TOKENS, KeyRound, ta('navTokens')],
+                [DEVELOPERS_GUIDE, BookOpen, ta('navGuide')],
                 [DEVELOPERS, Code2, ta('navDevelopers')],
               ] as const
             ).map(([href, Icon, label]) => (
