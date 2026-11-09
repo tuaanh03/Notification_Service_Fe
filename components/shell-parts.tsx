@@ -117,7 +117,7 @@ function initialsOf(email: string): string {
 /** Lối sang khu kia: console app -> Quản trị EWS (Super Admin), hoặc ngược lại (khi là thành viên org). */
 export type AreaSwitch = { href: string; label: string; icon: LucideIcon }
 
-/** Chân sidebar: tài khoản, vai thật, khoá truy cập + API (ADR-0041 / 0042), chuyển khu, ngôn ngữ, đăng xuất. */
+/** Chân sidebar: tài khoản, vai thật, khoá truy cập + API (ADR-0044 / 0042), chuyển khu, ngôn ngữ, đăng xuất. */
 export function AccountMenu({
   admin,
   roleLabel,

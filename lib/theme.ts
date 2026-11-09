@@ -44,7 +44,7 @@ export const statusColors: Record<string, string> = {
   duplicate: '#7E22CE',
   skipped: '#475569',
   rejected: '#BE123C',
-  // Khoá truy cập cá nhân (ADR-0041): hết hạn = trung tính (`active` / `revoked` dùng màu ở trên)
+  // Khoá truy cập cá nhân (ADR-0044): hết hạn = trung tính (`active` / `revoked` dùng màu ở trên)
   expired: '#475569',
 }
 

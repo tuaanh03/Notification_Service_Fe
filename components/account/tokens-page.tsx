@@ -28,7 +28,7 @@ const LIFETIMES = [7, 30, 90, 180, 365] as const
 const DEFAULT_LIFETIME = 90
 
 /**
- * Khoá truy cập cá nhân (PAT — ADR-0041 của backend): script / CI gọi `/admin/*` bằng quyền của CHÍNH người tạo.
+ * Khoá truy cập cá nhân (PAT — ADR-0044 của backend): script / CI gọi `/admin/*` bằng quyền của CHÍNH người tạo.
  * Tạo -> token hiện MỘT lần (`<TokenSecretDialog>`); danh sách chỉ có đoạn gợi nhớ; thu hồi có hỏi lại, không quay lại được.
  * Backend trả cả khoá đã hết hạn / thu hồi trong 30 ngày — chúng không có nút.
  */

@@ -15,7 +15,7 @@ import { fmtDateTime } from '@/lib/time'
 import { PUBLIC_API_BASE } from '@/lib/openapi'
 
 /**
- * Token `ewspat_…` hiện MỘT lần (ADR-0041 của backend — chỉ lưu băm). Cùng luật với `<CredentialDialog>` /
+ * Token `ewspat_…` hiện MỘT lần (ADR-0044 của backend — chỉ lưu băm). Cùng luật với `<CredentialDialog>` /
  * `<WebhookSecretDialog>` (UC-001 BR-4): tick "đã lưu" mới đóng, chưa sao chép mà đóng thì hỏi lại. Một nút Hiện / Ẩn
  * điều khiển cả dòng token lẫn lệnh curl mẫu.
  */

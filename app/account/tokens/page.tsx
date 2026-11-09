@@ -4,7 +4,7 @@ import { ApiError } from '@/lib/api/problem'
 import { listMyTokens } from '@/lib/api/tokens'
 
 /**
- * `/account/tokens` — khoá truy cập cá nhân của người đang đăng nhập (ADR-0041 của backend). Không thuộc app nào
+ * `/account/tokens` — khoá truy cập cá nhân của người đang đăng nhập (ADR-0044 của backend). Không thuộc app nào
  * (`isAccountRoute`). Server Component đọc bằng phiên; ghi qua Server Action rồi `router.refresh()`.
  */
 export const dynamic = 'force-dynamic'

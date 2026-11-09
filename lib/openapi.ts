@@ -1,11 +1,11 @@
 /**
- * Đọc spec OpenAPI 3.1 của backend (ADR-0042) cho trang `/developers`. Hàm thuần, không `server-only` — component
+ * Đọc spec OpenAPI 3.1 của backend (ADR-0045) cho trang `/developers`. Hàm thuần, không `server-only` — component
  * client gọi để nhóm, tìm, dựng bảng field / JSON mẫu / lệnh curl. Spec sinh từ chính schema zod của route, nên trang
  * này KHÔNG giữ hợp đồng nào của riêng nó: thứ gì không có trong spec thì không hiện.
  */
 
 /**
- * Domain API công khai — `/admin` chỉ mở cho request mang PAT (ADR-0041 §10), `/v1` cho khoá app. Chỉ là dự phòng:
+ * Domain API công khai — `/admin` chỉ mở cho request mang PAT (ADR-0044 §10), `/v1` cho khoá app. Chỉ là dự phòng:
  * spec có `servers` (từ cài đặt `api.public_base_url`) thì dùng cái đó (`apiBaseOf`).
  */
 export const PUBLIC_API_BASE = 'https://api-ews-astrolink.eonsr.net'
@@ -72,7 +72,7 @@ export type OpenApiOperation = {
   'x-ews-dto'?: string
   /** Mã lỗi ổn định route có thể trả (gồm mã trong `issues` của 422). */
   'x-ews-errors'?: { status: number; code: string }[]
-  /** Chỉ nhận phiên đăng nhập console — PAT gọi bị 403 `SESSION_REQUIRED` (quản lý PAT, ADR-0041 §6). */
+  /** Chỉ nhận phiên đăng nhập console — PAT gọi bị 403 `SESSION_REQUIRED` (quản lý PAT, ADR-0044 §6). */
   'x-ews-session-only'?: boolean
   [extension: `x-${string}`]: unknown
 }

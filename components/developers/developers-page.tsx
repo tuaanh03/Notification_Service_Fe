@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { OperationCard } from './operation-card'
 
 /**
- * Trang API cho lập trình viên (ADR-0042 của backend): spec OpenAPI nhóm theo tag, ô tìm, mỗi route một thẻ mở tại chỗ.
+ * Trang API cho lập trình viên (ADR-0045 của backend): spec OpenAPI nhóm theo tag, ô tìm, mỗi route một thẻ mở tại chỗ.
  * Chữ trong spec (summary / description) là tiếng Anh như error message — không dịch. Không có "Thử gọi" (cần CORS ở
  * backend) — mỗi route có lệnh curl để chép.
  */

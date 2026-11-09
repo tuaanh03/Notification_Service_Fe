@@ -49,8 +49,8 @@ export function orgPath(orgId: string): string {
 }
 
 /**
- * Màn của TÀI KHOẢN đang đăng nhập, không thuộc app / org nào: PAT (`/account/tokens`, ADR-0041 của backend) và
- * trang API cho lập trình viên (`/developers`, ADR-0042). Vào từ menu tài khoản; dựng trong khung `<OrgsShell>`
+ * Màn của TÀI KHOẢN đang đăng nhập, không thuộc app / org nào: PAT (`/account/tokens`, ADR-0044 của backend) và
+ * trang API cho lập trình viên (`/developers`, ADR-0045). Vào từ menu tài khoản; dựng trong khung `<OrgsShell>`
  * (không cần app — người chưa thuộc org nào vẫn tạo được PAT). Link tới đây không mang `?app=`.
  */
 export const ACCOUNT_TOKENS = '/account/tokens'

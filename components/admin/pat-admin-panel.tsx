@@ -16,7 +16,7 @@ import type { AdminPersonalAccessTokenDto } from '@/lib/api/types'
 import { fmtDateTime } from '@/lib/time'
 
 /**
- * Khối "Khoá truy cập cá nhân đang hoạt động" của Theo dõi & Bảo mật (ADR-0041 §9 của backend): PAT còn hiệu lực của
+ * Khối "Khoá truy cập cá nhân đang hoạt động" của Theo dõi & Bảo mật (ADR-0044 §9 của backend): PAT còn hiệu lực của
  * MỌI người, để Super Admin dập token bị lộ. Thu hồi luôn qua `<ConfirmDialog tone="blocking">` — script đang dùng
  * khoá đó hỏng ngay, không có đường quay lại. `error` = đọc danh sách hỏng (khối hiện mã, phần còn lại của màn vẫn dùng được).
  */

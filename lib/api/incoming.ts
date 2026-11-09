@@ -61,7 +61,7 @@ export async function listIncomingCalls(appId: string, hookId: string): Promise<
   return adminFetch<IncomingCallDto[]>(`${one(appId, hookId)}/calls`)
 }
 
-/** Danh mục công cụ giám sát cắm được (ADR-0043) — viết trong code backend, giống nhau cho mọi app. */
+/** Danh mục công cụ giám sát cắm được (ADR-0046) — viết trong code backend, giống nhau cho mọi app. */
 export async function listIncomingIntegrations(): Promise<IncomingIntegrationDto[]> {
   return (await adminFetch<{ integrations: IncomingIntegrationDto[] }>('/incoming-integrations')).integrations
 }

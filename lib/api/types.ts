@@ -59,7 +59,7 @@ export type AdminProfileDto = {
   orgs: { id: string; name: string; role: OrgRole | null }[]
   /** Vai cấp TRỰC TIẾP trên app. Owner / Org Admin còn có quyền ngầm trên mọi app của org. */
   appRoles: Record<string, AppRole>
-  /** Đang gọi bằng phiên hay PAT (ADR-0041). Console luôn là phiên. Optional: backend cũ chưa có. */
+  /** Đang gọi bằng phiên hay PAT (ADR-0044). Console luôn là phiên. Optional: backend cũ chưa có. */
   auth?: { via: 'session' | 'pat'; tokenId: string | null; scope: PatScope | null }
 }
 
@@ -468,7 +468,7 @@ export type IncomingVariableMapping =
 export type IncomingCondition = { path: string; values: string[] }
 
 /**
- * Công cụ giám sát cắm vào incoming webhook (ADR-0043) — sao đúng `IncomingIntegrationDto`. Danh mục viết trong
+ * Công cụ giám sát cắm vào incoming webhook (ADR-0046) — sao đúng `IncomingIntegrationDto`. Danh mục viết trong
  * code backend: `custom` = công cụ cho tự viết body (EWS dựng body để dán), `fixed` = JSON cố định (EWS tự ánh xạ),
  * `generic` = trường trùng tên biến.
  */
@@ -488,7 +488,7 @@ export type IncomingIntegrationDto = {
 export type IncomingHookDto = {
   id: string
   name: string
-  /** ADR-0043. Optional: backend cũ chưa có. `null` = hook dựng trước khi có danh mục công cụ. */
+  /** ADR-0046. Optional: backend cũ chưa có. `null` = hook dựng trước khi có danh mục công cụ. */
   integration?: IncomingIntegrationId | null
   trigger?: AlertTrigger | null
   /** Body dán vào công cụ `custom` — backend dựng, console chỉ hiện. */
@@ -517,7 +517,7 @@ export type IncomingHookConfigInput = {
   name: string
   topicId: string
   templateId: string
-  /** Bỏ trống khi có `integration` — backend tự dựng ánh xạ + điều kiện từ danh mục (ADR-0043 §4). */
+  /** Bỏ trống khi có `integration` — backend tự dựng ánh xạ + điều kiện từ danh mục (ADR-0046 §4). */
   mappings?: IncomingVariableMapping[]
   dedupePath: string | null
   condition?: IncomingCondition | null
@@ -742,7 +742,7 @@ export type DeadLetterDto = {
   aggregateId: string | null
 }
 
-/** Personal access token (ADR-0041) — sao đúng `PersonalAccessTokenDto`. Token gốc `ewspat_…` CHỈ có trong response tạo. */
+/** Personal access token (ADR-0044) — sao đúng `PersonalAccessTokenDto`. Token gốc `ewspat_…` CHỈ có trong response tạo. */
 export type PatScope = 'read' | 'write'
 export type PersonalAccessTokenDto = {
   tokenId: string

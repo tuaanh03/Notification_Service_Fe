@@ -9,7 +9,7 @@ import { getOpenApi } from '@/lib/api/openapi'
 import { ApiError } from '@/lib/api/problem'
 
 /**
- * `/developers` — danh sách API dựng từ spec OpenAPI của backend (ADR-0042), theo Cosmic, không nhúng Swagger UI.
+ * `/developers` — danh sách API dựng từ spec OpenAPI của backend (ADR-0045), theo Cosmic, không nhúng Swagger UI.
  * Không thuộc app nào (`isAccountRoute`). Server Component đọc spec bằng phiên; tìm / mở rộng chạy ở client.
  */
 export const dynamic = 'force-dynamic'

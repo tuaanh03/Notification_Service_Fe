@@ -87,7 +87,7 @@ const CALL_ERROR_KEY: Partial<
 }
 
 /**
- * Cấu hình gửi lên — tên tự theo template. Có công cụ (ADR-0043) thì KHÔNG gửi ánh xạ / điều kiện: backend tự dựng từ
+ * Cấu hình gửi lên — tên tự theo template. Có công cụ (ADR-0046) thì KHÔNG gửi ánh xạ / điều kiện: backend tự dựng từ
  * danh mục ∩ biến của template + `trigger`. Hook cũ chưa có công cụ mà người dùng không đổi công cụ -> giữ đúng như
  * trước (ánh xạ / điều kiện đội EWS đặt qua API giữ nguyên, trừ ánh xạ khi đổi template).
  */

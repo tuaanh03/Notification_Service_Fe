@@ -8,7 +8,7 @@ import type {
 } from './types'
 
 /**
- * Personal access token (ADR-0041 của backend). Mọi route ở đây CHỈ nhận phiên — console luôn gọi bằng phiên nên
+ * Personal access token (ADR-0044 của backend). Mọi route ở đây CHỈ nhận phiên — console luôn gọi bằng phiên nên
  * không gặp `SESSION_REQUIRED`. Token gốc `ewspat_…` chỉ đi qua `createMyToken`, không ghi log, không lưu lại.
  */
 

@@ -23,7 +23,7 @@ const ALL = 'all'
  * Bước chọn trước của màn Tạo template (ADR-0035 của backend): ô "Bắt đầu từ trống" + lưới mẫu dựng sẵn lọc
  * theo nhóm. Thẻ mẫu theo ngôn ngữ màn hình; bấm thẻ mở hộp xem trước để chọn ngôn ngữ thư + tên rồi "Dùng mẫu".
  * Chỉ hiện nút lọc của nhóm có mẫu — nhóm rỗng chỉ làm người dùng bấm vào chỗ trống.
- * `?preset=<id>` (link từ màn khác — vd gợi ý mẫu cảnh báo ở tab incoming webhook, ADR-0043) mở sẵn hộp của mẫu đó.
+ * `?preset=<id>` (link từ màn khác — vd gợi ý mẫu cảnh báo ở tab incoming webhook, ADR-0046) mở sẵn hộp của mẫu đó.
  */
 export function PresetGallery({ onBlank }: { onBlank: () => void }) {
   const t = useTranslations('templatePresets')

@@ -6,7 +6,7 @@ import { createMyToken, listAllTokens, listMyTokens, revokeAnyToken, revokeMyTok
 import type { AdminPersonalAccessTokenDto, IssuedPersonalAccessTokenDto, PatScope, PersonalAccessTokenDto } from '@/lib/api/types'
 
 /**
- * BFF của khoá truy cập cá nhân (ADR-0041 của backend). Token gốc `ewspat_…` chỉ đi qua đúng response của
+ * BFF của khoá truy cập cá nhân (ADR-0044 của backend). Token gốc `ewspat_…` chỉ đi qua đúng response của
  * `createTokenAction` — không ghi log, không lưu lại. Tạo xong màn gọi `router.refresh()`; thu hồi trả luôn danh sách mới.
  */
 

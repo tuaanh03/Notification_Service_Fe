@@ -94,7 +94,7 @@ export async function loadWebhookDeliveriesAction(
 
 // --- Incoming webhook (ADR-0030): công cụ ngoài gọi vào URL bí mật để phát vào topic. ---
 
-/** Danh sách hook + chọn lựa cho dòng thêm / sửa (topic, template của app, công cụ giám sát — ADR-0043). */
+/** Danh sách hook + chọn lựa cho dòng thêm / sửa (topic, template của app, công cụ giám sát — ADR-0046). */
 export async function loadIncomingAction(appId: string): Promise<
   ActionResult<{ list: IncomingHookListDto; topics: TopicDto[]; templates: TemplateSummaryDto[]; integrations: IncomingIntegrationDto[] }>
 > {

@@ -6,7 +6,7 @@ import { toLocale } from '@/i18n/locales'
 import type { IncomingHookDto, IncomingIntegrationDto } from '@/lib/api/types'
 
 /**
- * Cách cài một công cụ giám sát vào hook (ADR-0043 của backend): các bước (chữ backend đã dịch vi / en) + body dán vào
+ * Cách cài một công cụ giám sát vào hook (ADR-0046 của backend): các bước (chữ backend đã dịch vi / en) + body dán vào
  * công cụ `custom` (`setupBody` — backend dựng, console không tự dựng). Công cụ `fixed` tự gửi JSON nên chỉ có các bước.
  */
 export function IntegrationSetup({ hook, integration }: { hook: IncomingHookDto; integration: IncomingIntegrationDto }) {

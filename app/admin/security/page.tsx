@@ -63,7 +63,7 @@ async function securityActivity(): Promise<SecurityActivity | null> {
 }
 
 /**
- * PAT đang hoạt động của mọi người (ADR-0041 §9). Hỏng thì khối PAT hiện mã lỗi, phần khoá đăng nhập vẫn dùng được —
+ * PAT đang hoạt động của mọi người (ADR-0044 §9). Hỏng thì khối PAT hiện mã lỗi, phần khoá đăng nhập vẫn dùng được —
  * dập token lộ và mở khoá đăng nhập là hai việc độc lập.
  */
 async function activeTokens(): Promise<{ ok: true; data: Awaited<ReturnType<typeof listAllTokens>> } | { ok: false; error: string }> {
